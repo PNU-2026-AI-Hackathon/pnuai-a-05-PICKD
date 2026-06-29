@@ -1,0 +1,3 @@
+[submodule "FE"]
+	path = FE
+	url = https://github.com/ApptiveDev/pickd-front.git
