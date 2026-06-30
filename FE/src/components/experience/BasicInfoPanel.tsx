@@ -1,132 +1,128 @@
 import { useEffect, useMemo, useState } from "react";
 import { Check, Clipboard, Eye, EyeOff, Pencil, RotateCcw } from "lucide-react";
+import { getUserProfile } from "../../api/user";
 
 type InfoKey =
   | "name"
-  | "hanjaName"
-  | "engName"
-  | "birth"
+  | "nickname"
   | "email"
   | "phone"
-  | "address"
-  | "school"
-  | "major"
-  | "grade"
-  | "military"
-  | "veteran"
-  | "disability"
-  | "national"
-  | "driverLicense"
-  | "portfolioUrl"
-  | "github"
-  | "linkedin"
-  | "blog"
-  | "enrollYear"
-  | "gradYear"
-  | "gpa"
+  | "birthDate"
+  | "intro"
+  | "currentResidence"
+  | "detailedAddress"
+  | "desiredLocations"
+  | "schoolName"
+  | "department"
+  | "doubleMajor"
   | "minor"
-  | "transfer"
-  | "gender"
-  | "nationality"
-  | "hsSchool"
-  | "hsLocation"
-  | "hsEnroll"
-  | "hsGrad"
-  | "hsGradStatus";
+  | "degreeType"
+  | "enrollmentStatus"
+  | "graduationDate"
+  | "gpa"
+  | "campus"
+  | "industries"
+  | "jobGroups"
+  | "employmentType"
+  | "companyTypes"
+  | "targetCompany"
+  | "salaryRange"
+  | "targetPeriod"
+  | "currentStage"
+  | "focusItems"
+  | "hasResume"
+  | "hasBaseEssay"
+  | "hasPortfolio";
 
 const INFO_FIELDS: { key: InfoKey; label: string }[] = [
   { key: "name", label: "이름" },
-  { key: "hanjaName", label: "한자 이름" },
-  { key: "engName", label: "영문 이름" },
-  { key: "birth", label: "생년월일" },
+  { key: "nickname", label: "닉네임" },
   { key: "email", label: "이메일" },
   { key: "phone", label: "전화번호" },
-  { key: "address", label: "주소" },
-  { key: "school", label: "학교" },
-  { key: "major", label: "전공" },
-  { key: "grade", label: "학년 / 졸업 여부" },
-  { key: "military", label: "병역 사항" },
-  { key: "veteran", label: "보훈 사항" },
-  { key: "disability", label: "장애 사항" },
-  { key: "national", label: "국가유공자 관련" },
-  { key: "driverLicense", label: "운전면허" },
-  { key: "portfolioUrl", label: "포트폴리오 URL" },
-  { key: "github", label: "GitHub" },
-  { key: "linkedin", label: "LinkedIn" },
-  { key: "blog", label: "블로그/노션" },
-  { key: "enrollYear", label: "입학 연도" },
-  { key: "gradYear", label: "졸업(예정) 연도" },
-  { key: "gpa", label: "학점 (GPA)" },
+  { key: "birthDate", label: "생년월일" },
+  { key: "intro", label: "자기소개" },
+  { key: "currentResidence", label: "현재 거주지" },
+  { key: "detailedAddress", label: "상세 주소" },
+  { key: "desiredLocations", label: "희망 근무지" },
+  { key: "schoolName", label: "학교" },
+  { key: "department", label: "학과" },
+  { key: "doubleMajor", label: "복수전공" },
   { key: "minor", label: "부전공" },
-  { key: "transfer", label: "편입 여부" },
-  { key: "gender", label: "성별" },
-  { key: "nationality", label: "국적" },
-  { key: "hsSchool", label: "고등학교" },
-  { key: "hsLocation", label: "고등학교 소재지" },
-  { key: "hsEnroll", label: "고등학교 입학년월" },
-  { key: "hsGrad", label: "고등학교 졸업년월" },
-  { key: "hsGradStatus", label: "고등학교 졸업여부" },
+  { key: "degreeType", label: "학위 유형" },
+  { key: "enrollmentStatus", label: "재학 상태" },
+  { key: "graduationDate", label: "졸업일" },
+  { key: "gpa", label: "학점 (GPA)" },
+  { key: "campus", label: "캠퍼스" },
+  { key: "industries", label: "희망 산업" },
+  { key: "jobGroups", label: "희망 직군" },
+  { key: "employmentType", label: "고용 형태" },
+  { key: "companyTypes", label: "희망 기업 유형" },
+  { key: "targetCompany", label: "목표 기업" },
+  { key: "salaryRange", label: "희망 연봉" },
+  { key: "targetPeriod", label: "목표 취업 시기" },
+  { key: "currentStage", label: "현재 준비 단계" },
+  { key: "focusItems", label: "집중 항목" },
+  { key: "hasResume", label: "이력서 보유" },
+  { key: "hasBaseEssay", label: "기본 자소서 보유" },
+  { key: "hasPortfolio", label: "포트폴리오 보유" },
 ];
 
 const FIELD_GROUPS: { title: string; keys: InfoKey[] }[] = [
-  { title: "인적사항", keys: ["name", "hanjaName", "engName", "birth", "gender", "nationality"] },
-  { title: "연락처", keys: ["email", "phone", "address"] },
-  { title: "학력", keys: ["school", "major", "grade", "enrollYear", "gradYear", "gpa", "minor", "transfer"] },
-  { title: "고등학교", keys: ["hsSchool", "hsLocation", "hsEnroll", "hsGrad", "hsGradStatus"] },
-  { title: "온라인 프로필", keys: ["portfolioUrl", "github", "linkedin", "blog"] },
-  { title: "병역·면허", keys: ["military", "veteran", "disability", "national", "driverLicense"] },
+  { title: "인적사항", keys: ["name", "nickname", "birthDate", "intro"] },
+  { title: "연락처", keys: ["email", "phone", "currentResidence", "detailedAddress", "desiredLocations"] },
+  { title: "학력", keys: ["schoolName", "department", "doubleMajor", "minor", "degreeType", "enrollmentStatus", "graduationDate", "gpa", "campus"] },
+  { title: "취업 목표", keys: ["industries", "jobGroups", "employmentType", "companyTypes", "targetCompany", "salaryRange", "targetPeriod", "currentStage", "focusItems"] },
+  { title: "보유 자료", keys: ["hasResume", "hasBaseEssay", "hasPortfolio"] },
 ];
 
 const DEFAULT_VISIBLE: InfoKey[] = [
   "name",
-  "engName",
-  "birth",
   "email",
   "phone",
-  "address",
-  "school",
-  "major",
-  "grade",
-  "military",
-  "driverLicense",
+  "birthDate",
+  "currentResidence",
+  "schoolName",
+  "department",
+  "enrollmentStatus",
+  "graduationDate",
+  "gpa",
 ];
 
 const INFO_DEFAULTS: Record<InfoKey, string> = {
   name: "",
-  hanjaName: "",
-  engName: "",
-  birth: "",
+  nickname: "",
   email: "",
   phone: "",
-  address: "",
-  school: "",
-  major: "",
-  grade: "",
-  military: "해당 없음",
-  veteran: "해당 없음",
-  disability: "해당 없음",
-  national: "해당 없음",
-  driverLicense: "없음",
-  portfolioUrl: "",
-  github: "",
-  linkedin: "",
-  blog: "",
-  enrollYear: "",
-  gradYear: "",
-  gpa: "",
+  birthDate: "",
+  intro: "",
+  currentResidence: "",
+  detailedAddress: "",
+  desiredLocations: "",
+  schoolName: "",
+  department: "",
+  doubleMajor: "",
   minor: "",
-  transfer: "해당 없음",
-  gender: "선택 안 함",
-  nationality: "대한민국",
-  hsSchool: "",
-  hsLocation: "",
-  hsEnroll: "",
-  hsGrad: "",
-  hsGradStatus: "해당 없음",
+  degreeType: "",
+  enrollmentStatus: "",
+  graduationDate: "",
+  gpa: "",
+  campus: "",
+  industries: "",
+  jobGroups: "",
+  employmentType: "",
+  companyTypes: "",
+  targetCompany: "",
+  salaryRange: "",
+  targetPeriod: "",
+  currentStage: "",
+  focusItems: "",
+  hasResume: "",
+  hasBaseEssay: "",
+  hasPortfolio: "",
 };
 
-const LS_INFO_VISIBLE = "specs.info.visibleKeys.v4";
-const LS_INFO_VALUES = "specs.info.values.v2";
+const LS_INFO_VISIBLE = "specs.info.visibleKeys.v5";
+const LS_INFO_VALUES = "specs.info.values.v3";
 
 function lsGet<T>(key: string, fallback: T): T {
   try {
@@ -156,6 +152,49 @@ export default function BasicInfoPanel() {
   const [editMode, setEditMode] = useState(false);
   const [copiedKey, setCopiedKey] = useState<InfoKey | null>(null);
   const [maskedKeys, setMaskedKeys] = useState<Set<InfoKey>>(new Set());
+
+  useEffect(() => {
+    getUserProfile()
+      .then((profile) => {
+        const apiValues: Partial<Record<InfoKey, string>> = {
+          name: profile.name ?? "",
+          nickname: profile.nickname ?? "",
+          email: profile.email ?? "",
+          phone: profile.phone ?? "",
+          birthDate: profile.birthDate ?? "",
+          intro: profile.intro ?? "",
+          currentResidence: profile.currentResidence ?? "",
+          detailedAddress: profile.detailedAddress ?? "",
+          desiredLocations: profile.desiredLocations?.join(", ") ?? "",
+          schoolName: profile.schoolName ?? "",
+          department: profile.department ?? "",
+          doubleMajor: profile.doubleMajor ?? "",
+          minor: profile.minor ?? "",
+          degreeType: profile.degreeType ?? "",
+          enrollmentStatus: profile.enrollmentStatus ?? "",
+          graduationDate: profile.graduationDate ?? "",
+          gpa: profile.gpa != null ? String(profile.gpa) : "",
+          campus: profile.campus ?? "",
+          industries: profile.industries?.join(", ") ?? "",
+          jobGroups: profile.jobGroups?.join(", ") ?? "",
+          employmentType: profile.employmentType ?? "",
+          companyTypes: profile.companyTypes?.join(", ") ?? "",
+          targetCompany: profile.targetCompany ?? "",
+          salaryRange: profile.salaryRange ?? "",
+          targetPeriod: profile.targetPeriod ?? "",
+          currentStage: profile.currentStage ?? "",
+          focusItems: profile.focusItems?.join(", ") ?? "",
+          hasResume: profile.hasResume ? "있음" : "없음",
+          hasBaseEssay: profile.hasBaseEssay ? "있음" : "없음",
+          hasPortfolio: profile.hasPortfolio ? "있음" : "없음",
+        };
+
+        setValues((prev) => ({ ...prev, ...apiValues }));
+      })
+      .catch(() => {
+        // 프로필 조회 실패 시 기존 로컬스토리지 값 유지
+      });
+  }, []);
 
   useEffect(() => lsSet(LS_INFO_VALUES, values), [values]);
   useEffect(() => lsSet(LS_INFO_VISIBLE, visibleKeys), [visibleKeys]);
@@ -194,7 +233,7 @@ export default function BasicInfoPanel() {
         <div>
           <h2 className="text-[18px] font-[800] text-[#0F172A]">기본정보</h2>
           <p className="mt-1 text-[13px] font-[500] text-[#64748B]">
-            두 번째 프로젝트의 기본정보 필드명을 그대로 가져온 섹션입니다.
+            프로필에서 불러온 기본정보입니다.
           </p>
         </div>
 
