@@ -1,0 +1,29 @@
+.DS_Store
+
+# Secrets and local environment
+.env
+*.env
+*.local
+*.pem
+
+# IDE
+.idea/
+.vscode/
+
+# Java / Gradle
+.gradle/
+build/
+out/
+
+# Python
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+*.pyc
+
+# Node / frontend
+node_modules/
+dist/
+.next/

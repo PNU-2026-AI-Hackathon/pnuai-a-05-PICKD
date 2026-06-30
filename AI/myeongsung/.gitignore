@@ -1,0 +1,50 @@
+# Environments
+.env
+.env.*
+
+# MacOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python packaging & distribution
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# SQLite
+*.db
+*.sqlite3logs/
+
+# Data and API specs
+data/
+ai_job_extraction_api_spec.md
+ai_experience_extraction_api_spec.md
+tests/results/
+/*.pdf
+../.antigravitycli/
+
+# AI harness local-only notes
+docs/ai-harness/*.local.md
