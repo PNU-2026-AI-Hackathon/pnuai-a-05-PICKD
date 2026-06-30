@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, FileText, Folder, Image as ImageIcon, MoreHorizontal, Star, Trash2, Upload, X } from "lucide-react";
+import { uploadProfileImage } from "../../api/user";
 
 type FileKind =
   | "증명사진"
@@ -65,6 +66,8 @@ export default function FilesPanel() {
   const [preview, setPreview] = useState<FileItem | null>(null);
   const [pendingKind, setPendingKind] = useState<FileKind>("기타 제출서류");
   const [menuFileId, setMenuFileId] = useState<string | null>(null);
+  const [fileTypePopover, setFileTypePopover] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => lsSet(LS_FILES, files), [files]);
   useEffect(() => lsSet(LS_PHOTO_ID, basicPhotoId), [basicPhotoId]);
@@ -88,6 +91,25 @@ export default function FilesPanel() {
     };
   }, [menuFileId]);
 
+  useEffect(() => {
+    if (!fileTypePopover) return;
+
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target?.closest("[data-upload-popover]")) {
+        setFileTypePopover(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [fileTypePopover]);
+
   const filesByKind = useMemo(() => {
     const map: Partial<Record<FileKind, FileItem[]>> = {};
     files.forEach((file) => {
@@ -96,21 +118,41 @@ export default function FilesPanel() {
     return map;
   }, [files]);
 
-  const handleUpload = (fileList: FileList | null) => {
+  const handleUpload = async (fileList: FileList | null) => {
     const file = fileList?.[0];
     if (!file) return;
     const isImage = file.type.startsWith("image") || /\.(png|jpe?g|gif|webp)$/i.test(file.name);
-    const url = isImage ? URL.createObjectURL(file) : undefined;
-    setFiles((prev) => [
-      ...prev,
-      {
-        id: `f${Date.now()}`,
-        kind: pendingKind,
-        name: file.name,
-        fileKind: isImage ? "image" : "pdf",
-        url,
-      },
-    ]);
+
+    if (isImage) {
+      setUploading(true);
+      try {
+        const { profileImageUrl } = await uploadProfileImage(file);
+        setFiles((prev) => [
+          ...prev,
+          {
+            id: `f${Date.now()}`,
+            kind: pendingKind,
+            name: file.name,
+            fileKind: "image",
+            url: profileImageUrl,
+          },
+        ]);
+      } catch {
+        alert("이미지 업로드에 실패했습니다. 다시 시도해주세요.");
+      } finally {
+        setUploading(false);
+      }
+    } else {
+      setFiles((prev) => [
+        ...prev,
+        {
+          id: `f${Date.now()}`,
+          kind: pendingKind,
+          name: file.name,
+          fileKind: "pdf",
+        },
+      ]);
+    }
   };
 
   const renameFile = (fileId: string) => {
@@ -149,15 +191,54 @@ export default function FilesPanel() {
             ))}
           </select>
 
-          <input ref={inputRef} type="file" className="hidden" onChange={(event) => handleUpload(event.target.files)} />
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="inline-flex h-9 items-center gap-2 rounded-[8px] bg-[#2563EB] px-3 text-[13px] font-[700] text-white hover:bg-[#1D4ED8]"
-          >
-            <Upload size={15} />
-            파일 업로드
-          </button>
+          <input
+            ref={inputRef}
+            type="file"
+            className="hidden"
+            onChange={(event) => {
+              handleUpload(event.target.files);
+              event.target.value = "";
+            }}
+          />
+          <div className="relative" data-upload-popover>
+            <button
+              type="button"
+              onClick={() => setFileTypePopover((prev) => !prev)}
+              disabled={uploading}
+              className="inline-flex h-9 items-center gap-2 rounded-[8px] bg-[#2563EB] px-3 text-[13px] font-[700] text-white hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Upload size={15} />
+              {uploading ? "업로드 중..." : "파일 업로드"}
+            </button>
+            {fileTypePopover && (
+              <div className="absolute right-0 top-11 z-20 w-[160px] overflow-hidden rounded-lg border border-[#E2E8F0] bg-white py-1 shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (inputRef.current) inputRef.current.accept = "image/png,image/jpeg";
+                    inputRef.current?.click();
+                    setFileTypePopover(false);
+                  }}
+                  className="flex h-9 w-full items-center gap-2 px-4 text-left text-[13px] font-[600] text-[#334155] hover:bg-[#F8FAFC]"
+                >
+                  <ImageIcon size={15} className="text-[#64748B]" />
+                  이미지 (JPG / PNG)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (inputRef.current) inputRef.current.accept = "application/pdf";
+                    inputRef.current?.click();
+                    setFileTypePopover(false);
+                  }}
+                  className="flex h-9 w-full items-center gap-2 px-4 text-left text-[13px] font-[600] text-[#334155] hover:bg-[#F8FAFC]"
+                >
+                  <FileText size={15} className="text-[#64748B]" />
+                  PDF
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
