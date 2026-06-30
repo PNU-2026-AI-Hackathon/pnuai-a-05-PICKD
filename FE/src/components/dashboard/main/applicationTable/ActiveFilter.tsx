@@ -5,7 +5,6 @@ import { COLUMN_OPTIONS, DEFAULT_COLUMNS } from "../../../../types/application";
 interface Props {
   show: boolean;
   setShow: (value: boolean) => void;
-
   filters: { key: string; value: string }[];
   sort: { key: string; order: "asc" | "desc" } | null;
   groupedFilters: Record<string, string[]>;
@@ -19,6 +18,10 @@ interface Props {
 
   visibleColumns: string[];
   setVisibleColumns: React.Dispatch<React.SetStateAction<string[]>>;
+  searchKeyword: string;
+  setSearchKeyword: React.Dispatch<React.SetStateAction<string>>;
+  viewMode: "table" | "board";
+  setViewMode: React.Dispatch<React.SetStateAction<"table" | "board">>;
 }
 
 const filterLabelMap: Record<string, string> = {
@@ -43,6 +46,10 @@ export default function ActiveFilter({
   setSort,
   visibleColumns,
   setVisibleColumns,
+  searchKeyword,
+  setSearchKeyword,
+  viewMode,
+  setViewMode,
 }: Props) {
   const filterRef = useRef<HTMLDivElement | null>(null);
   const columnRef = useRef<HTMLDivElement | null>(null);
@@ -84,7 +91,44 @@ export default function ActiveFilter({
 
   return (
     <div className="relative">
-      <div className="ml-auto flex gap-3 w-fit">
+      <div className="ml-auto flex items-center gap-2 w-fit">
+        <div className="flex items-center rounded-[10px] border border-[#D5DEEA] bg-white p-[2px]">
+          <button
+            type="button"
+            onClick={() => setViewMode("table")}
+            className={`flex h-8 w-8 items-center justify-center rounded-[8px] transition ${
+              viewMode === "table"
+                ? "bg-[#F1F5F9] text-[#111827]"
+                : "text-[#64748B] hover:bg-[#F8FAFC]"
+            }`}
+            title="표 보기"
+          >
+            <Icon icon="lucide:table-2" width={17} height={17} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setViewMode("board")}
+            className={`flex h-8 w-8 items-center justify-center rounded-[8px] transition ${
+              viewMode === "board"
+                ? "bg-[#F1F5F9] text-[#111827]"
+                : "text-[#64748B] hover:bg-[#F8FAFC]"
+            }`}
+            title="카드 보기"
+          >
+            <Icon icon="lucide:columns-3" width={17} height={17} />
+          </button>
+        </div>
+        <div className="flex h-10 w-[280px] items-center gap-2 rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] px-3 focus-within:border-[#2563EB] focus-within:ring-2 focus-within:ring-[#BFDBFE]">
+          <Icon icon="mdi:magnify" className="text-[20px] text-[#64748B]" />
+
+          <input
+            value={searchKeyword}
+            onChange={(event) => setSearchKeyword(event.target.value)}
+            placeholder="기업명 / 공고명"
+            className="w-full bg-transparent text-sm text-[#0F172A] outline-none placeholder:text-[#64748B]"
+          />
+        </div>
         <button
           onClick={() => setShow(!show)}
           className="w-9 h-9 flex items-center justify-center rounded-xl border border-[#F1F5F9] hover:bg-gray-50 transition"

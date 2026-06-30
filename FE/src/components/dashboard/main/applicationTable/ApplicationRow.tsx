@@ -1,4 +1,4 @@
-import { Icon } from "@iconify/react";
+import { Star } from "lucide-react";
 import { createPortal } from "react-dom";
 import ApplicationMenu from "../ApplicationMenu";
 import { useEffect, useRef, useState } from "react";
@@ -8,7 +8,7 @@ import { getStatusStyle, getNextStep } from "../../../../utils/status";
 import { getRelativeTime } from "../../../../utils/document";
 import { useApplication } from "../../../../context/ApplicationContext";
 import type { ApplicationStatus } from "../../../../types/application";
-import { updateApplication as updateApplicationApi } from "../../../../api/application";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   row: any;
@@ -25,6 +25,7 @@ interface Props {
   setCheckedIds: any;
   visibleColumns: any;
   setIsDetailModalOpen: any;
+  widths: Record<string, number>;
 }
 
 export default function ApplicationRow({
@@ -42,7 +43,9 @@ export default function ApplicationRow({
   setCheckedIds,
   visibleColumns,
   setIsDetailModalOpen,
+  widths,
 }: Props) {
+  const navigate = useNavigate();
   const { updateApplication } = useApplication();
   const isChecked = checkedIds.includes(row.id);
   const completedCount =
@@ -89,12 +92,19 @@ export default function ApplicationRow({
   const currentDeadlineDate = getCurrentDeadlineDate(row);
   const currentDday = getDDay(currentDeadlineDate);
 
+  const cellStyle = (key: string) => ({
+    width: widths[key] ?? 120,
+    minWidth: widths[key] ?? 120,
+    maxWidth: widths[key] ?? 120,
+  });
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
+      const target = e.target as Node;
+      const clickedDropdown = dropdownRef.current?.contains(target);
+      const clickedButton = statusButtonRef.current?.contains(target);
+
+      if (!clickedDropdown && !clickedButton) {
         setStatusOpen(false);
       }
     };
@@ -131,12 +141,12 @@ export default function ApplicationRow({
         setFocusedApplication(row);
         setIsDetailModalOpen(true);
       }}
-      className={`[&>td]:px-3
+      className={`
         cursor-pointer hover:bg-[#F8FAFC]
         ${focusedApplication?.id === row.id ? "bg-[#F8FAFC]" : ""}
       `}
     >
-      <td className="border-b text-sm border-r border-[#F1F5F9]">
+      <td className="w-[48px] min-w-[48px] max-w-[48px] border-b text-sm border-r border-[#F1F5F9]">
         <label
           className="flex items-center justify-center cursor-pointer p-2 -m-1.5"
           onClick={(e) => e.stopPropagation()}
@@ -162,10 +172,35 @@ export default function ApplicationRow({
           </div>
         </label>
       </td>
+      <td className="w-[48px] min-w-[48px] max-w-[48px] border-b border-r border-[#F1F5F9] text-center">
+        <button
+          onClick={async (e) => {
+            e.stopPropagation();
 
-      <td className="border-b whitespace-nowrap border-r border-[#F1F5F9]">
+            const updated = {
+              ...row,
+              important: !row.important,
+            };
+            await updateApplication(row.id, () => updated);
+            await onChange?.();
+          }}
+          className="flex h-[48px] w-full items-center justify-center"
+        >
+          <Star
+            size={18}
+            className={
+              row.important ? "fill-[#F58A1F] text-[#F58A1F]" : "text-[#94A3B8]"
+            }
+          />
+        </button>
+      </td>
+
+      <td
+        className="border-b whitespace-nowrap border-r border-[#F1F5F9] overflow-hidden"
+        style={cellStyle("company")}
+      >
         <span
-          className="cursor-pointer text-black font-medium text-sm hover:text-green-600"
+          className="cursor-pointer px-3 text-black font-medium text-sm hover:text-green-600"
           onClick={(e) => {
             e.stopPropagation();
             onCompanyClick(row);
@@ -174,11 +209,29 @@ export default function ApplicationRow({
           {row.company}
         </span>
       </td>
-      <td className="border-b whitespace-nowrap text-sm border-r border-[#F1F5F9]">
-        {row.jobTitle}
+      <td
+        className="px-3 border-b whitespace-nowrap text-sm border-r border-[#F1F5F9] overflow-hidden truncate"
+        style={cellStyle("jobTitle")}
+      >
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/applications/${row.id}`, {
+              state: { application: row },
+            });
+          }}
+          className="max-w-full truncate text-left font-medium text-[#0F172A] hover:text-[#2563EB] hover:underline"
+          title={row.jobTitle}
+        >
+          {row.jobTitle}
+        </button>
       </td>
       {visibleColumns.includes("position") && (
-        <td className="border-b whitespace-nowrap text-sm text-center border-r border-[#F1F5F9]">
+        <td
+          className="border-b whitespace-nowrap text-sm text-center border-r border-[#F1F5F9] overflow-hidden"
+          style={cellStyle("position")}
+        >
           <span
             className={`inline-flex items-center justify-center px-2 py-[2px] text-xs font-semibold rounded ${getPositionColor(
               row.position,
@@ -189,12 +242,18 @@ export default function ApplicationRow({
         </td>
       )}
       {visibleColumns.includes("industry") && (
-        <td className="border-b whitespace-nowrap text-sm font-semibold border-r border-[#F1F5F9]">
+        <td
+          className="border-b whitespace-nowrap text-sm font-semibold border-r border-[#F1F5F9] overflow-hidden"
+          style={cellStyle("industry")}
+        >
           {row.industry || "-"}
         </td>
       )}
       {visibleColumns.includes("status") && (
-        <td className="border-b border-r border-[#F1F5F9] relative">
+        <td
+          className="border-b border-r border-[#F1F5F9] relative overflow-hidden"
+          style={cellStyle("status")}
+        >
           <div
             ref={statusRef}
             className="flex items-center justify-center relative"
@@ -250,8 +309,7 @@ export default function ApplicationRow({
                             ...row,
                             status,
                           };
-                          await updateApplicationApi(row.id, updated);
-                          updateApplication(row.id, () => updated);
+                          await updateApplication(row.id, () => updated);
                           await onChange?.();
                           setStatusOpen(false);
                         }}
@@ -274,19 +332,25 @@ export default function ApplicationRow({
         </td>
       )}
       {visibleColumns.includes("nextStep") && (
-        <td className="px-4 py-2 border-b whitespace-nowrap text-sm text-[#64748B] border-r border-[#F1F5F9]">
+        <td
+          className="px-4 py-2 border-b whitespace-nowrap text-sm text-[#64748B] border-r border-[#F1F5F9]"
+          style={cellStyle("nextStep")}
+        >
           {getNextStep(row.status)}
         </td>
       )}
       {visibleColumns.includes("deadlineDate") && (
-        <td className="border-b whitespace-nowrap text-sm text-[#334155] border-r border-[#F1F5F9]">
+        <td
+          className="px-3 border-b whitespace-nowrap text-sm text-[#334155] border-r border-[#F1F5F9]"
+          style={cellStyle("deadlineDate")}
+        >
           {formatApplicationDate(currentDeadlineDate)}
         </td>
       )}
 
       {visibleColumns.includes("dday") && (
         <td
-          className={`border-b whitespace-nowrap text-sm font-semibold border-r border-[#F1F5F9] ${
+          className={`px-3 border-b whitespace-nowrap text-sm font-semibold border-r border-[#F1F5F9] ${
             currentDday === "-"
               ? "text-[#64748B]"
               : currentDday.startsWith("D+")
@@ -297,12 +361,16 @@ export default function ApplicationRow({
                   ? "text-[#EF4444]"
                   : "text-[#64748B]"
           }`}
+          style={cellStyle("dday")}
         >
           {currentDday}
         </td>
       )}
       {visibleColumns.includes("documents") && (
-        <td className="border-b border-r border-[#F1F5F9]">
+        <td
+          className="px-3 border-b border-r border-[#F1F5F9] overflow-hidden"
+          style={cellStyle("documents")}
+        >
           {row.documents?.length ? (
             <div className="flex flex-col gap-1">
               {row.documents.slice(0, 2).map((doc: any) => (
@@ -319,9 +387,12 @@ export default function ApplicationRow({
         </td>
       )}
       {visibleColumns.includes("checklistInComplete") && (
-        <td className="border-b whitespace-nowrap border-r border-[#F1F5F9]">
-          <div className="flex items-center gap-2 min-w-[120px]">
-            <div className="w-[120px] h-[6px] bg-[#E5E7EB] rounded-full overflow-hidden">
+        <td
+          className="px-3 border-b whitespace-nowrap border-r border-[#F1F5F9] overflow-hidden"
+          style={cellStyle("checklistInComplete")}
+        >
+          <div className="flex items-center gap-2 w-full">
+            <div className="flex-1 h-[6px] bg-[#E5E7EB] rounded-full overflow-hidden">
               <div
                 className="h-full bg-[#2563EB] rounded-full transition-all duration-300"
                 style={{
@@ -335,39 +406,21 @@ export default function ApplicationRow({
           </div>
         </td>
       )}
-      {visibleColumns.includes("important") && (
-        <td className="border-b border-r border-[#F1F5F9] text-center">
-          <button
-            onClick={async (e) => {
-              e.stopPropagation();
-
-              const updated = {
-                ...row,
-                important: !row.important,
-              };
-              await updateApplicationApi(row.id, updated);
-              updateApplication(row.id, () => updated);
-            }}
-            className="flex h-full w-full items-center justify-center"
-          >
-            <Icon
-              icon={row.important ? "mdi:star" : "mdi:star-outline"}
-              className={`text-[20px] transition-colors ${
-                row.important ? "text-[#F58A1F]" : "text-[#7C8599]"
-              }`}
-            />
-          </button>
-        </td>
-      )}
       {visibleColumns.includes("recentUpdated") && (
-        <td className="border-b whitespace-nowrap text-sm text-[#64748B] border-r border-[#F1F5F9]">
+        <td
+          className="border-b whitespace-nowrap text-sm text-[#64748B] border-r border-[#F1F5F9]"
+          style={cellStyle("recentUpdated")}
+        >
           {row.documents?.[0]?.updatedAt
             ? getRelativeTime(row.documents[0].updatedAt)
             : "-"}
         </td>
       )}
       {visibleColumns.includes("memo") && (
-        <td className="border-b text-sm text-[#64748B] max-w-[180px] truncate border-r border-[#F1F5F9]">
+        <td
+          className="px-3 border-b text-sm text-[#64748B] truncate border-r border-[#F1F5F9] overflow-hidden"
+          style={cellStyle("memo")}
+        >
           {row.memo || "-"}
         </td>
       )}

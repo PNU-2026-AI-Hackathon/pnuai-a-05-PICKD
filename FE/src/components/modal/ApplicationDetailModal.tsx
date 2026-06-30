@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import { formatDate, getDDay } from "../../utils/date";
 import PostTodo from "./PostTodo";
+import PostSchedule from "./PostSchedule";
 import { useApplication } from "../../context/ApplicationContext";
+import { useClickOutside } from "../../hooks/useClickOutside";
 
 interface Props {
   open: boolean;
@@ -29,15 +31,24 @@ export default function ApplicationDetailModal({
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [todoModalOpen, setTodoModalOpen] = useState(false);
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const addMenuRef = useRef<HTMLDivElement | null>(null);
   const { addTodo, applications } = useApplication();
+
+  useClickOutside([addMenuRef], () => setShowAddMenu(false), showAddMenu);
   if (!open || !application) return null;
   const currentApplication =
     applications.find((app) => app.id === application.id) || application;
 
   return (
     <>
-      <div className="fixed inset-0 z-[99] flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
-        <div className="relative w-[1100px] min-h-[600px] max-h-[90vh] overflow-y-auto rounded-[20px] bg-[#F8FAFC] shadow-[0_10px_40px_rgba(15,23,42,0.12)]">
+      <div
+        className="fixed inset-0 z-[99] flex items-center justify-center bg-black/40 backdrop-blur-[1px]"
+        onClick={onClose}
+      >
+        <div
+          className="relative w-[1100px] min-h-[600px] max-h-[90vh] overflow-y-auto rounded-[20px] bg-[#F8FAFC] shadow-[0_10px_40px_rgba(15,23,42,0.12)]"
+          onClick={(event) => event.stopPropagation()}
+        >
           <div className="border-b border-[#EEF2F6] px-8 pt-5 pb-3 bg-white">
             <div className="flex items-start justify-between">
               <div>
@@ -138,7 +149,7 @@ export default function ApplicationDetailModal({
             <Section
               title="일정 · 할 일"
               right={
-                <div className="relative">
+                <div ref={addMenuRef} className="relative">
                   <button
                     onClick={() => setShowAddMenu((prev) => !prev)}
                     className="flex items-center gap-1 text-[14px] font-medium text-[#64748B] hover:text-[#2563EB]"
@@ -294,6 +305,13 @@ export default function ApplicationDetailModal({
           </div>
         </div>
       </div>
+      {scheduleModalOpen && (
+        <PostSchedule
+          application={currentApplication}
+          onClose={() => setScheduleModalOpen(false)}
+        />
+      )}
+
       {todoModalOpen && (
         <PostTodo
           application={currentApplication}

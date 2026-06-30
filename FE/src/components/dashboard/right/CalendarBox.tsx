@@ -1,23 +1,7 @@
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { useEffect, useState } from "react";
-
-function getEventDate(e: any): Date | null {
-  if (!e.start) return null;
-
-  if (e.start.dateTime?.value) {
-    return new Date(Number(e.start.dateTime.value));
-  }
-
-  if (typeof e.start.dateTime === "string") {
-    return new Date(e.start.dateTime);
-  }
-
-  if (e.start.date) {
-    return new Date(e.start.date);
-  }
-  return null;
-}
+import { getGoogleEventDate } from "../../../utils/date";
 
 type EventType = "interview" | "apply" | "deadline" | "default";
 
@@ -47,7 +31,7 @@ function getThisWeekEvents(events: any[]) {
   end.setDate(start.getDate() + 7);
 
   return events.filter((e) => {
-    const d = getEventDate(e);
+    const d = getGoogleEventDate(e);
     return d && d >= start && d < end;
   });
 }
@@ -69,8 +53,8 @@ export default function CalendarBox({
   const allEvents = [...defaultEvents].filter(Boolean);
 
   const weeklyEvents = getThisWeekEvents(allEvents).sort((a, b) => {
-    const da = getEventDate(a);
-    const db = getEventDate(b);
+    const da = getGoogleEventDate(a);
+    const db = getGoogleEventDate(b);
     if (!da || !db) return 0;
     return da.getTime() - db.getTime();
   });
@@ -82,8 +66,7 @@ export default function CalendarBox({
   const mergedEvents = [
     ...defaultEvents
       .map((e) => {
-        console.log(e.summary);
-        const d = getEventDate(e);
+        const d = getGoogleEventDate(e);
         if (!d) return null;
 
         return {
@@ -107,7 +90,7 @@ export default function CalendarBox({
 
   useEffect(() => {
     const selectedDayEvents = allEvents.filter((e) => {
-      const d = getEventDate(e);
+      const d = getGoogleEventDate(e);
       return d && isSameDay(d, date);
     });
 

@@ -1,4 +1,5 @@
 import type { Todo } from "../../../../types/todo";
+import { parseLocalDateTime } from "../../../../utils/date";
 
 interface TodoProps {
   todo: Todo;
@@ -6,26 +7,26 @@ interface TodoProps {
 }
 
 const TodoItem = ({ todo, onToggle }: TodoProps) => {
-  console.log("TodoItem 렌더링:", todo);
   const companyName = todo.company;
 
   const isUrgent =
     todo.dueDateTime &&
-    new Date(todo.dueDateTime).getTime() - new Date().getTime() <
+    (parseLocalDateTime(todo.dueDateTime)?.getTime() ?? Number.POSITIVE_INFINITY) -
+      new Date().getTime() <
       12 * 60 * 60 * 1000;
 
   const priority = isUrgent ? "긴급" : "보통";
 
   const time = todo.dueDateTime
-    ? new Date(todo.dueDateTime).toLocaleTimeString([], {
+    ? parseLocalDateTime(todo.dueDateTime)?.toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
-      })
+      }) ?? "시간 미정"
     : "시간 미정";
 
   const isOverdue = todo.dueDateTime
-    ? new Date(todo.dueDateTime) < new Date() && !todo.completed
+    ? (parseLocalDateTime(todo.dueDateTime)?.getTime() ?? 0) < new Date().getTime() && !todo.completed
     : false;
 
   return (

@@ -1,13 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { type Application } from "../types/application";
-
-function getEventDate(e: any): Date | null {
-  if (!e.start) return null;
-  if (e.start.dateTime?.value) return new Date(Number(e.start.dateTime.value));
-  if (typeof e.start.dateTime === "string") return new Date(e.start.dateTime);
-  if (e.start.date) return new Date(e.start.date);
-  return null;
-}
+import { getCalendarEvents } from "../api/calendar";
+import { getGoogleEventDate } from "../utils/date";
 
 export function isSameDay(d1: Date, d2: Date) {
   return (
@@ -44,18 +38,8 @@ export const useMainCalendar = (applications: Application[]) => {
 
   const loadEvents = useCallback(async () => {
     try {
-      const res = await fetch("/api/calendar/events", {
-        credentials: "include",
-      });
-
-      const text = await res.text();
-
-      if (!res.ok) {
-        throw new Error(text);
-      }
-
-      const data = text ? JSON.parse(text) : [];
-      setGoogleEvents(data);
+      const data = await getCalendarEvents();
+      setGoogleEvents(data ?? []);
     } catch (err) {
       console.error("캘린더 가져오기 실패", err);
     }
@@ -109,7 +93,7 @@ export const useMainCalendar = (applications: Application[]) => {
         else if (title.includes("마감")) type = "deadline";
         else if (title.includes("제출")) type = "apply";
         else if (title.includes("면접")) type = "interview";
-        const eventDate = getEventDate(e);
+        const eventDate = getGoogleEventDate(e);
         if (!eventDate) return null;
 
         const matchedApp = applications.find((app) => {

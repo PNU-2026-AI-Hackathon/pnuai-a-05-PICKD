@@ -22,7 +22,7 @@ export default function PostDocument({
     memo: string;
   }>({
     title: "",
-    type: "자소서",
+    type: "기타",
     status: "작성중",
     memo: "",
   });
@@ -108,7 +108,7 @@ export default function PostDocument({
               onChange={handleChange}
               className="w-full cursor-pointer rounded-xl border bg-white p-2 outline-none focus:border-blue-500"
             >
-              <option value="자소서">자소서</option>
+              <option value="기타">기타</option>
               <option value="포트폴리오">포트폴리오</option>
               <option value="이력서">이력서</option>
             </select>
@@ -126,9 +126,7 @@ export default function PostDocument({
               className="w-full cursor-pointer rounded-xl border bg-white p-2 outline-none focus:border-blue-500"
             >
               <option value="작성중">작성중</option>
-              <option value="검토중">검토중</option>
-              <option value="수정 필요">수정 필요</option>
-              <option value="제출 완료">제출 완료</option>
+              <option value="완료">완료</option>
             </select>
           </div>
 

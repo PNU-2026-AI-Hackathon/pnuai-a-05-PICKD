@@ -1,77 +1,82 @@
-export const createTodo = async (data: {
+import { apiRequest } from "./http";
+import type { Todo } from "../types/todo";
+import { toBackendLocalDateTime } from "../utils/date";
+
+export type TodoPayload = {
   title: string;
-  dueDateTime?: string;
+  dueDateTime?: string | null;
   memo?: string;
-  applicationId?: number;
+  applicationId?: number | string | null;
   company?: string;
   jobTitle?: string;
-}) => {
-  const res = await fetch("/api/todo", {
+};
+
+const toTodoRequest = (data: TodoPayload) => ({
+  title: data.title,
+  dueDateTime: toBackendLocalDateTime(data.dueDateTime) || null,
+  memo: data.memo ?? "",
+  applicationId:
+    data.applicationId === "" || data.applicationId == null
+      ? null
+      : Number(data.applicationId),
+  company: data.company ?? undefined,
+  jobTitle: data.jobTitle ?? undefined,
+});
+
+export const getTodos = async () => {
+  return apiRequest<Todo[]>("/api/todo", {
+    method: "GET",
+    skipJsonContentType: true,
+  });
+};
+
+export const getTodosByApplication = async (applicationId: number) => {
+  return apiRequest<Todo[]>(`/api/todo/application/${applicationId}`, {
+    method: "GET",
+    skipJsonContentType: true,
+  });
+};
+
+export const createTodo = async (data: TodoPayload) => {
+  const newTodo = await apiRequest<Todo>("/api/todo", {
     method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
+    body: JSON.stringify(toTodoRequest(data)),
   });
 
-  if (!res.ok) {
-    throw new Error("할 일 생성 실패");
-  }
-
-  const newTodo = await res.json();
-
-  window.dispatchEvent(new Event("googleCalendarUpdated"));
   window.dispatchEvent(new Event("todoUpdated"));
+  window.dispatchEvent(new Event("googleCalendarUpdated"));
 
   return newTodo;
 };
 
-export const toggleTodoApi = async (todoId: number) => {
-  const response = await fetch(`/api/todo/${todoId}`, {
-    method: "PUT",
-    credentials: "include",
+export const updateTodoApi = async (todoId: number, data: TodoPayload) => {
+  const updatedTodo = await apiRequest<Todo>(`/api/todo/${todoId}`, {
+    method: "PATCH",
+    body: JSON.stringify(toTodoRequest(data)),
   });
 
-  if (!response.ok) {
-    throw new Error("할 일 상태 변경 실패");
-  }
+  window.dispatchEvent(new Event("todoUpdated"));
+  window.dispatchEvent(new Event("googleCalendarUpdated"));
 
-  const text = await response.text();
+  return updatedTodo;
+};
 
-  if (!text) {
-    return null;
-  }
+export const toggleTodoApi = async (todoId: number) => {
+  await apiRequest<void>(`/api/todo/${todoId}/toggle`, {
+    method: "PUT",
+    skipJsonContentType: true,
+  });
 
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
+  window.dispatchEvent(new Event("todoUpdated"));
+  window.dispatchEvent(new Event("googleCalendarUpdated"));
 };
 
 export const deleteTodoApi = async (id: number) => {
-  const res = await fetch(`/api/todo/${id}`, {
+  await apiRequest<void>(`/api/todo/${id}`, {
     method: "DELETE",
-    credentials: "include",
+    skipJsonContentType: true,
   });
 
-  if (!res.ok) {
-    throw new Error("할 일 삭제 실패");
-  }
-
-  window.dispatchEvent(new Event("googleCalendarUpdated"));
   window.dispatchEvent(new Event("todoUpdated"));
-};
-
-export const getTodos = async () => {
-  const res = await fetch("/api/todo", {
-    credentials: "include",
-  });
-
-  if (!res.ok) {
-    throw new Error("할 일 조회 실패");
-  }
-
-  return res.json();
+  window.dispatchEvent(new Event("googleCalendarUpdated"));
 };

@@ -1,13 +1,87 @@
-import { useState } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import TableFilter from "./TableFilter";
 import ActiveFilter from "./ActiveFilter";
 import ApplicationRow from "./ApplicationRow";
-import { getDDay } from "../../../../utils/date";
+import { getDDay, parseLocalDateTime } from "../../../../utils/date";
 import { useApplication } from "../../../../context/ApplicationContext";
 import { getNextStep } from "../../../../utils/status";
-import { DEFAULT_COLUMNS } from "../../../../types/application";
+import {
+  DEFAULT_COLUMNS,
+  type Application,
+} from "../../../../types/application";
 import type { DocumentItem } from "../../../../types/document";
 import type { Todo } from "../../../../types/todo";
+import ApplicationStatusBoard from "./ApplicationStatusBoard";
+import {
+  ResizeHandle,
+  useResizableCols,
+} from "../../../../hooks/useResizableCols";
+
+const DEFAULT_WIDTHS: Record<string, number> = {
+  company: 180,
+  jobTitle: 240,
+  position: 140,
+  industry: 120,
+  status: 130,
+  nextStep: 130,
+  deadlineDate: 130,
+  dday: 100,
+  documents: 180,
+  checklistInComplete: 130,
+  recentUpdated: 130,
+  memo: 150,
+};
+
+const MIN_WIDTHS: Record<string, number> = {
+  company: 120,
+  jobTitle: 160,
+  position: 100,
+  industry: 90,
+  status: 100,
+  nextStep: 100,
+  deadlineDate: 110,
+  dday: 80,
+  documents: 140,
+  checklistInComplete: 100,
+  recentUpdated: 110,
+  memo: 140,
+};
+
+const ALL_TABLE_COLUMNS = [
+  ["company", "기업명"],
+  ["jobTitle", "공고명"],
+  ["position", "직무"],
+  ["industry", "산업"],
+  ["status", "현재 상태"],
+  ["nextStep", "다음 단계"],
+  ["deadlineDate", "마감일"],
+  ["dday", "남은 기간"],
+  ["documents", "작성중인 서류"],
+  ["checklistInComplete", "일정/할 일"],
+  ["recentUpdated", "최근 수정일"],
+  ["memo", "메모"],
+] as const;
+
+type TableColumn = (typeof ALL_TABLE_COLUMNS)[number];
+
+const FIXED_COLUMN_KEYS = ["company", "jobTitle"] as const;
+const FIXED_COLUMN_KEY_SET = new Set<string>(FIXED_COLUMN_KEYS);
+
+const REORDERABLE_COLUMN_KEYS = ALL_TABLE_COLUMNS.map(([key]) => key).filter(
+  (key) => !FIXED_COLUMN_KEY_SET.has(key),
+);
+
+const REORDERABLE_COLUMN_KEY_SET = new Set<string>(REORDERABLE_COLUMN_KEYS);
+
+const DEFAULT_COLUMN_ORDER = REORDERABLE_COLUMN_KEYS;
+
+const isFixedColumnKey = (key: string) => {
+  return FIXED_COLUMN_KEY_SET.has(key);
+};
+
+const isReorderableColumnKey = (key: string) => {
+  return REORDERABLE_COLUMN_KEY_SET.has(key);
+};
 
 export default function ApplicationTable({
   onEdit,
@@ -21,22 +95,173 @@ export default function ApplicationTable({
   const [checkedIds, setCheckedIds] = useState<number[]>([]);
   const [showActiveFilters, setShowActiveFilters] = useState(false);
   const [filters, setFilters] = useState<{ key: string; value: string }[]>([]);
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [viewMode, setViewMode] = useState<"table" | "board">("table");
   const [sort, setSort] = useState<{
     key: string;
     order: "asc" | "desc";
   } | null>(null);
 
-  const { applications, deleteApplications } = useApplication();
-  const { addDocument } = useApplication();
-  const [visibleColumns, setVisibleColumns] =
-    useState<string[]>(DEFAULT_COLUMNS);
+  const applicationContext = useApplication() as any;
+  const {
+    applications = [],
+    deleteApplications,
+    addDocument,
+  } = applicationContext as {
+    applications: Application[];
+    deleteApplications: (ids: number[]) => Promise<void>;
+    addDocument: (...args: any[]) => any;
+  };
 
-  console.log(applications.map((a) => a.status));
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(
+    DEFAULT_COLUMNS.filter((column) => column !== "important"),
+  );
+
+  const [applicationOverrides, setApplicationOverrides] = useState<
+    Record<string, Partial<Application>>
+  >({});
+
+  const mergedApplications = applications.map((application) => ({
+    ...application,
+    ...(applicationOverrides[String(application.id)] ?? {}),
+  }));
+
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem("pickd.application.columnOrder");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+
+        return parsed.filter((key: string) => isReorderableColumnKey(key));
+      }
+    } catch {
+      //
+    }
+
+    return DEFAULT_COLUMN_ORDER;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(
+      "pickd.application.columnOrder",
+      JSON.stringify(columnOrder),
+    );
+  }, [columnOrder]);
+
+  const draggingColumnKey = useRef<string | null>(null);
+
+  const handleColumnDragStart = (key: string) => {
+    if (isFixedColumnKey(key)) return;
+    draggingColumnKey.current = key;
+  };
+
+  const handleColumnDragOver = (e: DragEvent<HTMLTableCellElement>) => {
+    e.preventDefault();
+  };
+
+  const handleColumnDrop = (targetKey: string) => {
+    const draggingKey = draggingColumnKey.current;
+    draggingColumnKey.current = null;
+
+    if (!draggingKey || draggingKey === targetKey) return;
+    if (isFixedColumnKey(draggingKey)) return;
+    if (isFixedColumnKey(targetKey)) return;
+
+    setColumnOrder((prev) => {
+      const next = prev.filter((key) => key !== draggingKey);
+      const targetIndex = next.indexOf(targetKey);
+
+      if (targetIndex === -1) {
+        return [...next, draggingKey];
+      }
+
+      next.splice(targetIndex, 0, draggingKey);
+      return next;
+    });
+  };
+
+  const { widths, onMouseDown } = useResizableCols(
+    "pickd.application.colWidths",
+    DEFAULT_WIDTHS,
+    MIN_WIDTHS,
+  );
 
   const toggleCheck = (id: number) => {
     setCheckedIds((prev) =>
       prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id],
     );
+  };
+
+  const applyApplicationPatch = async (
+    applicationId: Application["id"],
+    patch: Partial<Application>,
+  ) => {
+    const currentApplication = mergedApplications.find(
+      (application) => application.id === applicationId,
+    );
+
+    if (!currentApplication) return;
+
+    const nextApplication = {
+      ...currentApplication,
+      ...patch,
+    };
+
+    setApplicationOverrides((prev) => ({
+      ...prev,
+      [String(applicationId)]: {
+        ...(prev[String(applicationId)] ?? {}),
+        ...patch,
+      },
+    }));
+
+    try {
+      if (typeof applicationContext.updateApplication === "function") {
+        await applicationContext.updateApplication(
+          applicationId,
+          (prevApplication: Application) =>
+            ({
+              ...prevApplication,
+              ...patch,
+            }) as Application,
+        );
+      } else if (typeof applicationContext.patchApplication === "function") {
+        await applicationContext.patchApplication(applicationId, patch);
+      } else if (typeof applicationContext.editApplication === "function") {
+        await applicationContext.editApplication(nextApplication);
+      }
+
+      await onChange?.();
+    } catch (error) {
+      console.error("지원 공고 수정에 실패했습니다.", error);
+    }
+  };
+
+  const handleChangeStatusFromBoard = (
+    applicationId: Application["id"],
+    nextStatus: string,
+  ) => {
+    applyApplicationPatch(applicationId, {
+      status: nextStatus as Application["status"],
+      recentUpdated: new Date().toISOString().slice(0, 10),
+    } as Partial<Application>);
+  };
+
+  const handleToggleImportant = (applicationId: Application["id"]) => {
+    const currentApplication = mergedApplications.find(
+      (application) => application.id === applicationId,
+    );
+
+    if (!currentApplication) return;
+
+    applyApplicationPatch(applicationId, {
+      important: !currentApplication.important,
+    } as Partial<Application>);
+  };
+
+  const handleOpenApplicationFromBoard = (application: Application) => {
+    setFocusedApplication?.(application);
+    setIsDetailModalOpen?.(true);
   };
 
   const handleDeleteSelected = async () => {
@@ -52,6 +277,14 @@ export default function ApplicationTable({
     if (!confirmDelete) return;
 
     await deleteApplications(checkedIds);
+    setApplicationOverrides((prev) => {
+      const next = { ...prev };
+      checkedIds.forEach((id) => {
+        delete next[String(id)];
+      });
+      return next;
+    });
+
     checkedIds.forEach((id) => {
       onDelete?.(id);
     });
@@ -62,7 +295,7 @@ export default function ApplicationTable({
   };
 
   const handleCopySelected = async () => {
-    const selectedRows = applications.filter((app) =>
+    const selectedRows = mergedApplications.filter((app) =>
       checkedIds.includes(app.id),
     );
 
@@ -141,9 +374,9 @@ export default function ApplicationTable({
 
     const escapeHtml = (value: any) =>
       String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;");
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
 
     const html = `
     <table border="1" style="border-collapse: collapse;">
@@ -201,7 +434,9 @@ export default function ApplicationTable({
   };
 
   const getUniqueValues = (key: string) => {
-    const values = applications.map((row: any) => row[key]).filter(Boolean);
+    const values = mergedApplications
+      .map((row: any) => row[key])
+      .filter(Boolean);
 
     return [...new Set(values)];
   };
@@ -219,17 +454,32 @@ export default function ApplicationTable({
     {} as Record<string, string[]>,
   );
 
-  const filteredRows = applications.filter((row) => {
+  const filteredRows = mergedApplications.filter((row) => {
     return Object.entries(groupedFilters).every(([key, values]) => {
       const rowValue = (row as any)[key];
 
       if (rowValue == null) return false;
 
-      return values.some((value) => String(rowValue).includes(String(value)));
+      return (values as string[]).some((value) => String(rowValue).includes(String(value)));
     });
   });
 
-  const sortedRows = [...filteredRows];
+  const searchedApplications = filteredRows.filter((application) => {
+    const keyword = searchKeyword.trim().toLowerCase();
+
+    if (!keyword) return true;
+
+    return (
+      String(application.company ?? "")
+        .toLowerCase()
+        .includes(keyword) ||
+      String(application.jobTitle ?? "")
+        .toLowerCase()
+        .includes(keyword)
+    );
+  });
+
+  const sortedRows = [...searchedApplications];
 
   if (sort) {
     sortedRows.sort((a, b) => {
@@ -237,13 +487,13 @@ export default function ApplicationTable({
       let bValue = 0;
 
       if (sort.key === "applyDate") {
-        aValue = a.applyDate ? new Date(a.applyDate).getTime() : 0;
-        bValue = b.applyDate ? new Date(b.applyDate).getTime() : 0;
+        aValue = parseLocalDateTime(a.applyDate)?.getTime() ?? 0;
+        bValue = parseLocalDateTime(b.applyDate)?.getTime() ?? 0;
       }
 
       if (sort.key === "dday") {
-        aValue = a.deadlineDate ? new Date(a.deadlineDate).getTime() : 0;
-        bValue = b.deadlineDate ? new Date(b.deadlineDate).getTime() : 0;
+        aValue = parseLocalDateTime(a.deadlineDate)?.getTime() ?? 0;
+        bValue = parseLocalDateTime(b.deadlineDate)?.getTime() ?? 0;
       }
 
       if (sort.key === "checklistInComplete") {
@@ -260,9 +510,38 @@ export default function ApplicationTable({
 
   const EMPTY_COUNT = Math.max(0, 8 - sortedRows.length);
 
+  const visibleRowIds = sortedRows.map((row) => row.id);
+
+  const isAllVisibleRowsChecked =
+    visibleRowIds.length > 0 &&
+    visibleRowIds.every((id) => checkedIds.includes(id));
+
+  const orderedColumnKeys = [
+    ...columnOrder.filter((key) => isReorderableColumnKey(key)),
+    ...REORDERABLE_COLUMN_KEYS.filter((key) => !columnOrder.includes(key)),
+  ];
+
+  const fixedTableColumns = ALL_TABLE_COLUMNS.filter(([key]) =>
+    isFixedColumnKey(key),
+  );
+
+  const reorderableTableColumns = orderedColumnKeys
+    .map((key) => ALL_TABLE_COLUMNS.find(([columnKey]) => columnKey === key))
+    .filter((column): column is TableColumn => Boolean(column))
+    .filter(([key]) => visibleColumns.includes(key));
+
+  const tableColumns = [...fixedTableColumns, ...reorderableTableColumns];
+  const tableWidth =
+    48 +
+    48 +
+    56 +
+    tableColumns.reduce((sum, [key]) => {
+      return sum + (widths[key] ?? DEFAULT_WIDTHS[key] ?? 120);
+    }, 0);
+
   return (
     <div className="bg-white rounded-xl overflow-visible">
-      <div className="px-4 pt-[6px] pb-[6px] flex items-center justify-between">
+      <div className="px-4 pt-[6px] pb-[6px] flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           {checkedIds.length > 0 && (
             <div className="flex items-center rounded-xl bg-white px-4">
@@ -284,6 +563,7 @@ export default function ApplicationTable({
             </div>
           )}
         </div>
+
         <ActiveFilter
           show={showActiveFilters}
           setShow={setShowActiveFilters}
@@ -294,140 +574,172 @@ export default function ApplicationTable({
           groupedFilters={groupedFilters}
           visibleColumns={visibleColumns}
           setVisibleColumns={setVisibleColumns}
+          searchKeyword={searchKeyword}
+          setSearchKeyword={setSearchKeyword}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
         />
       </div>
 
       <div className="w-full overflow-visible">
-        <div className="overflow-x-auto overflow-y-visible max-h-[400px]">
-          <table className="w-full min-w-full border-separate border-spacing-0">
-            <thead className="sticky top-0 z-30 bg-[#F1F5F9] text-sm text-black font-medium">
-              <tr>
-                <th className="w-[48px] px-4 py-3 bg-[#F1F5F9] sticky left-0 z-20 border-r border-[#E2E8F0]">
-                  <label className="flex items-center justify-center cursor-pointer p-2 -m-2">
-                    <input
-                      type="checkbox"
-                      className="hidden"
-                      checked={
-                        filteredRows.length > 0 &&
-                        checkedIds.length === filteredRows.length
-                      }
-                      onChange={() => {
-                        const isAllChecked =
-                          checkedIds.length === filteredRows.length;
+        <div
+          className={
+            viewMode === "board"
+              ? "overflow-x-auto overflow-y-visible"
+              : "overflow-x-auto overflow-y-visible max-h-[400px]"
+          }
+        >
+          {viewMode === "board" ? (
+            <ApplicationStatusBoard
+              applications={sortedRows}
+              onOpenApplication={handleOpenApplicationFromBoard}
+              onToggleImportant={handleToggleImportant}
+              onChangeStatus={handleChangeStatusFromBoard}
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table
+                className="border-separate border-spacing-0 table-fixed"
+                style={{ width: tableWidth, minWidth: "100%" }}
+              >
+                <thead className="sticky top-0 z-30 bg-[#F1F5F9] text-sm text-black font-medium">
+                  <tr>
+                    <th className="w-[48px] px-4 py-3 bg-[#F1F5F9] sticky left-0 z-20 border-r border-[#E2E8F0]">
+                      <label className="flex items-center justify-center cursor-pointer p-2 -m-2">
+                        <input
+                          type="checkbox"
+                          className="hidden"
+                          checked={isAllVisibleRowsChecked}
+                          onChange={() => {
+                            if (isAllVisibleRowsChecked) {
+                              setCheckedIds((prev) =>
+                                prev.filter(
+                                  (id) => !visibleRowIds.includes(id),
+                                ),
+                              );
+                            } else {
+                              setCheckedIds((prev) => [
+                                ...new Set([...prev, ...visibleRowIds]),
+                              ]);
+                            }
+                          }}
+                        />
 
-                        if (isAllChecked) {
-                          setCheckedIds([]);
-                        } else {
-                          setCheckedIds(sortedRows.map((row) => row.id));
-                        }
-                      }}
-                    />
-
-                    <div className="w-[15px] h-[15px] rounded-[4px] border-[1.5px] border-[#2563EB] flex items-center justify-center">
-                      {filteredRows.length > 0 &&
-                        checkedIds.length === filteredRows.length && (
-                          <svg
-                            className="w-3 h-3 text-[#2563EB]"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="3"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                    </div>
-                  </label>
-                </th>
-                {[
-                  ["company", "기업명"],
-                  ["jobTitle", "공고명"],
-                  ["position", "직무"],
-                  ["industry", "산업"],
-                  ["status", "현재 상태"],
-                  ["nextStep", "다음 단계"],
-                  ["deadlineDate", "마감일"],
-                  ["dday", "남은 기간"],
-                  ["documents", "작성중인 서류"],
-                  ["checklistInComplete", "일정/할 일"],
-                  ["important", "중요"],
-                  ["recentUpdated", "최근 수정일"],
-                  ["memo", "메모"],
-                ]
-                  .filter(([key]) => {
-                    if (key === "company" || key === "jobTitle") {
-                      return true;
-                    }
-                    return visibleColumns.includes(key);
-                  })
-                  .map(([key, label], idx) => (
-                    <th
-                      key={key + idx}
-                      className="px-4 py-3 text-left whitespace-nowrap relative bg-[#F1F5F9] border-r border-[#E2E8F0]"
-                    >
-                      <div className="flex items-center gap-1">
-                        {label}
-
-                        {["applyDate", "dday", "checklistInComplete"].includes(
-                          key,
-                        ) ? (
-                          <TableFilter
-                            mode="sort"
-                            columnKey={key}
-                            setFilters={setFilters}
-                            handleSort={handleSort}
-                          />
-                        ) : ![
-                            "documents",
-                            "important",
-                            "recentUpdated",
-                            "nextStep",
-                            "memo",
-                          ].includes(key) ? (
-                          <TableFilter
-                            mode="filter"
-                            columnKey={key}
-                            values={getUniqueValues(key)}
-                            setFilters={setFilters}
-                          />
-                        ) : null}
-                      </div>
+                        <div className="w-[15px] h-[15px] rounded-[4px] border-[1.5px] border-[#2563EB] flex items-center justify-center">
+                          {isAllVisibleRowsChecked && (
+                            <svg
+                              className="w-3 h-3 text-[#2563EB]"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              viewBox="0 0 24 24"
+                            >
+                              <path d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                      </label>
                     </th>
-                  ))}
-                <th className="w-[56px] min-w-[56px] max-w-[56px] sticky right-0 bg-[#F1F5F9] z-20"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedRows.map((row) => (
-                <ApplicationRow
-                  key={row.id}
-                  row={row}
-                  visibleColumns={visibleColumns}
-                  checkedIds={checkedIds}
-                  toggleCheck={toggleCheck}
-                  onCompanyClick={onCompanyClick}
-                  setFocusedApplication={setFocusedApplication}
-                  focusedApplication={focusedApplication}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                  onChange={onChange}
-                  deleteApplications={deleteApplications}
-                  addDocument={addDocument}
-                  setCheckedIds={setCheckedIds}
-                  setIsDetailModalOpen={setIsDetailModalOpen}
-                />
-              ))}
-              {Array.from({ length: EMPTY_COUNT }).map((_, i) => (
-                <tr key={`empty-${i}`} className="h-[67px]">
-                  {Array(visibleColumns.length + 4)
-                    .fill(null)
-                    .map((_, idx) => (
-                      <td key={idx}>&nbsp;</td>
+                    <th className="w-[60px] min-w-[60px] max-w-[60px] px-3 py-3 bg-[#F1F5F9] border-r border-[#E2E8F0] text-center select-none">
+                      중요
+                    </th>
+                    {tableColumns.map(([key, label], idx) => (
+                      <th
+                        key={key + idx}
+                        className="relative px-4 py-3 text-left whitespace-nowrap bg-[#F1F5F9] border-r border-[#E2E8F0] select-none"
+                        style={{
+                          width: widths[key],
+                          minWidth: widths[key],
+                          maxWidth: widths[key],
+                        }}
+                        draggable={!isFixedColumnKey(key)}
+                        onDragStart={() => handleColumnDragStart(key)}
+                        onDragOver={
+                          isFixedColumnKey(key)
+                            ? undefined
+                            : handleColumnDragOver
+                        }
+                        onDrop={
+                          isFixedColumnKey(key)
+                            ? undefined
+                            : () => handleColumnDrop(key)
+                        }
+                      >
+                        <div
+                          className={`flex items-center gap-1 pr-2 ${
+                            isFixedColumnKey(key) ? "" : "cursor-grab"
+                          }`}
+                        >
+                          {label}
+
+                          {[
+                            "applyDate",
+                            "dday",
+                            "checklistInComplete",
+                          ].includes(key) ? (
+                            <TableFilter
+                              mode="sort"
+                              columnKey={key}
+                              setFilters={setFilters}
+                              setSort={setSort}
+                              handleSort={handleSort}
+                            />
+                          ) : ![
+                              "documents",
+                              "important",
+                              "recentUpdated",
+                              "nextStep",
+                              "memo",
+                            ].includes(key) ? (
+                            <TableFilter
+                              mode="filter"
+                              columnKey={key}
+                              values={getUniqueValues(key)}
+                              setFilters={setFilters}
+                            />
+                          ) : null}
+                        </div>
+
+                        <ResizeHandle onMouseDown={onMouseDown(key)} />
+                      </th>
                     ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <th className="w-[56px] min-w-[56px] max-w-[56px] sticky right-0 bg-[#F1F5F9] z-20"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedRows.map((row) => (
+                    <ApplicationRow
+                      key={row.id}
+                      row={row}
+                      visibleColumns={visibleColumns}
+                      widths={widths}
+                      checkedIds={checkedIds}
+                      toggleCheck={toggleCheck}
+                      onCompanyClick={onCompanyClick}
+                      setFocusedApplication={setFocusedApplication}
+                      focusedApplication={focusedApplication}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                      onChange={onChange}
+                      deleteApplications={deleteApplications}
+                      addDocument={addDocument}
+                      setCheckedIds={setCheckedIds}
+                      setIsDetailModalOpen={setIsDetailModalOpen}
+                    />
+                  ))}
+                  {Array.from({ length: EMPTY_COUNT }).map((_, i) => (
+                    <tr key={`empty-${i}`} className="h-[67px]">
+                      {Array(tableColumns.length + 3)
+                        .fill(null)
+                        .map((_, idx) => (
+                          <td key={idx}>&nbsp;</td>
+                        ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>

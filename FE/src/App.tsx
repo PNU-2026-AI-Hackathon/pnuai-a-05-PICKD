@@ -7,6 +7,7 @@ import AiScreen from "./screens/AiScreen";
 import SettingScreen from "./screens/SettingScreen";
 import HelpScreen from "./screens/HelpScrenn.tsx";
 import CalendarScreen from "./screens/CalenderScreen.tsx";
+import ApplicationJobDetailPage from "./screens/ApplicationJobDetailPage";
 
 import OnboardingEntry from "./screens/onboarding/OnboardingEntry.tsx";
 import Step1Terms from "./screens/onboarding/Step1Terms.tsx";
@@ -36,6 +37,11 @@ function App() {
           <Route path="/onboarding/step3" element={<Step3Education />} />
           <Route path="/onboarding/step4" element={<Step4Interest />} />
           <Route path="/onboarding/step5" element={<Step5PrepStatus />} />
+
+          <Route
+            path="/applications/:applicationId"
+            element={<ApplicationJobDetailPage />}
+          />
 
           {/* 메인 영역 */}
           <Route element={<Layout />}>

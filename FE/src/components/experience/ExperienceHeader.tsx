@@ -1,19 +1,22 @@
-import { Sparkles, Download } from "lucide-react";
+import { Clipboard, Download, Sparkles } from "lucide-react";
 
-export default function ExperienceHeader() {
+interface Props {
+  onOpenPaste?: () => void;
+  onExtract?: () => void;
+  onExportExcel?: () => void;
+}
+
+export default function ExperienceHeader({
+  onExportExcel,
+}: Props) {
   const actions = [
-    {
-      label: "자소서 복붙용 요약",
-    },
-    {
-      label: "자소서에서 추출",
-      icon: Sparkles,
-    },
     {
       label: "Excel 내보내기",
       icon: Download,
+      onClick: onExportExcel,
     },
   ];
+
   return (
     <div className="flex items-start justify-between gap-10">
       <div>
@@ -31,6 +34,8 @@ export default function ExperienceHeader() {
           return (
             <button
               key={action.label}
+              type="button"
+              onClick={action.onClick}
               className="inline-flex h-[44px] items-center gap-2 rounded-xl border border-[#E2E8F0] bg-white px-5 text-[14px] font-[500] text-[#0F172A] transition-colors hover:bg-[#F8FAFC]"
             >
               {Icon && <Icon size={16} className="text-[#475569]" />}

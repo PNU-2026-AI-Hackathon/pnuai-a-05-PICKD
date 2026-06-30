@@ -3,6 +3,7 @@ import { Icon } from "@iconify/react";
 import DocumentCard from "./DocumentCard";
 import DocumentList from "./DocumentList";
 import type { DocumentItem } from "../../../../types/document";
+import { updateDocument } from "../../../../api/document";
 
 interface Props {
   documents?: DocumentItem[];
@@ -17,6 +18,29 @@ export default function DocumentSection({
   useEffect(() => {
     setDocuments(initialDocuments);
   }, [initialDocuments]);
+
+  const handleStatusChange = async (id: number, status: DocumentItem["status"]) => {
+    const target = documents.find((document) => document.id === id);
+    if (!target) return;
+
+    setDocuments((prev) =>
+      prev.map((document) =>
+        document.id === id ? { ...document, status } : document,
+      ),
+    );
+
+    try {
+      await updateDocument(id, { ...target, status });
+    } catch (error) {
+      console.error("서류 상태 변경 실패:", error);
+      setDocuments((prev) =>
+        prev.map((document) =>
+          document.id === id ? { ...document, status: target.status } : document,
+        ),
+      );
+      alert("서류 상태 변경에 실패했습니다.");
+    }
+  };
 
   return (
     <div className="mt-6 rounded-2xl border border-[#E2E8F0] bg-white overflow-visible">
@@ -57,11 +81,7 @@ export default function DocumentSection({
               <div key={doc.id} className="snap-start">
                 <DocumentCard
                   item={doc}
-                  onStatusChange={(status) => {
-                    setDocuments((prev) =>
-                      prev.map((d) => (d.id === doc.id ? { ...d, status } : d)),
-                    );
-                  }}
+                  onStatusChange={(status) => handleStatusChange(doc.id, status)}
                 />
               </div>
             ))}
@@ -70,11 +90,7 @@ export default function DocumentSection({
       ) : (
         <DocumentList
           documents={documents}
-          onStatusChange={(id, status) => {
-            setDocuments((prev) =>
-              prev.map((doc) => (doc.id === id ? { ...doc, status } : doc)),
-            );
-          }}
+          onStatusChange={handleStatusChange}
         />
       )}
     </div>

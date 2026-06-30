@@ -26,10 +26,15 @@ export default function ApplicationMenu({
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const clickedMenu = menuRef.current?.contains(target);
+      const clickedButton = buttonRef.current?.contains(target);
+
+      if (!clickedMenu && !clickedButton) {
         setOpen(false);
       }
     };
@@ -55,6 +60,7 @@ export default function ApplicationMenu({
   return (
     <div className="relative flex justify-center">
       <button
+        ref={buttonRef}
         className="w-full h-full py-2 text-[20px] text-gray-400"
         onClick={(e) => {
           e.stopPropagation();

@@ -1,5 +1,6 @@
 import { Icon } from "@iconify/react";
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface Props {
   columnKey: string;
@@ -16,6 +17,9 @@ interface Props {
   >;
 }
 
+const MENU_WIDTH = 160;
+const VIEWPORT_PADDING = 8;
+
 export default function TableFilter({
   columnKey,
   values = [],
@@ -25,7 +29,25 @@ export default function TableFilter({
   setSort,
 }: Props) {
   const [open, setOpen] = useState(false);
-  const menu = useRef<HTMLDivElement>(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  const updateMenuPosition = () => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+
+    const rect = trigger.getBoundingClientRect();
+    const nextLeft = Math.min(
+      Math.max(VIEWPORT_PADDING, rect.left - 24),
+      window.innerWidth - MENU_WIDTH - VIEWPORT_PADDING,
+    );
+
+    setMenuPosition({
+      top: rect.bottom + 8,
+      left: nextLeft,
+    });
+  };
 
   const addFilter = (key: string, value: string | null) => {
     if (value == null || value === "전체" || value.trim() === "") {
@@ -44,28 +66,50 @@ export default function TableFilter({
   };
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menu.current && !menu.current.contains(e.target as Node)) {
-        setOpen(false);
+    if (!open) return;
+
+    updateMenuPosition();
+
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+
+      if (
+        triggerRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
+      ) {
+        return;
       }
+
+      setOpen(false);
     };
+
+    const handleReposition = () => {
+      updateMenuPosition();
+    };
+
     document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    window.addEventListener("resize", handleReposition);
+    window.addEventListener("scroll", handleReposition, true);
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      window.removeEventListener("resize", handleReposition);
+      window.removeEventListener("scroll", handleReposition, true);
     };
-  }, []);
+  }, [open]);
 
-  return (
-    <div className="relative" ref={menu}>
-      <button onClick={() => setOpen(!open)} className="flex items-center">
-        <Icon icon={"mdi:chevron-down"} width={18} />
-      </button>
-
-      {open && (
-        <div className="absolute top-5 -ml-6 z-[999]">
-          <div className="relative bg-white border border-[#E2E8F0] rounded-2xl shadow-xl p-2 min-w-[140px]">
-            <div className=" absolute -top-2 left-6 w-4 h-4 bg-white border-l border-t border-[#E2E8F0] rotate-45" />
+  const menuContent = open
+    ? createPortal(
+        <div
+          ref={menuRef}
+          className="fixed z-[9999]"
+          style={{ top: menuPosition.top, left: menuPosition.left }}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="relative min-w-[140px] rounded-2xl border border-[#E2E8F0] bg-white p-2 shadow-xl">
+            <div className="absolute -top-2 left-6 h-4 w-4 rotate-45 border-l border-t border-[#E2E8F0] bg-white" />
             {mode === "sort" ? (
               <>
                 <div
@@ -73,7 +117,7 @@ export default function TableFilter({
                     handleSort?.(columnKey, "asc");
                     setOpen(false);
                   }}
-                  className="px-2 py-2 text-sm font-medium hover:bg-gray-100 rounded-lg cursor-pointer whitespace-nowrap"
+                  className="cursor-pointer whitespace-nowrap rounded-lg px-2 py-2 text-sm font-medium hover:bg-gray-100"
                 >
                   오름차순
                 </div>
@@ -83,7 +127,7 @@ export default function TableFilter({
                     handleSort?.(columnKey, "desc");
                     setOpen(false);
                   }}
-                  className="px-2 py-2 text-sm font-medium hover:bg-gray-100 rounded-lg cursor-pointer whitespace-nowrap"
+                  className="cursor-pointer whitespace-nowrap rounded-lg px-2 py-2 text-sm font-medium hover:bg-gray-100"
                 >
                   내림차순
                 </div>
@@ -93,7 +137,7 @@ export default function TableFilter({
                     setSort?.(null);
                     setOpen(false);
                   }}
-                  className="px-2 py-2 text-sm font-medium hover:bg-gray-100 rounded-lg cursor-pointer whitespace-nowrap"
+                  className="cursor-pointer whitespace-nowrap rounded-lg px-2 py-2 text-sm font-medium hover:bg-gray-100"
                 >
                   정렬 해제
                 </div>
@@ -107,7 +151,7 @@ export default function TableFilter({
                       addFilter(columnKey, value);
                       setOpen(false);
                     }}
-                    className="px-2 py-2 text-sm font-medium hover:bg-gray-100 rounded-lg cursor-pointer whitespace-nowrap"
+                    className="cursor-pointer whitespace-nowrap rounded-lg px-2 py-2 text-sm font-medium hover:bg-gray-100"
                   >
                     {columnKey === "applyDate" && value
                       ? value.split("T")[0]
@@ -119,15 +163,33 @@ export default function TableFilter({
                     addFilter(columnKey, null);
                     setOpen(false);
                   }}
-                  className="px-2 py-2 text-sm font-medium hover:bg-gray-100 rounded-lg cursor-pointer"
+                  className="cursor-pointer rounded-lg px-2 py-2 text-sm font-medium hover:bg-gray-100"
                 >
                   전체
                 </div>
               </>
             )}
           </div>
-        </div>
-      )}
+        </div>,
+        document.body,
+      )
+    : null;
+
+  return (
+    <div className="relative">
+      <button
+        ref={triggerRef}
+        onClick={(event) => {
+          event.stopPropagation();
+          updateMenuPosition();
+          setOpen((prev) => !prev);
+        }}
+        className="flex items-center"
+      >
+        <Icon icon="mdi:chevron-down" width={18} />
+      </button>
+
+      {menuContent}
     </div>
   );
 }

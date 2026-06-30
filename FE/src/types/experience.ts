@@ -1,8 +1,10 @@
-import type { ExperienceType } from "../constants/experience/experiencePresets";
+import type { ExperienceType, FieldType } from "../constants/experience/experiencePresets";
 
-export type { ExperienceType };
+export type { ExperienceType, FieldType };
 
 export type ExperienceStatus =
+  | "작성중"
+  | "완료"
   | "정리 완료"
   | "보완 필요"
   | "확인 필요"
@@ -10,14 +12,19 @@ export type ExperienceStatus =
   | "AI 질문 필요"
   | "병합 필요";
 
+export type ImportanceLevel = "높음" | "보통" | "낮음";
+
 export interface CustomTopField {
   key: string;
   label: string;
   placeholder?: string;
+  type?: FieldType;
 }
 
+export type ExperienceId = string | number;
+
 export interface ExperienceItem {
-  id: number;
+  id: ExperienceId;
   type: ExperienceType;
   name: string;
   org?: string;
@@ -27,12 +34,17 @@ export interface ExperienceItem {
   keywords: string[];
   status: ExperienceStatus;
   missing: string[];
-  linkedExperienceIds: number[];
+  linkedExperienceIds: ExperienceId[];
   fields: Record<string, string>;
   important?: boolean;
+  importance?: ImportanceLevel;
   pinned?: boolean;
   customTopFields?: CustomTopField[];
   hiddenFieldKeys?: string[];
   topFieldOrder?: string[];
   fieldLabels?: Record<string, string>;
+  documentExpanded?: boolean;
+  updatedAt?: string;
+  hasMergeCandidate?: boolean;
+  hasUnansweredAiQuestion?: boolean;
 }

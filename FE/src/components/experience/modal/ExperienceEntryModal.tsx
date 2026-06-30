@@ -16,8 +16,14 @@ export default function ExperienceEntryModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75">
-      <div className="w-[460px] rounded-[8px] bg-white px-6 py-6 shadow-[0_18px_50px_rgba(15,23,42,0.28)]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75"
+      onClick={onClose}
+    >
+      <div
+        className="w-[460px] rounded-[8px] bg-white px-6 py-6 shadow-[0_18px_50px_rgba(15,23,42,0.28)]"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="flex items-start justify-between">
           <div>
             <h2 className="text-[18px] font-[800] text-[#0F172A]">경험 추가</h2>

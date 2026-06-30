@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Schedule } from "../../../types/schedule";
-import { formatDate } from "../../../utils/date";
+import { formatDate, getGoogleEventDate } from "../../../utils/date";
 import { categoryColor, getScheduleCategory } from "../../../utils/schedule";
 
 interface ScheduleSectionProps {
@@ -18,32 +18,7 @@ export default function ScheduleSection({
 }: ScheduleSectionProps) {
   const [mode, setMode] = useState<"week" | "day">("week");
 
-  const getSafeDate = (e: Schedule): Date | null => {
-    if (!e.start) return null;
-
-    const start = e.start as any;
-
-    const dateTime = start.dateTime;
-    const date = start.date;
-
-    if (typeof dateTime === "string") {
-      return new Date(dateTime);
-    }
-
-    if (dateTime?.value) {
-      return new Date(Number(dateTime.value));
-    }
-
-    if (typeof date === "string") {
-      return new Date(date);
-    }
-
-    if (date?.value) {
-      return new Date(Number(date.value));
-    }
-
-    return null;
-  };
+  const getSafeDate = (e: Schedule): Date | null => getGoogleEventDate(e);
 
   const baseEvents = mode === "week" ? weeklyEvents : selectedEvents;
 

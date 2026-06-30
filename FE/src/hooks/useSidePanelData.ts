@@ -6,26 +6,10 @@ import {
   getTodos,
   deleteTodoApi,
 } from "../api/todo";
+import { getCalendarEvents } from "../api/calendar";
+import { getGoogleEventDate, parseLocalDateTime } from "../utils/date";
 
 import { useApplication } from "../context/ApplicationContext";
-
-function getEventDate(e: any): Date | null {
-  if (!e.start) return null;
-
-  if (e.start.dateTime?.value) {
-    return new Date(Number(e.start.dateTime.value));
-  }
-
-  if (typeof e.start.dateTime === "string") {
-    return new Date(e.start.dateTime);
-  }
-
-  if (e.start.date) {
-    return new Date(e.start.date);
-  }
-
-  return null;
-}
 
 function isSameDay(date1: Date, date2: Date) {
   return (
@@ -34,7 +18,6 @@ function isSameDay(date1: Date, date2: Date) {
     date1.getDate() === date2.getDate()
   );
 }
-
 function isTodoCalendarEvent(summary: string) {
   const normalized = summary.replace(/\s/g, "");
   return normalized.includes("[할일]") || normalized.includes("할일");
@@ -64,16 +47,8 @@ export const useSidePanelData = () => {
 
   const fetchCalendarEvents = useCallback(async () => {
     try {
-      const calendarRes = await fetch("/api/calendar/events", {
-        credentials: "include",
-      });
-
-      if (!calendarRes.ok) {
-        throw new Error("캘린더 조회 실패");
-      }
-
-      const calendarData = await calendarRes.json();
-      setGoogleEvents(calendarData);
+      const calendarData = await getCalendarEvents();
+      setGoogleEvents(calendarData ?? []);
     } catch (error) {
       console.error("캘린더 가져오기 실패:", error);
     }
@@ -118,7 +93,7 @@ export const useSidePanelData = () => {
       title: app.jobTitle,
       company: app.company,
       step: app.status,
-      date: app.deadlineDate ? new Date(app.deadlineDate) : null,
+      date: parseLocalDateTime(app.deadlineDate),
     }));
 
     const googleAnnouncements = googleEvents
@@ -148,7 +123,7 @@ export const useSidePanelData = () => {
           title: jobTitle,
           company,
           step,
-          date: getEventDate(e),
+          date: getGoogleEventDate(e),
         };
       });
 
@@ -179,9 +154,9 @@ export const useSidePanelData = () => {
     return todos.filter((todo) => {
       if (!todo.dueDateTime) return false;
 
-      const todoDate = new Date(todo.dueDateTime);
+      const todoDate = getGoogleEventDate({ start: { dateTime: todo.dueDateTime } });
 
-      if (Number.isNaN(todoDate.getTime())) return false;
+      if (!todoDate) return false;
 
       return isSameDay(todoDate, today);
     });
@@ -230,7 +205,7 @@ export const useSidePanelData = () => {
               company: selectedApplication.company,
               jobTitle: selectedApplication.jobTitle,
             }
-          : null,
+          : undefined,
       };
 
       setTodos((prev) => [todoWithApplication, ...prev]);
@@ -300,7 +275,8 @@ export const useSidePanelData = () => {
   };
 
   const calculateDDay = (targetDate: Date) => {
-    const target = new Date(targetDate);
+    const target = parseLocalDateTime(targetDate);
+    if (!target) return "-";
     target.setHours(0, 0, 0, 0);
 
     const diff = Math.ceil(

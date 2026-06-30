@@ -3,12 +3,7 @@ import { createPortal } from "react-dom";
 import { statusStyle } from "../../../../utils/document";
 import type { DocumentItem } from "../../../../types/document";
 
-const statuses: DocumentItem["status"][] = [
-  "작성중",
-  "검토중",
-  "수정 필요",
-  "제출 완료",
-];
+const statuses: DocumentItem["status"][] = ["작성중", "완료"];
 
 interface Props {
   status: DocumentItem["status"];
@@ -23,10 +18,11 @@ export default function DocumentStatus({ status, onChange }: Props) {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
+      const target = e.target as Node;
+      const clickedDropdown = dropdownRef.current?.contains(target);
+      const clickedButton = buttonRef.current?.contains(target);
+
+      if (!clickedDropdown && !clickedButton) {
         setOpen(false);
       }
     };

@@ -2,45 +2,30 @@ import { useState, useEffect } from "react";
 import MainCalendar from "../components/dashboard/calender/MainCalender";
 import SideDetailPanel from "../components/dashboard/calender/SideDetail/SideDetailPanel";
 import { Icon } from "@iconify/react";
-import type { Application } from "../types/application";
+import { useApplication } from "../context/ApplicationContext";
 
 const CalendarScreen = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [applications, setApplications] = useState<Application[]>([]);
+  const { applications, loadData } = useApplication();
 
   useEffect(() => {
-    const fetchApplications = async () => {
-      try {
-        const response = await fetch("/api/application");
-        const data = await response.json();
-        setApplications(data);
-      } catch (error) {
-        console.error("공고 데이터를 불러오는 데 실패했습니다:", error);
-      }
-    };
-
-    fetchApplications();
-  }, []);
+    void loadData();
+  }, [loadData]);
 
   return (
     <div className="relative flex h-screen w-full bg-gray-50 overflow-hidden">
       <div className="flex-1 overflow-auto">
         <MainCalendar applications={applications} />
-      </div>
 
-      {/* 메인 페이지와 동일한 사이드 엣지 토글 버튼 */}
-      <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="absolute top-1/2 right-0 -translate-y-1/2 flex items-center justify-center w-6 h-16 bg-white border border-r-0 border-gray-200 rounded-l-xl shadow-md hover:bg-gray-50 text-gray-500 transition-all group z-40"
-        style={{ right: isSidebarOpen ? "400px" : "0" }}
-      >
-        <Icon
-          icon={isSidebarOpen ? "lucide:chevron-right" : "lucide:chevron-left"}
-          className={`w-4 h-4 transition-transform ${
-            isSidebarOpen ? "group-hover:translate-x-0.5" : "group-hover:-translate-x-0.5"
-          }`}
-        />
-      </button>
+        {!isSidebarOpen && (
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="absolute top-4 right-4 z-10 p-2 bg-white rounded-md shadow-md border border-gray-200 hover:bg-gray-50 text-gray-600 transition-all"
+          >
+            <Icon icon="lucide:sidebar-open" className="w-5 h-5" />
+          </button>
+        )}
+      </div>
 
       {isSidebarOpen && (
         <div
