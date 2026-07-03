@@ -294,6 +294,10 @@ export default function ExperienceExtractWizardModal({
               onBack={() => setStep("upload")}
               onToggle={toggleTempId}
               onSubmit={handleStep2}
+              onDone={() => {
+                onCompleted([]);
+                onClose();
+              }}
             />
           )}
 
@@ -526,6 +530,7 @@ function CandidateStep({
   onBack,
   onToggle,
   onSubmit,
+  onDone,
 }: {
   candidates: ExperienceTempResponse[];
   selectedIds: number[];
@@ -534,6 +539,7 @@ function CandidateStep({
   onBack: () => void;
   onToggle: (id: number) => void;
   onSubmit: () => void;
+  onDone: () => void;
 }) {
   return (
     <section className="rounded-[20px] border border-[#E2E8F0] bg-white p-5">
@@ -552,7 +558,12 @@ function CandidateStep({
       </div>
 
       {candidates.length === 0 ? (
-        <EmptyBox text="추출된 경험 후보가 없습니다." />
+        <div>
+          <EmptyBox text="추출된 경험 후보가 없습니다." />
+          <p className="mt-3 text-center text-[13px] font-[700] text-[#64748B]">
+            저장할 경험 후보가 없어서 상세 추출 단계는 건너뜁니다.
+          </p>
+        </div>
       ) : (
         <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
           {candidates.map((candidate) => {
@@ -626,15 +637,26 @@ function CandidateStep({
         >
           파일 다시 선택
         </button>
-        <button
-          type="button"
-          disabled={loading || selectedIds.length === 0}
-          onClick={onSubmit}
-          className="inline-flex h-10 items-center gap-2 rounded-[10px] bg-[#2563EB] px-4 text-[13px] font-[900] text-white hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:bg-[#94A3B8]"
-        >
-          {loading && <Loader2 size={15} className="animate-spin" />}
-          선택 후보 상세 추출
-        </button>
+
+        {candidates.length === 0 ? (
+          <button
+            type="button"
+            onClick={onDone}
+            className="inline-flex h-10 items-center gap-2 rounded-[10px] bg-[#2563EB] px-4 text-[13px] font-[900] text-white hover:bg-[#1D4ED8]"
+          >
+            완료
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled={loading || selectedIds.length === 0}
+            onClick={onSubmit}
+            className="inline-flex h-10 items-center gap-2 rounded-[10px] bg-[#2563EB] px-4 text-[13px] font-[900] text-white hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:bg-[#94A3B8]"
+          >
+            {loading && <Loader2 size={15} className="animate-spin" />}
+            선택 후보 상세 추출
+          </button>
+        )}
       </div>
     </section>
   );

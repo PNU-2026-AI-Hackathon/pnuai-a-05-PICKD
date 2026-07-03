@@ -1,11 +1,21 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { updateOnboarding } from "../../api/onboarding";
+import { updateOnboarding, type DegreeType, type EnrollmentStatus } from "../../api/onboarding";
 
 export default function Step3Education() {
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    schoolName: string;
+    department: string;
+    doubleMajor: string;
+    minor: string;
+    degreeType: DegreeType;
+    enrollmentStatus: EnrollmentStatus;
+    graduationDate: string;
+    gpa: string;
+    campus: string;
+  }>({
     schoolName: "",
     department: "",
     doubleMajor: "",
@@ -81,7 +91,7 @@ export default function Step3Education() {
         {/* 학위 */}
         <select
           value={form.degreeType}
-          onChange={(e) => setForm({ ...form, degreeType: e.target.value })}
+          onChange={(e) => setForm({ ...form, degreeType: e.target.value as DegreeType })}
           className="w-full border px-3 py-2 rounded mb-3"
         >
           <option value="ASSOCIATE">전문학사</option>
@@ -94,7 +104,7 @@ export default function Step3Education() {
         <select
           value={form.enrollmentStatus}
           onChange={(e) =>
-            setForm({ ...form, enrollmentStatus: e.target.value })
+            setForm({ ...form, enrollmentStatus: e.target.value as EnrollmentStatus })
           }
           className="w-full border px-3 py-2 rounded mb-3"
         >

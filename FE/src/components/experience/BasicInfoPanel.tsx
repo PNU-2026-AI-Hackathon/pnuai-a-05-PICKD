@@ -122,7 +122,6 @@ const INFO_DEFAULTS: Record<InfoKey, string> = {
 };
 
 const LS_INFO_VISIBLE = "specs.info.visibleKeys.v5";
-const LS_INFO_VALUES = "specs.info.values.v3";
 
 function lsGet<T>(key: string, fallback: T): T {
   try {
@@ -142,10 +141,7 @@ function lsSet(key: string, value: unknown) {
 }
 
 export default function BasicInfoPanel() {
-  const [values, setValues] = useState<Record<InfoKey, string>>(() => ({
-    ...INFO_DEFAULTS,
-    ...lsGet<Record<InfoKey, string>>(LS_INFO_VALUES, INFO_DEFAULTS),
-  }));
+  const [values, setValues] = useState<Record<InfoKey, string>>(INFO_DEFAULTS);
   const [visibleKeys, setVisibleKeys] = useState<InfoKey[]>(() =>
     lsGet<InfoKey[]>(LS_INFO_VISIBLE, DEFAULT_VISIBLE),
   );
@@ -191,12 +187,12 @@ export default function BasicInfoPanel() {
 
         setValues((prev) => ({ ...prev, ...apiValues }));
       })
-      .catch(() => {
-        // 프로필 조회 실패 시 기존 로컬스토리지 값 유지
+      .catch((error) => {
+        console.error("프로필 조회 실패:", error);
+        setValues(INFO_DEFAULTS);
       });
   }, []);
 
-  useEffect(() => lsSet(LS_INFO_VALUES, values), [values]);
   useEffect(() => lsSet(LS_INFO_VISIBLE, visibleKeys), [visibleKeys]);
 
   const filledCount = INFO_FIELDS.filter((field) => values[field.key]?.trim()).length;

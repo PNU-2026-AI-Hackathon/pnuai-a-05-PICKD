@@ -25,8 +25,11 @@ export default function MainScreen() {
   const [googleEvents, setGoogleEvents] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
 
-  const { loadData } = useApplication();
-  const { applications } = useApplication();
+  const { loadData, applications } = useApplication();
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const allTodos = applications.flatMap((app) =>
     (app.todos || []).map((todo) => ({

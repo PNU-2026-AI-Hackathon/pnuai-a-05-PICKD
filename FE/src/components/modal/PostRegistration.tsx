@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import type { Application, RegistrationTab } from "../../types/application";
 import { useApplicationForm } from "../../hooks/useApplicationForm";
 import { LinkIcon, PdfIcon, ImageIcon, ManualIcon } from "../../assets";
-import { createApplication, updateApplication } from "../../api/application";
+import { createApplication, updateApplication, type ApplicationPayload } from "../../api/application";
 import {
   analyzeNoticeByUrl,
   analyzeNoticeByPdf,
   analyzeNoticeByImages,
+  getNoticeDetail,
+  type NoticeDetail,
 } from "../../api/notice";
 import { toBackendLocalDateTime, toDateInputValue } from "../../utils/date";
 
@@ -24,6 +26,28 @@ const EMPLOYMENT_TYPE_OPTIONS = [
   { value: "CONTRACT", label: "계약직" },
   { value: "FREELANCER", label: "프리랜서" },
 ] as const;
+
+const DEFAULT_CATEGORY = "FULL_TIME" as const;
+
+function getNoticePosition(notice: NoticeDetail) {
+  return notice.sections?.find((section) => section.jobTitle?.trim())?.jobTitle ?? "";
+}
+
+async function createApplicationFromAnalyzedNotice(noticeId: number) {
+  const notice = await getNoticeDetail(noticeId);
+
+  await createApplication({
+    noticeId,
+    company: notice.companyName ?? "",
+    jobTitle: notice.noticeName ?? "",
+    position: getNoticePosition(notice),
+    industry: "",
+    category: (notice.category ?? DEFAULT_CATEGORY) as ApplicationPayload["category"],
+    status: "지원 예정",
+    memo: "",
+    deadlineDate: toBackendLocalDateTime(notice.endedAt) ?? null,
+  });
+}
 
 export default function PostRegistration({
   onClose,
@@ -104,7 +128,7 @@ export default function PostRegistration({
         }
 
         const result = await analyzeNoticeByUrl(url);
-        console.log("URL 공고 분석 완료:", result.noticeId);
+        await createApplicationFromAnalyzedNotice(result.noticeId);
 
         await onSuccess?.();
         onClose();
@@ -118,7 +142,7 @@ export default function PostRegistration({
         }
 
         const result = await analyzeNoticeByPdf(selectedPdfFile);
-        console.log("PDF 공고 분석 완료:", result.noticeId);
+        await createApplicationFromAnalyzedNotice(result.noticeId);
 
         await onSuccess?.();
         onClose();
@@ -132,7 +156,7 @@ export default function PostRegistration({
         }
 
         const result = await analyzeNoticeByImages(selectedImageFiles);
-        console.log("이미지 공고 분석 완료:", result.noticeId);
+        await createApplicationFromAnalyzedNotice(result.noticeId);
 
         await onSuccess?.();
         onClose();
@@ -144,12 +168,12 @@ export default function PostRegistration({
         (formData as any).employType ||
         "FULL_TIME";
 
-      const data = {
+      const data: ApplicationPayload = {
         company: formData.company,
         jobTitle: formData.jobTitle,
         position: formData.position,
         industry: formData.industry,
-        employmentType,
+        category: employmentType as ApplicationPayload["category"],
         status: formData.status || "지원 예정",
         memo: formData.memo,
 
