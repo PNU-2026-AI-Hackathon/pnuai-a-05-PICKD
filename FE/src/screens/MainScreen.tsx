@@ -25,8 +25,11 @@ export default function MainScreen() {
   const [googleEvents, setGoogleEvents] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
 
-  const { loadData } = useApplication();
-  const { applications } = useApplication();
+  const { loadData, applications } = useApplication();
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const allTodos = applications.flatMap((app) =>
     (app.todos || []).map((todo) => ({
@@ -66,8 +69,27 @@ export default function MainScreen() {
       console.error(e);
     }
   };
+
   useEffect(() => {
     loadCalendarEvents();
+  }, []);
+
+  useEffect(() => {
+    const handleGoogleCalendarUpdated = () => {
+      void loadCalendarEvents();
+    };
+
+    window.addEventListener(
+      "googleCalendarUpdated",
+      handleGoogleCalendarUpdated,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "googleCalendarUpdated",
+        handleGoogleCalendarUpdated,
+      );
+    };
   }, []);
 
   const handleAfterChange = async () => {
@@ -107,8 +129,10 @@ export default function MainScreen() {
                 focusedApplication={focusedApplication}
                 setFocusedApplication={setFocusedApplication}
                 setIsDetailModalOpen={setIsDetailModalOpen}
+                calendarEvents={googleEvents}
               />
             </div>
+
             <DocumentSection documents={documents} />
 
             <CompletedSection
@@ -195,6 +219,8 @@ export default function MainScreen() {
         open={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
         application={focusedApplication}
+        calendarEvents={googleEvents}
+        onChange={handleAfterChange}
       />
 
       {isCompanyModalOpen && selectedApplication && (
