@@ -2,7 +2,10 @@ package back.pickd.user.service;
 
 import back.pickd.global.infra.s3.FileUploadType;
 import back.pickd.global.infra.s3.S3Service;
+import back.pickd.user.dto.UserProfileDto;
+import back.pickd.user.dto.UserProfileUpdateRequest;
 import back.pickd.user.entity.User;
+import back.pickd.user.entity.UserLocation;
 import back.pickd.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,7 +13,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -67,5 +72,38 @@ class UserServiceTest {
         String result = userService.getProfileImage("user@example.com");
 
         assertEquals("https://cdn.example.com/user/profile/1/profile.png", result);
+    }
+
+    @Test
+    void updateProfileUpdatesOnlyRequestedFields() {
+        User user = User.builder()
+                .email("user@example.com")
+                .name("기존 이름")
+                .nickname("기존 닉네임")
+                .build();
+        user.verify("기존 이름", "20000101", "010-0000-0000");
+        user.updateIntro("기존 소개");
+        user.setLocation(UserLocation.builder()
+                .user(user)
+                .currentResidence("부산광역시")
+                .desiredLocations(List.of("서울"))
+                .detailedAddress("해운대구")
+                .build());
+        UserProfileUpdateRequest request = new UserProfileUpdateRequest();
+        ReflectionTestUtils.setField(request, "nickname", "새 닉네임");
+        ReflectionTestUtils.setField(request, "desiredLocations", List.of("서울", "판교"));
+
+        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+
+        UserProfileDto result = userService.updateProfile("user@example.com", request);
+
+        assertEquals("기존 이름", result.getName());
+        assertEquals("새 닉네임", result.getNickname());
+        assertEquals("20000101", result.getBirthDate());
+        assertEquals("010-0000-0000", result.getPhone());
+        assertEquals("기존 소개", result.getIntro());
+        assertEquals("부산광역시", result.getCurrentResidence());
+        assertEquals(List.of("서울", "판교"), result.getDesiredLocations());
+        assertEquals("해운대구", result.getDetailedAddress());
     }
 }

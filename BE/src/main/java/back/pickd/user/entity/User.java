@@ -146,6 +146,14 @@ public class User {
         this.intro = intro;
     }
 
+    public void updateProfile(String name, String nickname, String phone, String birthDate, String intro) {
+        this.name = name;
+        this.nickname = nickname;
+        this.phone = phone;
+        this.birthDate = birthDate;
+        this.intro = intro;
+    }
+
     public void verify(String name, String birthDate, String phone) {
         this.name = name;
         this.birthDate = birthDate;
