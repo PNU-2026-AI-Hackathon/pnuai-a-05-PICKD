@@ -16,40 +16,35 @@ const CalendarScreen = () => {
     <div className="relative flex h-screen w-full bg-gray-50 overflow-hidden">
       <div className="flex-1 overflow-auto">
         <MainCalendar applications={applications} />
-
-        {!isSidebarOpen && (
-          <button
-            onClick={() => setIsSidebarOpen(true)}
-            className="absolute top-4 right-4 z-10 p-2 bg-white rounded-md shadow-md border border-gray-200 hover:bg-gray-50 text-gray-600 transition-all"
-          >
-            <Icon icon="lucide:sidebar-open" className="w-5 h-5" />
-          </button>
-        )}
       </div>
 
       {isSidebarOpen && (
         <div
-          className="absolute inset-0 bg-black/20 z-20 transition-opacity"
+          className="absolute inset-0 bg-transparent z-20"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       <div
-        className={`absolute top-0 right-0 h-full w-[400px] bg-white shadow-xl z-30 flex flex-col overflow-y-auto transform transition-transform duration-300 ease-in-out ${
+        className={`absolute top-0 right-0 h-full w-[400px] bg-white shadow-xl z-30 flex flex-col transform transition-transform duration-300 ease-in-out ${
           isSidebarOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <div className="flex justify-between items-center p-4 border-b border-gray-100">
-          <span className="font-medium text-gray-700">상세 정보</span>
-          <button
-            onClick={() => setIsSidebarOpen(false)}
-            className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500 transition-colors"
-          >
-            <Icon icon="lucide:x" className="w-5 h-5" />
-          </button>
-        </div>
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="absolute top-1/3 left-0 -translate-x-full -translate-y-1/2 flex items-center justify-center w-6 h-16 bg-white border border-r-0 border-gray-200 rounded-l-xl shadow-md hover:bg-gray-50 text-gray-500 transition-all group z-40"
+        >
+          <Icon
+            icon={isSidebarOpen ? "lucide:chevron-right" : "lucide:chevron-left"}
+            className={`w-4 h-4 transition-transform ${
+              isSidebarOpen
+                ? "group-hover:translate-x-0.5"
+                : "group-hover:-translate-x-0.5"
+            }`}
+          />
+        </button>
 
-        <div className="flex-1">
+        <div className="flex-1 overflow-y-auto">
           <SideDetailPanel applications={applications} />
         </div>
       </div>
