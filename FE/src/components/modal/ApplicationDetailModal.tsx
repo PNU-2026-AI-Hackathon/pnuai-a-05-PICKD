@@ -1,32 +1,35 @@
 import { useRef, useState } from "react";
 import { Icon } from "@iconify/react";
-import { formatDate, getDDay } from "../../utils/date";
+import { formatDate, getDDay, getGoogleEventDate } from "../../utils/date";
 import PostTodo from "./PostTodo";
 import PostSchedule from "./PostSchedule";
 import { useApplication } from "../../context/ApplicationContext";
 import { useClickOutside } from "../../hooks/useClickOutside";
+import { getSchedulesForApplication } from "../../utils/calendarEvent";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   application: any;
+  calendarEvents?: any[];
+  onChange?: () => void | Promise<void>;
 }
 
 const flow = [
-  "지원 예정",
   "작성중",
-  "제출 완료",
-  "서류 결과 대기",
-  "서류 합격",
-  "필기 전형",
-  "면접 전형",
-  "최종 결과",
+  "지원완료",
+  "서류전형",
+  "필기전형",
+  "면접전형",
+  "전형완료",
 ];
 
 export default function ApplicationDetailModal({
   open,
   onClose,
   application,
+  calendarEvents = [],
+  onChange,
 }: Props) {
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [todoModalOpen, setTodoModalOpen] = useState(false);
@@ -36,8 +39,17 @@ export default function ApplicationDetailModal({
 
   useClickOutside([addMenuRef], () => setShowAddMenu(false), showAddMenu);
   if (!open || !application) return null;
-  const currentApplication =
+  const foundApplication =
     applications.find((app) => app.id === application.id) || application;
+  const linkedCalendarEvents =
+    foundApplication.calendarEvents?.length > 0
+      ? foundApplication.calendarEvents
+      : getSchedulesForApplication(calendarEvents, foundApplication);
+  const currentApplication = {
+    ...foundApplication,
+    calendarEvents: linkedCalendarEvents,
+    calendarEventCount: linkedCalendarEvents.length,
+  };
 
   return (
     <>
@@ -111,6 +123,12 @@ export default function ApplicationDetailModal({
                       )
                     }
                   />
+                  {currentApplication.status === "전형완료" && (
+                    <InfoRow
+                      label="세부 결과"
+                      value={currentApplication.finalResult || "미선택"}
+                    />
+                  )}
                 </div>
               </div>
             </Section>
@@ -191,7 +209,7 @@ export default function ApplicationDetailModal({
                       <th className="px-5 py-3 text-[13px] font-semibold text-[#64748B]">
                         유형
                       </th>
-                      <th className="px-5 py- text-[13px] font-semibold text-[#64748B]">
+                      <th className="px-5 py-3 text-[13px] font-semibold text-[#64748B]">
                         제목
                       </th>
                       <th className="px-5 py-3 text-[13px] font-semibold text-[#64748B]">
@@ -204,12 +222,24 @@ export default function ApplicationDetailModal({
                   </thead>
                   <tbody>
                     {[
+                      ...linkedCalendarEvents.map((schedule: any) => {
+                        const scheduleDate = getGoogleEventDate(schedule);
+
+                        return {
+                          id: `calendar-${schedule.id}`,
+                          type: "일정",
+                          title: schedule.summary || "일정",
+                          date: formatDate(scheduleDate, "기한 없음"),
+                          status: "예정",
+                        };
+                      }),
+
                       ...(currentApplication.applyDate
                         ? [
                             {
                               id: "apply",
                               type: "일정",
-                              title: "지원 예정",
+                              title: "서류제출일",
                               date: formatDate(
                                 currentApplication.applyDate,
                                 "기한 없음",
@@ -224,7 +254,7 @@ export default function ApplicationDetailModal({
                             {
                               id: "deadline",
                               type: "일정",
-                              title: "서류 마감",
+                              title: "지원마감일",
                               date: formatDate(
                                 currentApplication.deadlineDate,
                                 "기한 없음",
@@ -239,7 +269,7 @@ export default function ApplicationDetailModal({
                             {
                               id: "interview",
                               type: "일정",
-                              title: "면접 예정",
+                              title: "면접일",
                               date: formatDate(
                                 currentApplication.interviewDate,
                                 "기한 없음",
@@ -250,7 +280,7 @@ export default function ApplicationDetailModal({
                         : []),
 
                       ...(currentApplication.todos || []).map((todo: any) => ({
-                        id: todo.id,
+                        id: `todo-${todo.id}`,
                         type: "할 일",
                         title: todo.title,
                         date: formatDate(todo.dueDateTime, "기한 없음"),
@@ -309,6 +339,9 @@ export default function ApplicationDetailModal({
         <PostSchedule
           application={currentApplication}
           onClose={() => setScheduleModalOpen(false)}
+          onSuccess={async () => {
+            await onChange?.();
+          }}
         />
       )}
 
@@ -323,6 +356,7 @@ export default function ApplicationDetailModal({
               applicationId: currentApplication.id,
             });
 
+            await onChange?.();
             setTodoModalOpen(false);
           }}
         />

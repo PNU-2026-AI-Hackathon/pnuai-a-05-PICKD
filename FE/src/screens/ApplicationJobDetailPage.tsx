@@ -128,7 +128,7 @@ const emptyJob = {
   deadlineDate: null,
   dday: null,
   expired: false,
-  status: "지원 예정",
+  status: "작성중",
   docsInProgress: [],
   sourceUrl: "#",
   basic: {
@@ -238,7 +238,8 @@ function formatDate(value?: string | Date | null) {
 
 function formatDateTime(value?: string | Date | null) {
   if (!value) return "-";
-  const normalized = value instanceof Date ? value : new Date(String(value).replace(" ", "T"));
+  const normalized =
+    value instanceof Date ? value : new Date(String(value).replace(" ", "T"));
   if (Number.isNaN(normalized.getTime())) return String(value);
 
   return normalized.toLocaleString("ko-KR", {
@@ -252,7 +253,8 @@ function formatDateTime(value?: string | Date | null) {
 
 function toDate(value?: string | Date | null) {
   if (!value) return null;
-  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  if (value instanceof Date)
+    return Number.isNaN(value.getTime()) ? null : value;
 
   const parsed = new Date(String(value).replace(" ", "T"));
   return Number.isNaN(parsed.getTime()) ? null : parsed;
@@ -313,11 +315,17 @@ function labelCategory(value?: string | null) {
   return value ? (labels[value] ?? value) : "-";
 }
 
-function getApplicationDeadline(application: Application | null, notice: NoticeDetail | null) {
+function getApplicationDeadline(
+  application: Application | null,
+  notice: NoticeDetail | null,
+) {
   return application?.deadlineDate ?? notice?.endedAt ?? null;
 }
 
-function buildEligibility(application: Application | null, notice: NoticeDetail | null) {
+function buildEligibility(
+  application: Application | null,
+  notice: NoticeDetail | null,
+) {
   const sections = notice?.sections ?? [];
   const documents = notice?.documents ?? [];
 
@@ -363,11 +371,28 @@ function buildEligibility(application: Application | null, notice: NoticeDetail 
   );
 
   return {
-    "지원 자격": generalQualifications.length > 0 ? generalQualifications : ["공고에서 별도 지원 자격을 확인하지 못했어요."],
-    "필수 조건": mandatoryQualifications.length > 0 ? mandatoryQualifications : [application?.position || "지원 직무 정보를 확인해 주세요."],
-    우대사항: generalPreferences.length > 0 ? generalPreferences : ["등록된 우대사항이 없어요."],
-    "가산점 요소": additionalPoints.length > 0 ? additionalPoints : ["등록된 가산점 요소가 없어요."],
-    "제출 서류": submitDocuments.length > 0 ? submitDocuments : fallbackSubmitDocuments.length > 0 ? fallbackSubmitDocuments : ["등록된 제출 서류가 없어요."],
+    "지원 자격":
+      generalQualifications.length > 0
+        ? generalQualifications
+        : ["공고에서 별도 지원 자격을 확인하지 못했어요."],
+    "필수 조건":
+      mandatoryQualifications.length > 0
+        ? mandatoryQualifications
+        : [application?.position || "지원 직무 정보를 확인해 주세요."],
+    우대사항:
+      generalPreferences.length > 0
+        ? generalPreferences
+        : ["등록된 우대사항이 없어요."],
+    "가산점 요소":
+      additionalPoints.length > 0
+        ? additionalPoints
+        : ["등록된 가산점 요소가 없어요."],
+    "제출 서류":
+      submitDocuments.length > 0
+        ? submitDocuments
+        : fallbackSubmitDocuments.length > 0
+          ? fallbackSubmitDocuments
+          : ["등록된 제출 서류가 없어요."],
   };
 }
 
@@ -388,7 +413,8 @@ function buildProcess(notice: NoticeDetail | null) {
   return processes.map((process) => {
     const scheduleItems = compact([
       process.applicationPeriod && `접수 ${process.applicationPeriod}`,
-      process.documentScreenSchedule && `서류 ${process.documentScreenSchedule}`,
+      process.documentScreenSchedule &&
+        `서류 ${process.documentScreenSchedule}`,
       process.writtenExamSchedule && `필기 ${process.writtenExamSchedule}`,
       process.interviewSchedule && `면접 ${process.interviewSchedule}`,
       process.joinDate && `입사 ${process.joinDate}`,
@@ -413,7 +439,10 @@ function buildJobDescription(notice: NoticeDetail | null) {
     : "등록된 직무 설명이 없어요.";
 }
 
-function buildCompetencies(application: Application | null, notice: NoticeDetail | null) {
+function buildCompetencies(
+  application: Application | null,
+  notice: NoticeDetail | null,
+) {
   const sections = notice?.sections ?? [];
   const qualificationTexts = sections.flatMap((section) =>
     (section.qualifications ?? []).flatMap((qualification) =>
@@ -437,7 +466,11 @@ function buildCompetencies(application: Application | null, notice: NoticeDetail
   const competencies = [...qualificationTexts, ...preferenceTexts];
 
   if (competencies.length > 0) return competencies.slice(0, 8);
-  return compact([application?.position, application?.industry, "공고 상세 내용을 확인해 주세요."]);
+  return compact([
+    application?.position,
+    application?.industry,
+    "공고 상세 내용을 확인해 주세요.",
+  ]);
 }
 
 function mapCoverLettersToEssays(items: CoverLetterItem[]): DetailEssay[] {
@@ -499,7 +532,8 @@ function buildRawSource(
     "■ 자기소개서 문항",
     ...(coverLetters.length > 0
       ? mapCoverLettersToEssays(coverLetters).map(
-          (essay) => `  ${essay.no}. ${essay.question}${essay.charLimit ? ` (${essay.charLimit}자)` : ""}`,
+          (essay) =>
+            `  ${essay.no}. ${essay.question}${essay.charLimit ? ` (${essay.charLimit}자)` : ""}`,
         )
       : ["  등록된 문항 없음"]),
   ];
@@ -523,20 +557,27 @@ function buildJobFromBackend(
   const firstSection = sections[0];
   const essays = mapCoverLettersToEssays(coverLetters);
   const periodStart = notice?.startedAt ? formatDate(notice.startedAt) : "-";
-  const periodEnd = notice?.endedAt ? formatDate(notice.endedAt) : formatDate(application?.deadlineDate);
-  const sourceUrl = notice?.noticeUrl || application?.sourceUrl || application?.url || "#";
+  const periodEnd = notice?.endedAt
+    ? formatDate(notice.endedAt)
+    : formatDate(application?.deadlineDate);
+  const sourceUrl =
+    notice?.noticeUrl || application?.sourceUrl || application?.url || "#";
 
   return {
     company: notice?.companyName ?? application?.company ?? "-",
     division: firstSection?.sectionName ?? labelCategory(notice?.category),
     title: notice?.noticeName ?? application?.jobTitle ?? "지원 공고 상세",
-    role: application?.position || firstSection?.jobTitle || firstSection?.sectionName || "직무 미지정",
+    role:
+      application?.position ||
+      firstSection?.jobTitle ||
+      firstSection?.sectionName ||
+      "직무 미지정",
     period: `${periodStart} ~ ${periodEnd}`,
     deadline: formatDateTime(deadlineValue),
     deadlineDate: toDate(deadlineValue),
     dday,
     expired,
-    status: application?.status ?? "지원 예정",
+    status: application?.status ?? "작성중",
     docsInProgress: application?.documents ?? [],
     sourceUrl,
     basic: {
@@ -544,7 +585,11 @@ function buildJobFromBackend(
       공고명: notice?.noticeName ?? application?.jobTitle ?? "-",
       "모집 직무": application?.position || firstSection?.jobTitle || "-",
       산업: application?.industry ?? "-",
-      근무지: notice?.workplaceAddress ?? firstSection?.workplace ?? notice?.region1depth ?? "-",
+      근무지:
+        notice?.workplaceAddress ??
+        firstSection?.workplace ??
+        notice?.region1depth ??
+        "-",
       "채용 형태": labelEmploymentType(notice?.employmentType),
       "공고 분류": labelCategory(notice?.category),
       "접수 시작일": notice?.startedAt ? formatDate(notice.startedAt) : "-",
@@ -735,12 +780,16 @@ export default function ApplicationJobDetailPage() {
     targetApplication: Application,
     targetNotice: NoticeDetail | null,
   ) => {
-    const appItems = await getCoverLetters({ applicationId: targetApplication.id });
+    const appItems = await getCoverLetters({
+      applicationId: targetApplication.id,
+    });
     let noticeItems: CoverLetterItem[] = [];
 
     if (targetApplication.noticeId != null) {
       try {
-        noticeItems = await getCoverLetters({ noticeId: targetApplication.noticeId });
+        noticeItems = await getCoverLetters({
+          noticeId: targetApplication.noticeId,
+        });
       } catch {
         noticeItems = (targetNotice?.coverLetterItems ?? []).map((item) => ({
           ...item,
@@ -975,7 +1024,13 @@ export default function ApplicationJobDetailPage() {
   const eligibilityHighlightCount = getHighlightCountByPrefix("eligibility::");
   const jdHighlightCount = getHighlightCountByPrefix("jd::");
   const jobDescriptionRows = [
-    { groupKey: "직무 설명", items: splitText(job.jobDescription).length > 0 ? splitText(job.jobDescription) : [job.jobDescription] },
+    {
+      groupKey: "직무 설명",
+      items:
+        splitText(job.jobDescription).length > 0
+          ? splitText(job.jobDescription)
+          : [job.jobDescription],
+    },
     { groupKey: "요구 역량", items: job.competencies },
   ];
 
@@ -1011,9 +1066,15 @@ export default function ApplicationJobDetailPage() {
             <p className="text-[14px] font-semibold text-foreground">
               상세 정보를 불러오지 못했어요
             </p>
-            <p className="mt-1 text-[12px] text-muted-foreground">{pageError}</p>
+            <p className="mt-1 text-[12px] text-muted-foreground">
+              {pageError}
+            </p>
             <div className="mt-4 flex items-center justify-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => navigate("/main")}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/main")}
+              >
                 대시보드로
               </Button>
               <Button size="sm" onClick={() => void loadDetail()}>
@@ -1476,7 +1537,10 @@ export default function ApplicationJobDetailPage() {
                           onChange={(event) =>
                             setEssayDraft((prev) => ({
                               ...prev,
-                              maxLength: event.target.value.replace(/[^0-9]/g, ""),
+                              maxLength: event.target.value.replace(
+                                /[^0-9]/g,
+                                "",
+                              ),
                             }))
                           }
                           placeholder="700"
@@ -1589,7 +1653,9 @@ export default function ApplicationJobDetailPage() {
                                 </span>
                               )}
                               <span className="text-[11px] text-muted-foreground tabular-nums">
-                                {e.charLimit ? `${e.charLimit.toLocaleString()}자 이내` : "제한 없음"}
+                                {e.charLimit
+                                  ? `${e.charLimit.toLocaleString()}자 이내`
+                                  : "제한 없음"}
                               </span>
                               {e.updated && (
                                 <span className="text-[11px] text-muted-foreground/50">

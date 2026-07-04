@@ -8,36 +8,40 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum ApplicationStatus {
-
-    PREPARING("지원 예정"),
     WRITING("작성중"),
-    SUBMITTED("제출 완료"),
-    WAITING("결과 대기"),
-    INTERVIEW("면접 전형"),
-    FINAL("최종 결과");
+    SUBMITTED("지원완료"),
+    DOCUMENT("서류전형"),
+    WRITTEN_TEST("필기전형"),
+    INTERVIEW("면접전형"),
+    COMPLETED("전형완료");
 
     @JsonValue
     private final String label;
 
     @JsonCreator
-    public static ApplicationStatus from(String label) {
+    public static ApplicationStatus from(String value) {
+        if (value == null || value.isBlank()) {
+            return WRITING;
+        }
+
         for (ApplicationStatus status : values()) {
-            if (status.label.equals(label) || status.name().equals(label)) {
+            if (status.name().equals(value) || status.label.equals(value)) {
                 return status;
             }
         }
-        throw new IllegalArgumentException("지원하지 않는 지원 상태입니다: " + label);
+
+        throw new IllegalArgumentException("지원하지 않는 지원 상태입니다: " + value);
     }
 
     public boolean needsApplyEvent() {
-        return this == PREPARING || this == WRITING;
+        return this != COMPLETED;
     }
 
     public boolean needsInterviewEvent() {
-        return this == SUBMITTED || this == WAITING || this == INTERVIEW;
+        return this == INTERVIEW;
     }
 
     public boolean needsDeadlineEvent() {
-        return this == FINAL;
+        return this != COMPLETED;
     }
 }

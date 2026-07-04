@@ -132,7 +132,15 @@ public class CalendarService {
 
     public Event createTodoEvent(Authentication authentication, Todo todo)
             throws IOException, GeneralSecurityException {
+        return createEvent(authentication, buildTodoEvent(todo));
+    }
 
+    public Event updateTodoEvent(Authentication authentication, String eventId, Todo todo)
+            throws IOException, GeneralSecurityException {
+        return updateEvent(authentication, eventId, buildTodoEvent(todo));
+    }
+
+    private Event buildTodoEvent(Todo todo) {
         if (todo == null) {
             throw new IllegalArgumentException("Todo가 비어 있습니다.");
         }
@@ -144,7 +152,7 @@ public class CalendarService {
         ZonedDateTime startDateTime = todo.getDueDateTime().atZone(SEOUL_ZONE);
         ZonedDateTime endDateTime = startDateTime.plusMinutes(30);
 
-        Event event = new Event()
+        return new Event()
                 .setSummary("[할일] " + todo.getTitle())
                 .setDescription(makeTodoDescription(todo))
                 .setStart(new EventDateTime()
@@ -153,8 +161,6 @@ public class CalendarService {
                 .setEnd(new EventDateTime()
                         .setDateTime(new DateTime(endDateTime.toInstant().toEpochMilli()))
                         .setTimeZone(TIME_ZONE));
-
-        return createEvent(authentication, event);
     }
 
     private String makeTodoDescription(Todo todo) {

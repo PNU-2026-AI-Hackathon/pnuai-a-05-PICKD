@@ -73,6 +73,7 @@ export default function Step4Interest() {
   return (
     <div className="flex justify-center items-center h-screen bg-gray-50">
       <div className="bg-white p-8 rounded-xl shadow w-[500px] overflow-y-auto max-h-screen">
+        <p className="mb-2 text-sm font-semibold text-blue-500">Step 4</p>
         <h2 className="text-xl font-bold mb-6">관심 분야 설정</h2>
 
         {/* 고용 형태 */}

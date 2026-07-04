@@ -46,7 +46,7 @@ export default function StepVerification() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
       <div className="w-full max-w-[420px] rounded-xl bg-white p-8 shadow">
-        <p className="mb-2 text-sm font-semibold text-blue-500">Step 2</p>
+        <p className="mb-2 text-sm font-semibold text-blue-500">Step 1</p>
         <h2 className="mb-2 text-xl font-bold">본인 정보 확인</h2>
         <div className="space-y-4">
           <input

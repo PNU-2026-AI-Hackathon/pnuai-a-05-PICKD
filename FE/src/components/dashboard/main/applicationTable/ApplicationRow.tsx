@@ -7,8 +7,12 @@ import { getDDay, formatApplicationDate } from "../../../../utils/date";
 import { getStatusStyle, getNextStep } from "../../../../utils/status";
 import { getRelativeTime } from "../../../../utils/document";
 import { useApplication } from "../../../../context/ApplicationContext";
-import type { ApplicationStatus } from "../../../../types/application";
+import {
+  APPLICATION_STATUSES,
+  type ApplicationStatus,
+} from "../../../../types/application";
 import { useNavigate } from "react-router-dom";
+import { Icon } from "@iconify/react";
 
 interface Props {
   row: any;
@@ -48,10 +52,33 @@ export default function ApplicationRow({
   const navigate = useNavigate();
   const { updateApplication } = useApplication();
   const isChecked = checkedIds.includes(row.id);
-  const completedCount =
-    row.todos?.filter((todo: any) => todo.completed).length || 0;
   const totalCount = row.todos?.length || 0;
-  const progress = totalCount === 0 ? 0 : (completedCount / totalCount) * 100;
+  const dateFieldScheduleCount = [
+    row.applyDate,
+    row.deadlineDate,
+    row.interviewDate,
+  ].filter(Boolean).length;
+
+  const scheduleCount =
+    Number(
+      row.scheduleCount ??
+        row.calendarCount ??
+        row.calendarEventCount ??
+        row.schedules?.length ??
+        row.calendarEvents?.length ??
+        row.events?.length ??
+        0,
+    ) || dateFieldScheduleCount;
+
+  const todoCount =
+    Number(
+      row.todoCount ??
+        row.checklistCount ??
+        row.todos?.length ??
+        row.checklists?.length ??
+        totalCount ??
+        0,
+    ) || 0;
   const [statusOpen, setStatusOpen] = useState(false);
   const statusRef = useRef<HTMLDivElement | null>(null);
   const statusButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -61,31 +88,16 @@ export default function ApplicationRow({
   });
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
-  const statuses: ApplicationStatus[] = [
-    "지원 예정",
-    "작성중",
-    "제출 완료",
-    "결과 대기",
-    "면접 전형",
-    "최종 결과",
-  ];
+  const statuses: ApplicationStatus[] = [...APPLICATION_STATUSES];
 
   const getCurrentDeadlineDate = (row: any) => {
     switch (row.status) {
-      case "지원 예정":
-      case "작성중":
-        return row.deadlineDate;
-
-      case "제출 완료":
-      case "결과 대기":
-      case "면접 전형":
-        return row.interviewDate;
-
-      case "최종 결과":
-        return row.deadlineDate;
-
+      case "면접전형":
+        return row.interviewDate || row.deadlineDate;
+      case "전형완료":
+        return row.interviewDate || row.deadlineDate || row.applyDate;
       default:
-        return row.deadlineDate;
+        return row.deadlineDate || row.applyDate || row.interviewDate;
     }
   };
 
@@ -274,6 +286,11 @@ export default function ApplicationRow({
               className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold  ${getStatusStyle(row.status)}`}
             >
               <span>{row.status}</span>
+              {row.status === "전형완료" && row.finalResult && (
+                <span className="ml-1 rounded bg-white/70 px-1.5 py-0.5 text-[10px]">
+                  {row.finalResult}
+                </span>
+              )}
               <svg
                 className="w-3 h-3"
                 fill="none"
@@ -391,18 +408,30 @@ export default function ApplicationRow({
           className="px-3 border-b whitespace-nowrap border-r border-[#F1F5F9] overflow-hidden"
           style={cellStyle("checklistInComplete")}
         >
-          <div className="flex items-center gap-2 w-full">
-            <div className="flex-1 h-[6px] bg-[#E5E7EB] rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#2563EB] rounded-full transition-all duration-300"
-                style={{
-                  width: `${progress}%`,
-                }}
-              />
-            </div>
-            <span className="text-[13px] text-[#64748B] whitespace-nowrap">
-              {completedCount}/{totalCount}
-            </span>
+          <div className="flex h-full items-center justify-center gap-3 text-[13px] text-[#475569]">
+            {scheduleCount > 0 && (
+              <div className="flex items-center gap-1">
+                <Icon
+                  icon="lucide:calendar-days"
+                  className="h-4 w-4 text-[#94A3B8]"
+                />
+                <span>{scheduleCount}</span>
+              </div>
+            )}
+
+            {todoCount > 0 && (
+              <div className="flex items-center gap-1">
+                <Icon
+                  icon="lucide:square-check"
+                  className="h-4 w-4 text-[#94A3B8]"
+                />
+                <span>{todoCount}</span>
+              </div>
+            )}
+
+            {scheduleCount === 0 && todoCount === 0 && (
+              <span className="text-[#CBD5E1]">-</span>
+            )}
           </div>
         </td>
       )}

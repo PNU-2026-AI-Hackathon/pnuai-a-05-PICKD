@@ -35,13 +35,23 @@ import static org.mockito.Mockito.*;
 @DisplayName("ApplicationService 단위 테스트")
 class ApplicationServiceTest {
 
-    @Mock ApplicationRepository applicationRepository;
-    @Mock NoticeRepository noticeRepository;
-    @Mock CalendarAsyncService calendarAsyncService;
-    @Mock UserService userService;
-    @Mock Authentication authentication;
+    @Mock
+    ApplicationRepository applicationRepository;
 
-    @InjectMocks ApplicationService applicationService;
+    @Mock
+    NoticeRepository noticeRepository;
+
+    @Mock
+    CalendarAsyncService calendarAsyncService;
+
+    @Mock
+    UserService userService;
+
+    @Mock
+    Authentication authentication;
+
+    @InjectMocks
+    ApplicationService applicationService;
 
     User user;
     Notice notice;
@@ -95,11 +105,14 @@ class ApplicationServiceTest {
         @Test
         @DisplayName("현재 사용자 공고 목록을 최신순으로 반환한다")
         void returnsUserApplicationsOrderedByIdDesc() {
-            Application app1 = buildApp(1L, ApplicationStatus.PREPARING);
+            Application app1 = buildApp(1L, ApplicationStatus.WRITING);
             Application app2 = buildApp(2L, ApplicationStatus.SUBMITTED);
-            when(applicationRepository.findAllByUserOrderByIdDesc(user)).thenReturn(List.of(app2, app1));
 
-            List<ApplicationResponse> result = applicationService.getApplications(authentication);
+            when(applicationRepository.findAllByUserOrderByIdDesc(user))
+                    .thenReturn(List.of(app2, app1));
+
+            List<ApplicationResponse> result =
+                    applicationService.getApplications(authentication);
 
             assertThat(result).hasSize(2);
             verify(applicationRepository).findAllByUserOrderByIdDesc(user);
@@ -108,9 +121,11 @@ class ApplicationServiceTest {
         @Test
         @DisplayName("공고가 없으면 빈 리스트를 반환한다")
         void returnsEmptyListWhenNoApplications() {
-            when(applicationRepository.findAllByUserOrderByIdDesc(user)).thenReturn(List.of());
+            when(applicationRepository.findAllByUserOrderByIdDesc(user))
+                    .thenReturn(List.of());
 
-            List<ApplicationResponse> result = applicationService.getApplications(authentication);
+            List<ApplicationResponse> result =
+                    applicationService.getApplications(authentication);
 
             assertThat(result).isEmpty();
         }
@@ -123,62 +138,103 @@ class ApplicationServiceTest {
     class AddApplication {
 
         @Test
-        @DisplayName("PREPARING 상태이고 applyDate가 있으면 apply 캘린더 이벤트를 생성한다")
-        void createsApplyCalendarEventForPreparingStatus() throws Exception {
-            ApplicationRequest req = buildRequest(ApplicationStatus.PREPARING);
+        @DisplayName("WRITING 상태이고 applyDate가 있으면 apply 캘린더 이벤트를 생성한다")
+        void createsApplyCalendarEventForWritingStatus() throws Exception {
+            ApplicationRequest req = buildRequest(ApplicationStatus.WRITING);
             req.setApplyDate(LocalDateTime.now().plusDays(3));
-            when(applicationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            when(applicationRepository.save(any()))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
 
             applicationService.addApplication(req, authentication);
 
-            verify(calendarAsyncService).createEventAsync(any(), eq("apply"), eq(authentication), any());
-            verify(calendarAsyncService, never()).createEventAsync(any(), eq("interview"), any(), any());
-            verify(calendarAsyncService, never()).createEventAsync(any(), eq("deadline"), any(), any());
+            verify(calendarAsyncService)
+                    .createEventAsync(any(), eq("apply"), eq(authentication), any());
+            verify(calendarAsyncService, never())
+                    .createEventAsync(any(), eq("interview"), any(), any());
+            verify(calendarAsyncService, never())
+                    .createEventAsync(any(), eq("deadline"), any(), any());
         }
 
         @Test
-        @DisplayName("SUBMITTED 상태이고 interviewDate가 있으면 interview 캘린더 이벤트를 생성한다")
-        void createsInterviewCalendarEventForSubmittedStatus() throws Exception {
-            ApplicationRequest req = buildRequest(ApplicationStatus.SUBMITTED);
+        @DisplayName("INTERVIEW 상태이고 interviewDate가 있으면 interview 캘린더 이벤트를 생성한다")
+        void createsInterviewCalendarEventForInterviewStatus() throws Exception {
+            ApplicationRequest req = buildRequest(ApplicationStatus.INTERVIEW);
             req.setInterviewDate(LocalDateTime.now().plusDays(7));
-            when(applicationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            when(applicationRepository.save(any()))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
 
             applicationService.addApplication(req, authentication);
 
-            verify(calendarAsyncService).createEventAsync(any(), eq("interview"), eq(authentication), any());
-            verify(calendarAsyncService, never()).createEventAsync(any(), eq("apply"), any(), any());
+            verify(calendarAsyncService)
+                    .createEventAsync(any(), eq("interview"), eq(authentication), any());
+            verify(calendarAsyncService, never())
+                    .createEventAsync(any(), eq("apply"), any(), any());
+            verify(calendarAsyncService, never())
+                    .createEventAsync(any(), eq("deadline"), any(), any());
         }
 
         @Test
-        @DisplayName("FINAL 상태이고 deadlineDate가 있으면 deadline 캘린더 이벤트를 생성한다")
-        void createsDeadlineCalendarEventForFinalStatus() throws Exception {
-            ApplicationRequest req = buildRequest(ApplicationStatus.FINAL);
+        @DisplayName("WRITING 상태이고 deadlineDate가 있으면 deadline 캘린더 이벤트를 생성한다")
+        void createsDeadlineCalendarEventForWritingStatus() throws Exception {
+            ApplicationRequest req = buildRequest(ApplicationStatus.WRITING);
             req.setDeadlineDate(LocalDateTime.now().plusDays(14));
-            when(applicationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            when(applicationRepository.save(any()))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
 
             applicationService.addApplication(req, authentication);
 
-            verify(calendarAsyncService).createEventAsync(any(), eq("deadline"), eq(authentication), any());
+            verify(calendarAsyncService)
+                    .createEventAsync(any(), eq("deadline"), eq(authentication), any());
+            verify(calendarAsyncService, never())
+                    .createEventAsync(any(), eq("apply"), any(), any());
+            verify(calendarAsyncService, never())
+                    .createEventAsync(any(), eq("interview"), any(), any());
+        }
+
+        @Test
+        @DisplayName("COMPLETED 상태이면 날짜가 있어도 캘린더 이벤트를 생성하지 않는다")
+        void doesNotCreateCalendarEventForCompletedStatus() throws Exception {
+            ApplicationRequest req = buildRequest(ApplicationStatus.COMPLETED);
+            req.setApplyDate(LocalDateTime.now().plusDays(3));
+            req.setInterviewDate(LocalDateTime.now().plusDays(7));
+            req.setDeadlineDate(LocalDateTime.now().plusDays(14));
+
+            when(applicationRepository.save(any()))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+
+            applicationService.addApplication(req, authentication);
+
+            verify(calendarAsyncService, never())
+                    .createEventAsync(any(), any(), any(), any());
         }
 
         @Test
         @DisplayName("날짜가 null이면 캘린더 이벤트를 생성하지 않는다")
         void doesNotCreateCalendarEventWhenDateIsNull() throws Exception {
-            ApplicationRequest req = buildRequest(ApplicationStatus.PREPARING);
-            // applyDate = null
-            when(applicationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            ApplicationRequest req = buildRequest(ApplicationStatus.WRITING);
+
+            when(applicationRepository.save(any()))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
 
             applicationService.addApplication(req, authentication);
 
-            verify(calendarAsyncService, never()).createEventAsync(any(), any(), any(), any());
+            verify(calendarAsyncService, never())
+                    .createEventAsync(any(), any(), any(), any());
         }
 
         @Test
         @DisplayName("Application 저장 시 User가 설정된다")
         void savesApplicationWithUser() throws Exception {
             ApplicationRequest req = buildRequest(ApplicationStatus.WRITING);
-            ArgumentCaptor<Application> captor = ArgumentCaptor.forClass(Application.class);
-            when(applicationRepository.save(captor.capture())).thenAnswer(inv -> inv.getArgument(0));
+
+            ArgumentCaptor<Application> captor =
+                    ArgumentCaptor.forClass(Application.class);
+
+            when(applicationRepository.save(captor.capture()))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
 
             applicationService.addApplication(req, authentication);
 
@@ -189,11 +245,17 @@ class ApplicationServiceTest {
         @Test
         @DisplayName("noticeId가 있으면 Notice와 연결된 Application을 생성한다")
         void createsApplicationLinkedToNotice() throws Exception {
-            ApplicationRequest req = buildRequest(ApplicationStatus.PREPARING);
+            ApplicationRequest req = buildRequest(ApplicationStatus.WRITING);
             req.setNoticeId(1L);
-            when(noticeRepository.findByIdAndUser(1L, user)).thenReturn(Optional.of(notice));
-            ArgumentCaptor<Application> captor = ArgumentCaptor.forClass(Application.class);
-            when(applicationRepository.save(captor.capture())).thenAnswer(inv -> inv.getArgument(0));
+
+            when(noticeRepository.findByIdAndUser(1L, user))
+                    .thenReturn(Optional.of(notice));
+
+            ArgumentCaptor<Application> captor =
+                    ArgumentCaptor.forClass(Application.class);
+
+            when(applicationRepository.save(captor.capture()))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
 
             applicationService.addApplication(req, authentication);
 
@@ -203,10 +265,13 @@ class ApplicationServiceTest {
         @Test
         @DisplayName("noticeId가 null이면 notice 없이 Application을 생성한다")
         void createsApplicationWithoutNotice() throws Exception {
-            ApplicationRequest req = buildRequest(ApplicationStatus.PREPARING);
-            // noticeId = null
-            ArgumentCaptor<Application> captor = ArgumentCaptor.forClass(Application.class);
-            when(applicationRepository.save(captor.capture())).thenAnswer(inv -> inv.getArgument(0));
+            ApplicationRequest req = buildRequest(ApplicationStatus.WRITING);
+
+            ArgumentCaptor<Application> captor =
+                    ArgumentCaptor.forClass(Application.class);
+
+            when(applicationRepository.save(captor.capture()))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
 
             applicationService.addApplication(req, authentication);
 
@@ -216,11 +281,15 @@ class ApplicationServiceTest {
         @Test
         @DisplayName("존재하지 않는 noticeId로 Application 생성 시 예외가 발생한다")
         void throwsWhenNoticeNotFound() {
-            ApplicationRequest req = buildRequest(ApplicationStatus.PREPARING);
+            ApplicationRequest req = buildRequest(ApplicationStatus.WRITING);
             req.setNoticeId(99L);
-            when(noticeRepository.findByIdAndUser(99L, user)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> applicationService.addApplication(req, authentication))
+            when(noticeRepository.findByIdAndUser(99L, user))
+                    .thenReturn(Optional.empty());
+
+            assertThatThrownBy(() ->
+                    applicationService.addApplication(req, authentication)
+            )
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("공고를 찾을 수 없습니다");
         }
@@ -235,8 +304,10 @@ class ApplicationServiceTest {
         @Test
         @DisplayName("소유자가 맞으면 Application을 삭제한다")
         void deletesApplicationWhenOwnerMatches() throws Exception {
-            Application app = buildApp(1L, ApplicationStatus.PREPARING);
-            when(applicationRepository.findByIdAndUser(1L, user)).thenReturn(Optional.of(app));
+            Application app = buildApp(1L, ApplicationStatus.WRITING);
+
+            when(applicationRepository.findByIdAndUser(1L, user))
+                    .thenReturn(Optional.of(app));
 
             applicationService.deleteApplication(1L, authentication);
 
@@ -246,9 +317,12 @@ class ApplicationServiceTest {
         @Test
         @DisplayName("다른 사용자의 Application 삭제 시 예외가 발생한다")
         void throwsWhenDeletingOtherUsersApplication() {
-            when(applicationRepository.findByIdAndUser(99L, user)).thenReturn(Optional.empty());
+            when(applicationRepository.findByIdAndUser(99L, user))
+                    .thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> applicationService.deleteApplication(99L, authentication))
+            assertThatThrownBy(() ->
+                    applicationService.deleteApplication(99L, authentication)
+            )
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("지원 공고를 찾을 수 없습니다");
         }
@@ -260,15 +334,19 @@ class ApplicationServiceTest {
                     .user(user)
                     .company("카카오")
                     .jobTitle("백엔드")
-                    .status(ApplicationStatus.PREPARING)
+                    .status(ApplicationStatus.WRITING)
                     .important(false)
                     .build();
+
             app.assignApplyEventId("apply-event-id-123");
-            when(applicationRepository.findByIdAndUser(1L, user)).thenReturn(Optional.of(app));
+
+            when(applicationRepository.findByIdAndUser(1L, user))
+                    .thenReturn(Optional.of(app));
 
             applicationService.deleteApplication(1L, authentication);
 
-            verify(calendarAsyncService).deleteEventAsync(authentication, "apply-event-id-123");
+            verify(calendarAsyncService)
+                    .deleteEventAsync(authentication, "apply-event-id-123");
             verify(applicationRepository).delete(app);
         }
 
@@ -276,11 +354,14 @@ class ApplicationServiceTest {
         @DisplayName("캘린더 이벤트가 없으면 캘린더 삭제를 호출하지 않는다")
         void doesNotDeleteCalendarEventWhenNoEventIds() throws Exception {
             Application app = buildApp(1L, ApplicationStatus.WRITING);
-            when(applicationRepository.findByIdAndUser(1L, user)).thenReturn(Optional.of(app));
+
+            when(applicationRepository.findByIdAndUser(1L, user))
+                    .thenReturn(Optional.of(app));
 
             applicationService.deleteApplication(1L, authentication);
 
-            verify(calendarAsyncService, never()).deleteEventAsync(any(), any());
+            verify(calendarAsyncService, never())
+                    .deleteEventAsync(any(), any());
         }
     }
 
@@ -293,35 +374,95 @@ class ApplicationServiceTest {
         @Test
         @DisplayName("다른 사용자의 Application 수정 시 예외가 발생한다")
         void throwsWhenUpdatingOtherUsersApplication() {
-            when(applicationRepository.findByIdAndUser(99L, user)).thenReturn(Optional.empty());
+            when(applicationRepository.findByIdAndUser(99L, user))
+                    .thenReturn(Optional.empty());
+
             ApplicationRequest req = buildRequest(ApplicationStatus.WRITING);
 
-            assertThatThrownBy(() -> applicationService.updateApplication(99L, req, authentication))
+            assertThatThrownBy(() ->
+                    applicationService.updateApplication(99L, req, authentication)
+            )
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("지원 공고를 찾을 수 없습니다");
         }
 
         @Test
-        @DisplayName("상태가 바뀌어 캘린더 이벤트가 필요 없어지면 기존 이벤트를 삭제한다")
+        @DisplayName("상태가 COMPLETED로 바뀌어 캘린더 이벤트가 필요 없어지면 기존 이벤트를 삭제한다")
         void deletesCalendarEventWhenStatusNoLongerNeedsIt() throws Exception {
             Application app = Application.builder()
                     .user(user)
                     .company("카카오")
                     .jobTitle("백엔드")
-                    .status(ApplicationStatus.PREPARING)
+                    .status(ApplicationStatus.WRITING)
                     .important(false)
                     .build();
-            app.assignApplyEventId("old-event-id");
-            when(applicationRepository.findByIdAndUser(1L, user)).thenReturn(Optional.of(app));
 
-            // FINAL 상태로 변경 → needsApplyEvent() = false
-            ApplicationRequest req = buildRequest(ApplicationStatus.FINAL);
-            req.setDeadlineDate(LocalDateTime.now().plusDays(7));
-            when(applicationRepository.save(any())).thenReturn(app);
+            app.assignApplyEventId("old-event-id");
+
+            when(applicationRepository.findByIdAndUser(1L, user))
+                    .thenReturn(Optional.of(app));
+
+            ApplicationRequest req = buildRequest(ApplicationStatus.COMPLETED);
+
+            when(applicationRepository.save(any()))
+                    .thenReturn(app);
 
             applicationService.updateApplication(1L, req, authentication);
 
-            verify(calendarAsyncService).deleteEventAsync(authentication, "old-event-id");
+            verify(calendarAsyncService)
+                    .deleteEventAsync(authentication, "old-event-id");
+        }
+
+        @Test
+        @DisplayName("INTERVIEW 상태로 수정하고 interviewDate가 있으면 interview 이벤트를 생성한다")
+        void createsInterviewEventWhenUpdatedToInterview() throws Exception {
+            Application app = Application.builder()
+                    .user(user)
+                    .company("카카오")
+                    .jobTitle("백엔드")
+                    .status(ApplicationStatus.SUBMITTED)
+                    .important(false)
+                    .build();
+
+            when(applicationRepository.findByIdAndUser(1L, user))
+                    .thenReturn(Optional.of(app));
+
+            ApplicationRequest req = buildRequest(ApplicationStatus.INTERVIEW);
+            req.setInterviewDate(LocalDateTime.now().plusDays(7));
+
+            when(applicationRepository.save(any()))
+                    .thenReturn(app);
+
+            applicationService.updateApplication(1L, req, authentication);
+
+            verify(calendarAsyncService)
+                    .createEventAsync(any(), eq("interview"), eq(authentication), any());
+        }
+
+        @Test
+        @DisplayName("deadlineDate가 있으면 deadline 이벤트를 생성한다")
+        void createsDeadlineEventWhenDeadlineDateExists() throws Exception {
+            Application app = Application.builder()
+                    .user(user)
+                    .company("카카오")
+                    .jobTitle("백엔드")
+                    .status(ApplicationStatus.WRITING)
+                    .important(false)
+                    .build();
+
+            when(applicationRepository.findByIdAndUser(1L, user))
+                    .thenReturn(Optional.of(app));
+
+            ApplicationRequest req = buildRequest(ApplicationStatus.WRITING);
+            req.setDeadlineDate(LocalDateTime.now().plusDays(10));
+
+            when(applicationRepository.save(any()))
+                    .thenReturn(app);
+
+            applicationService.updateApplication(1L, req, authentication);
+
+            verify(calendarAsyncService)
+                    .createEventAsync(any(), eq("deadline"), eq(authentication), any());
         }
     }
 }

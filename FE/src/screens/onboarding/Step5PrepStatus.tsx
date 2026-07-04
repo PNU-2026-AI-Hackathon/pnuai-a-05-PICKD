@@ -146,7 +146,7 @@ export default function Step5PrepStatus() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
       <div className="w-full max-w-[560px] rounded-xl bg-white p-8 shadow">
-        <p className="mb-2 text-sm font-semibold text-blue-500">Step 6</p>
+        <p className="mb-2 text-sm font-semibold text-blue-500">Step 5</p>
         <h2 className="mb-6 text-xl font-bold">준비 상태</h2>
 
         <input

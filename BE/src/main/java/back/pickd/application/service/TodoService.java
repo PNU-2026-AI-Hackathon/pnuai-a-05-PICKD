@@ -85,7 +85,18 @@ public class TodoService {
         User user = userService.findByEmail(authentication.getName());
         Todo todo = todoRepository.findByIdAndUser(id, user)
                 .orElseThrow(() -> new IllegalArgumentException("할 일을 찾을 수 없습니다."));
-        todo.update(dto.getTitle(), parseDueDateTime(dto.getDueDateTime()), dto.getMemo());
+        boolean dueDateTimeProvided = dto.getDueDateTime() != null;
+        todo.update(
+                dto.getTitle(),
+                parseDueDateTime(dto.getDueDateTime()),
+                dueDateTimeProvided,
+                dto.getMemo()
+        );
+
+        if (dueDateTimeProvided || todo.getDueDateTime() != null || todo.getCalendarEventId() != null) {
+            calendarAsyncService.syncTodoEventAsync(todo.getId(), authentication);
+        }
+
         return TodoResponse.from(todo);
     }
 

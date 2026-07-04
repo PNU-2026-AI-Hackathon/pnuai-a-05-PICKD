@@ -19,7 +19,10 @@ export default function DocumentSection({
     setDocuments(initialDocuments);
   }, [initialDocuments]);
 
-  const handleStatusChange = async (id: number, status: DocumentItem["status"]) => {
+  const handleStatusChange = async (
+    id: number,
+    status: DocumentItem["status"],
+  ) => {
     const target = documents.find((document) => document.id === id);
     if (!target) return;
 
@@ -35,7 +38,9 @@ export default function DocumentSection({
       console.error("서류 상태 변경 실패:", error);
       setDocuments((prev) =>
         prev.map((document) =>
-          document.id === id ? { ...document, status: target.status } : document,
+          document.id === id
+            ? { ...document, status: target.status }
+            : document,
         ),
       );
       alert("서류 상태 변경에 실패했습니다.");
@@ -50,13 +55,13 @@ export default function DocumentSection({
           <span className="text-sm text-[#94A3B8]">{documents.length}건</span>
         </div>
 
-        <div className="flex items-center rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-0.5">
+        <div className="flex items-center rounded-lg border border-[#D8E0EA] bg-[#F8FAFC] p-[2px]">
           <button
             onClick={() => setView("card")}
-            className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all ${
+            className={`flex h-8 w-8 items-center justify-center rounded-md transition ${
               view === "card"
-                ? "bg-white text-[#0F172A] shadow-sm"
-                : "text-[#64748B]"
+                ? "bg-white text-[#334155] shadow-sm"
+                : "text-[#64748B] hover:bg-white/70"
             }`}
           >
             <Icon icon="mdi:view-grid-outline" width={16} />
@@ -64,10 +69,10 @@ export default function DocumentSection({
 
           <button
             onClick={() => setView("list")}
-            className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all ${
+            className={`flex h-8 w-8 items-center justify-center rounded-md transition ${
               view === "list"
-                ? "bg-white text-[#0F172A] shadow-sm"
-                : "text-[#64748B]"
+                ? "bg-white text-[#334155] shadow-sm"
+                : "text-[#64748B] hover:bg-white/70"
             }`}
           >
             <Icon icon="mdi:table-large" width={16} />
@@ -81,7 +86,9 @@ export default function DocumentSection({
               <div key={doc.id} className="snap-start">
                 <DocumentCard
                   item={doc}
-                  onStatusChange={(status) => handleStatusChange(doc.id, status)}
+                  onStatusChange={(status) =>
+                    handleStatusChange(doc.id, status)
+                  }
                 />
               </div>
             ))}

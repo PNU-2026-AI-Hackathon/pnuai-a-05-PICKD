@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import type { Application } from "../../types/application";
 import { createEvent } from "../../api/calendar";
-import { toBackendLocalDateTime } from "../../utils/date";
+import { parseLocalDateTime, toBackendLocalDateTime } from "../../utils/date";
+import { buildApplicationScheduleDescription } from "../../utils/calendarEvent";
 
 interface PostScheduleProps {
   onClose: () => void;
@@ -42,11 +43,17 @@ export default function PostSchedule({
       return;
     }
 
-    const startDateTime = toBackendLocalDateTime(
+    const selectedDateTime = parseLocalDateTime(
       `${formData.date}T${formData.time || "09:00"}`,
     );
+    const startDateTime = toBackendLocalDateTime(selectedDateTime);
+    const endDateTime = selectedDateTime
+      ? toBackendLocalDateTime(
+          new Date(selectedDateTime.getTime() + 60 * 60 * 1000),
+        )
+      : undefined;
 
-    if (!startDateTime) {
+    if (!startDateTime || !endDateTime) {
       alert("일정 시간을 확인해주세요.");
       return;
     }
@@ -60,13 +67,17 @@ export default function PostSchedule({
             ? formData.title
             : `${formData.title} ${formData.category}`,
         category: formData.category,
-        description: formData.memo,
+        applicationId: application?.id,
+        description: buildApplicationScheduleDescription(
+          formData.memo,
+          application,
+        ),
         start: {
           dateTime: startDateTime,
           timeZone: "Asia/Seoul",
         },
         end: {
-          dateTime: startDateTime,
+          dateTime: endDateTime,
           timeZone: "Asia/Seoul",
         },
       });
