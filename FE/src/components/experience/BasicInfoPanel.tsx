@@ -324,7 +324,7 @@ export default function BasicInfoPanel() {
                   </label>
                 ) : field.key === "focusItems" ? (
                   <div className="flex flex-wrap gap-1.5">
-                    {["서류", "코딩테스트", "면접"].map((item) => {
+                    {["서류", "코딩테스트", "면접", "포트폴리오", "경험정리"].map((item) => {
                       const selected = toArray(values.focusItems).includes(item);
                       return (
                         <button
