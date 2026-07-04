@@ -9,7 +9,7 @@ export type FileUploadType =
   | "TEMP_RESUME"
   | "GENERAL";
 
-export interface UploadedFileResponse {
+export interface FileUploadResponse {
   id: number;
   fileName: string;
   fileUrl: string;
@@ -19,25 +19,24 @@ export interface UploadedFileResponse {
   createdAt: string;
 }
 
-export async function getUploadedFiles(type?: FileUploadType) {
-  const searchParams = new URLSearchParams();
-  if (type) searchParams.set("type", type);
-
-  return apiRequest<UploadedFileResponse[]>(
-    `/api/files${searchParams.toString() ? `?${searchParams.toString()}` : ""}`,
-    {
-      method: "GET",
-      skipJsonContentType: true,
-    },
-  );
+export async function getFiles(
+  type?: FileUploadType
+): Promise<FileUploadResponse[]> {
+  const query = type ? `?type=${type}` : "";
+  return apiRequest<FileUploadResponse[]>(`/api/files${query}`, {
+    method: "GET",
+    skipJsonContentType: true,
+  });
 }
 
-export async function uploadFile(file: File, type: FileUploadType) {
+export async function uploadFile(
+  type: FileUploadType,
+  file: File
+): Promise<FileUploadResponse> {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("type", type);
 
-  return apiRequest<UploadedFileResponse>("/api/files/upload", {
+  return apiRequest<FileUploadResponse>(`/api/files/upload?type=${type}`, {
     method: "POST",
     body: formData,
     skipJsonContentType: true,

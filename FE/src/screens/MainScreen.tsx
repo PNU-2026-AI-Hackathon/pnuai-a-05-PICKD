@@ -25,11 +25,8 @@ export default function MainScreen() {
   const [googleEvents, setGoogleEvents] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
 
-  const { loadData, applications } = useApplication();
-
-  useEffect(() => {
-    loadData();
-  }, []);
+  const { loadData } = useApplication();
+  const { applications } = useApplication();
 
   const allTodos = applications.flatMap((app) =>
     (app.todos || []).map((todo) => ({
@@ -131,7 +128,7 @@ export default function MainScreen() {
 
       {user && (
         <div
-          className={`absolute top-0 right-0 h-full w-[350px] bg-white shadow-xl z-30 flex flex-col transform transition-transform duration-300 ease-in-out ${
+          className={`fixed top-0 right-0 h-screen w-[350px] bg-white shadow-xl z-30 flex flex-col transform transition-transform duration-300 ease-in-out ${
             isSidebarOpen ? "translate-x-0" : "translate-x-full"
           }`}
         >
