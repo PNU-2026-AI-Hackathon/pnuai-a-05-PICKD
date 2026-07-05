@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, FileText, Folder, Image as ImageIcon, MoreHorizontal, Star, Trash2, Upload, X } from "lucide-react";
-import { uploadFile, getFiles } from "../../api/file";
+import { uploadFile, getFiles, renameFile as renameFileApi, deleteFile as deleteFileApi } from "../../api/file";
 import type { FileUploadType } from "../../api/file";
 
 type FileKind =
@@ -56,12 +56,6 @@ type FileItem = {
   url?: string;
 };
 
-const INITIAL_FILES: FileItem[] = [
-  { id: "f0", kind: "증명사진", name: "profile_photo.jpg", fileKind: "image" },
-  { id: "f1", kind: "성적증명서", name: "성적증명서_2025.pdf", fileKind: "pdf" },
-  { id: "f2", kind: "어학 성적표", name: "toeic_score.png", fileKind: "image" },
-];
-
 const LS_PHOTO_ID = "specs.basicPhoto.id";
 
 function lsGet<T>(key: string, fallback: T): T {
@@ -104,9 +98,7 @@ export default function FilesPanel() {
           url: item.fileUrl,
         }))
       );
-    }).catch(() => {
-      setFiles(INITIAL_FILES);
-    });
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -181,18 +173,28 @@ export default function FilesPanel() {
     }
   };
 
-  const renameFile = (fileId: string) => {
+  const renameFile = async (fileId: string) => {
     const target = files.find((file) => file.id === fileId);
     if (!target) return;
     const nextName = window.prompt("파일 이름을 입력해주세요.", target.name);
     if (!nextName?.trim()) return;
-    setFiles((prev) => prev.map((file) => (file.id === fileId ? { ...file, name: nextName.trim() } : file)));
+    try {
+      await renameFileApi(Number(fileId), nextName.trim());
+      setFiles((prev) => prev.map((file) => (file.id === fileId ? { ...file, name: nextName.trim() } : file)));
+    } catch {
+      alert("파일 이름 변경에 실패했습니다. 다시 시도해주세요.");
+    }
     setMenuFileId(null);
   };
 
-  const deleteFile = (fileId: string) => {
-    setFiles((prev) => prev.filter((file) => file.id !== fileId));
-    if (preview?.id === fileId) setPreview(null);
+  const deleteFile = async (fileId: string) => {
+    try {
+      await deleteFileApi(Number(fileId));
+      setFiles((prev) => prev.filter((file) => file.id !== fileId));
+      if (preview?.id === fileId) setPreview(null);
+    } catch {
+      alert("파일 삭제에 실패했습니다. 다시 시도해주세요.");
+    }
     setMenuFileId(null);
   };
 
