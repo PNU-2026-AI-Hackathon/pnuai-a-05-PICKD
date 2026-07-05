@@ -29,6 +29,16 @@ export async function getFiles(
   });
 }
 
+export async function renameFile(
+  fileId: number,
+  fileName: string
+): Promise<FileUploadResponse> {
+  return apiRequest<FileUploadResponse>(`/api/files/${fileId}/name`, {
+    method: "PUT",
+    body: JSON.stringify({ fileName }),
+  });
+}
+
 export async function uploadFile(
   type: FileUploadType,
   file: File
