@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -74,5 +75,50 @@ public class FileController {
         }
 
         return ResponseEntity.ok(fileService.getFiles(authentication.getName(), type));
+    }
+
+    @PutMapping("/{fileId}/name")
+    @Operation(
+            summary = "업로드 파일 이름 변경",
+            description = "사용자가 업로드한 파일의 표시 이름을 변경합니다. S3 객체 key는 변경하지 않습니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "이름 변경 성공",
+                    content = @Content(schema = @Schema(implementation = UploadedFileResponse.class))),
+            @ApiResponse(responseCode = "400", description = "요청 유효성 오류",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<UploadedFileResponse> renameFile(
+            @Parameter(hidden = true) Authentication authentication,
+            @Parameter(description = "파일 ID", required = true) @PathVariable Long fileId,
+            @RequestBody @Valid UploadedFileRenameRequest request) {
+        if (authentication == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        return ResponseEntity.ok(fileService.renameFile(authentication.getName(), fileId, request.fileName()));
+    }
+
+    @DeleteMapping("/{fileId}")
+    @Operation(
+            summary = "업로드 파일 삭제",
+            description = "사용자가 업로드한 파일을 S3와 파일 보관함에서 삭제합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "삭제 성공"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<Void> deleteFile(
+            @Parameter(hidden = true) Authentication authentication,
+            @Parameter(description = "파일 ID", required = true) @PathVariable Long fileId) {
+        if (authentication == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        fileService.deleteFile(authentication.getName(), fileId);
+        return ResponseEntity.noContent().build();
     }
 }

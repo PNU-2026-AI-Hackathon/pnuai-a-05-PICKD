@@ -9,6 +9,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.UUID;
 
 @Slf4j
@@ -63,6 +65,12 @@ public class S3Service {
         return combineCloudFrontUrl(s3Key);
     }
 
+    public void deleteFile(String fileUrl) {
+        String s3Key = extractS3Key(fileUrl);
+        s3Template.deleteObject(bucket, s3Key);
+        log.info("Successfully deleted file from S3: bucket={}, key={}", bucket, s3Key);
+    }
+
     private String getFileExtension(String filename) {
         if (filename == null) {
             return "";
@@ -76,5 +84,31 @@ public class S3Service {
                 ? cloudFrontDomain.substring(0, cloudFrontDomain.length() - 1) 
                 : cloudFrontDomain;
         return domain + "/" + s3Key;
+    }
+
+    private String extractS3Key(String fileUrl) {
+        if (fileUrl == null || fileUrl.isBlank()) {
+            throw new IllegalArgumentException("삭제할 파일 URL이 비어있습니다.");
+        }
+
+        String normalizedDomain = cloudFrontDomain.endsWith("/")
+                ? cloudFrontDomain.substring(0, cloudFrontDomain.length() - 1)
+                : cloudFrontDomain;
+        if (fileUrl.startsWith(normalizedDomain + "/")) {
+            return fileUrl.substring(normalizedDomain.length() + 1);
+        }
+
+        try {
+            URI uri = new URI(fileUrl);
+            String path = uri.getPath();
+            if (path == null || path.isBlank() || "/".equals(path)) {
+                throw new IllegalArgumentException("파일 URL에서 S3 key를 찾을 수 없습니다.");
+            }
+            String key = path.startsWith("/") ? path.substring(1) : path;
+            String bucketPrefix = bucket + "/";
+            return key.startsWith(bucketPrefix) ? key.substring(bucketPrefix.length()) : key;
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("파일 URL 형식이 올바르지 않습니다.", e);
+        }
     }
 }

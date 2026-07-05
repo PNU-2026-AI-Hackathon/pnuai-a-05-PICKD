@@ -3,6 +3,7 @@ package back.pickd.user.controller;
 import back.pickd.global.config.OpenApiConfig;
 import back.pickd.global.error.ErrorResponse;
 import back.pickd.user.dto.UserProfileDto;
+import back.pickd.user.dto.UserProfileUpdateRequest;
 import back.pickd.user.entity.User;
 import back.pickd.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,6 +14,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -42,6 +44,25 @@ public class UserController {
     public ResponseEntity<UserProfileDto> getUser(@Parameter(hidden = true) Authentication authentication) {
         User user = userService.findByEmail(authentication.getName());
         return ResponseEntity.ok(UserProfileDto.from(user));
+    }
+
+    @PutMapping
+    @Operation(
+            summary = "내 프로필 수정",
+            description = "로그인 사용자의 기본정보를 수정합니다. 요청 본문에 포함된 필드만 수정하고 생략한 필드는 기존 값을 유지합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "수정 성공",
+                    content = @Content(schema = @Schema(implementation = UserProfileDto.class))),
+            @ApiResponse(responseCode = "400", description = "요청 유효성 오류",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<UserProfileDto> updateUser(
+            @Parameter(hidden = true) Authentication authentication,
+            @RequestBody @Valid UserProfileUpdateRequest request) {
+        return ResponseEntity.ok(userService.updateProfile(authentication.getName(), request));
     }
 
     @PostMapping(value = "/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
