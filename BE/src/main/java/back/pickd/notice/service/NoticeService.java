@@ -1,5 +1,8 @@
 package back.pickd.notice.service;
 
+import back.pickd.application.entity.Application;
+import back.pickd.application.enums.ApplicationStatus;
+import back.pickd.application.repository.ApplicationRepository;
 import back.pickd.global.infra.ai.AiClient;
 import back.pickd.global.infra.ai.dto.*;
 import back.pickd.notice.dto.NoticeSaveRequestDto;
@@ -31,6 +34,7 @@ public class NoticeService {
     private final SectionPreferenceRepository sectionPreferenceRepository;
     private final NoticeProcessRepository noticeProcessRepository;
     private final ApplicationDocumentRepository applicationDocumentRepository;
+    private final ApplicationRepository applicationRepository;
     private final UserRepository userRepository;
     private final CoverLetterItemRepository coverLetterItemRepository;
 
@@ -156,8 +160,16 @@ public class NoticeService {
             }
         }
 
-        // AI 분석 단계에서는 Notice만 저장한다.
-        // Application은 프론트 검수 폼에서 사용자가 확인한 뒤 /api/application으로 생성한다.
+        // AI 분석 공고 저장 후 Application 자동 생성
+        Application application = Application.builder()
+                .user(user)
+                .notice(savedNotice)
+                .company(savedNotice.getCompanyName())
+                .jobTitle(savedNotice.getNoticeName())
+                .status(ApplicationStatus.PREPARING)
+                .build();
+        applicationRepository.save(application);
+
         return savedNotice.getId();
     }
 

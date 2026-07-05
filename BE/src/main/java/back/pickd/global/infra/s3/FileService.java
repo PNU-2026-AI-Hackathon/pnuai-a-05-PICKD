@@ -46,8 +46,28 @@ public class FileService {
                 .toList();
     }
 
+    @Transactional
+    public UploadedFileResponse renameFile(String email, Long fileId, String fileName) {
+        UploadedFile uploadedFile = findOwnedFile(email, fileId);
+        uploadedFile.rename(fileName);
+        return new UploadedFileResponse(uploadedFile);
+    }
+
+    @Transactional
+    public void deleteFile(String email, Long fileId) {
+        UploadedFile uploadedFile = findOwnedFile(email, fileId);
+        s3Service.deleteFile(uploadedFile.getFileUrl());
+        uploadedFileRepository.delete(uploadedFile);
+    }
+
     private String resolveFileName(MultipartFile file) {
         String originalFilename = file.getOriginalFilename();
         return (originalFilename == null || originalFilename.isBlank()) ? "unknown" : originalFilename;
+    }
+
+    private UploadedFile findOwnedFile(String email, Long fileId) {
+        User user = userService.findByEmail(email);
+        return uploadedFileRepository.findByIdAndUser(fileId, user)
+                .orElseThrow(() -> new IllegalArgumentException("파일을 찾을 수 없습니다. id: " + fileId));
     }
 }

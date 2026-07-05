@@ -1,7 +1,6 @@
 package back.pickd.application.dto.response;
 
 import back.pickd.application.entity.Application;
-import back.pickd.application.enums.ApplicationFinalResult;
 import back.pickd.application.enums.ApplicationStatus;
 import back.pickd.document.entity.Document;
 import lombok.Builder;
@@ -21,8 +20,7 @@ public class ApplicationResponse {
     private String jobTitle;
     private String position;
     private String industry;
-    private ApplicationStatus status;   // @JsonValue → "작성중" 형태로 직렬화
-    private ApplicationFinalResult finalResult;
+    private ApplicationStatus status;   // @JsonValue → "지원 예정" 형태로 직렬화
     private String memo;
     private LocalDateTime applyDate;
     private LocalDateTime interviewDate;
@@ -45,7 +43,6 @@ public class ApplicationResponse {
                 .position(app.getPosition())
                 .industry(app.getIndustry())
                 .status(app.getStatus())
-                .finalResult(app.getFinalResult())
                 .memo(app.getMemo())
                 .applyDate(app.getApplyDate())
                 .interviewDate(app.getInterviewDate())
