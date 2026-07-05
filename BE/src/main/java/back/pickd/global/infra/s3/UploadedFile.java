@@ -39,4 +39,8 @@ public class UploadedFile {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
+
+    public void rename(String fileName) {
+        this.fileName = fileName;
+    }
 }
