@@ -39,6 +39,13 @@ export async function renameFile(
   });
 }
 
+export async function deleteFile(fileId: number): Promise<void> {
+  return apiRequest<void>(`/api/files/${fileId}`, {
+    method: "DELETE",
+    skipJsonContentType: true,
+  });
+}
+
 export async function uploadFile(
   type: FileUploadType,
   file: File
