@@ -1,42 +1,61 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { updateOnboarding } from "../../api/onboarding";
+import { PickdLogoIcon } from "../../assets";
+
+const TERMS = [
+  { key: "marketingAgreed", label: "만 14세 이상이에요", required: true },
+  { key: "serviceAgreed", label: "이용약관 동의", required: true },
+  { key: "privacyAgreed", label: "개인정보 수집·이용 동의", required: true },
+  { key: "pushAgreed", label: "합격에 도움되는 공고·일정 소식 받기", required: false },
+] as const;
+
+type FormKey = "serviceAgreed" | "privacyAgreed" | "marketingAgreed" | "pushAgreed";
+
+function Checkbox({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onChange}
+      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+        checked
+          ? "border-[#2563EB] bg-[#2563EB]"
+          : "border-gray-300 bg-white"
+      }`}
+    >
+      {checked && (
+        <svg width="11" height="8" viewBox="0 0 11 8" fill="none">
+          <path d="M1 3.5L4 6.5L10 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )}
+    </button>
+  );
+}
 
 export default function Step1Terms() {
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<Record<FormKey, boolean>>({
     serviceAgreed: false,
     privacyAgreed: false,
     marketingAgreed: false,
     pushAgreed: false,
   });
 
-  const allChecked =
-    form.serviceAgreed &&
-    form.privacyAgreed &&
-    form.marketingAgreed &&
-    form.pushAgreed;
+  const allChecked = TERMS.every((t) => form[t.key]);
+  const requiredChecked = TERMS.filter((t) => t.required).every((t) => form[t.key]);
 
-  const requiredChecked = form.serviceAgreed && form.privacyAgreed;
-
-  const handleChange = (key: string) => {
-    setForm({ ...form, [key]: !form[key as keyof typeof form] });
+  const handleChange = (key: FormKey) => {
+    setForm((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const handleAll = () => {
     const value = !allChecked;
-    setForm({
-      serviceAgreed: value,
-      privacyAgreed: value,
-      marketingAgreed: value,
-      pushAgreed: value,
-    });
+    setForm({ serviceAgreed: value, privacyAgreed: value, marketingAgreed: value, pushAgreed: value });
   };
 
   const submit = async () => {
     if (!requiredChecked) return;
-
     try {
       await updateOnboarding(form);
       navigate("/onboarding/verify");
@@ -46,79 +65,69 @@ export default function Step1Terms() {
   };
 
   return (
-    <div className="flex justify-center items-center h-screen bg-gray-50">
-      <div className="bg-white p-8 rounded-xl shadow w-[400px]">
-        <h2 className="text-xl font-bold mb-6">약관 동의</h2>
+    <div className="min-h-screen bg-[#F5F6FA]">
+      {/* Top-left logo */}
+      <div className="flex items-center gap-2 px-40 py-5">
+        <PickdLogoIcon size={28} />
+        <span className="text-base font-bold text-gray-900">Pickd</span>
+      </div>
 
-        {/* 전체 동의 */}
-        <div className="mb-4 border-b pb-3">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={allChecked} onChange={handleAll} />
-            <span className="font-semibold">전체 동의</span>
-          </label>
+      {/* Center card */}
+      <div className="flex items-center justify-center px-4 py-8">
+        <div className="w-full max-w-[600px] rounded-2xl bg-white p-10 shadow-sm">
+          {/* Header */}
+          <p className="mb-2 text-sm font-semibold text-[#2563EB]">시작하기 전에</p>
+          <h1 className="mb-8 text-2xl font-bold leading-snug text-gray-900">
+            서비스 이용을 위해
+            <br />
+            약관에 동의해 주세요
+          </h1>
+
+          {/* 전체 동의 */}
+          <button
+            type="button"
+            onClick={handleAll}
+            className={`mb-5 flex w-full items-center gap-3 rounded-xl px-5 py-4 text-left transition-colors ${
+              allChecked ? "bg-[#EEF0FD]" : "bg-[#F3F4F8]"
+            }`}
+          >
+            <Checkbox checked={allChecked} onChange={handleAll} />
+            <span className="font-semibold text-gray-800 text-sm">전체 동의할게요</span>
+          </button>
+
+          {/* 개별 항목 */}
+          <div className="space-y-4 px-1">
+            {TERMS.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => handleChange(t.key)}
+                className="flex w-full items-center gap-3 text-left"
+              >
+                <Checkbox checked={form[t.key]} onChange={() => handleChange(t.key)} />
+                <span className="text-sm text-gray-700">
+                  <span className={`mr-3 font-semibold ${t.required ? "text-[#2563EB]" : "text-gray-400"}`}>
+                    {t.required ? "[필수]" : "[선택]"}
+                  </span>
+                  {t.label}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* 다음 버튼 */}
+          <button
+            onClick={submit}
+            disabled={!requiredChecked}
+            className={`mt-10 w-full rounded-xl py-4 text-base font-semibold transition-colors ${
+              requiredChecked
+                ? "bg-[#2563EB] text-white hover:bg-[#1d4ed8]"
+                : "cursor-not-allowed bg-gray-200 text-gray-400"
+            }`}
+          >
+            다음
+          </button>
         </div>
-
-        {/* 개별 동의 */}
-        <div className="space-y-3">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={form.serviceAgreed}
-              onChange={() => handleChange("serviceAgreed")}
-            />
-            <span>
-              <span className="text-red-500">[필수]</span> 서비스 이용약관 동의
-            </span>
-          </label>
-
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={form.privacyAgreed}
-              onChange={() => handleChange("privacyAgreed")}
-            />
-            <span>
-              <span className="text-red-500">[필수]</span> 개인정보 수집·이용
-              동의
-            </span>
-          </label>
-
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={form.marketingAgreed}
-              onChange={() => handleChange("marketingAgreed")}
-            />
-            <span>
-              <span className="text-gray-400">[선택]</span> 마케팅 정보 수신
-              동의
-            </span>
-          </label>
-
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={form.pushAgreed}
-              onChange={() => handleChange("pushAgreed")}
-            />
-            <span>
-              <span className="text-gray-400">[선택]</span> 푸시 알림 수신 동의
-            </span>
-          </label>
-        </div>
-
-        {/* 버튼 */}
-        <button
-          onClick={submit}
-          disabled={!requiredChecked}
-          className={`mt-6 w-full py-2 rounded ${
-            requiredChecked
-              ? "bg-blue-500 text-white"
-              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-          }`}
-        >
-          다음
-        </button>
       </div>
     </div>
   );
