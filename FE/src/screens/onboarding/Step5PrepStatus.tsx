@@ -125,7 +125,10 @@ export default function Step5PrepStatus() {
         experiences: form.experiences,
         certifications: form.certifications,
       });
-      navigate("/main");
+      navigate("/onboarding/complete", {
+        replace: true,
+        state: { targetPeriod: form.targetPeriod },
+      });
     } catch (e) {
       console.error(e);
       alert("온보딩 완료 저장에 실패했어요. 입력값을 다시 확인해주세요.");
