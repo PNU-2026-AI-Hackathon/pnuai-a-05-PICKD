@@ -218,7 +218,7 @@ export default function Step5PrepStatus() {
             <label className="mb-3 block text-sm font-bold text-gray-800">
               경험 <span className="font-normal text-gray-400">(선택)</span>
             </label>
-            <div className="rounded-xl border border-gray-200 p-4">
+            <div className="rounded-xl border border-gray-200 p-4 bg-gray-50">
               <div className="mb-3 grid grid-cols-2 gap-3">
                 <select
                   value={exp.type}
@@ -291,7 +291,7 @@ export default function Step5PrepStatus() {
             <label className="mb-3 block text-sm font-bold text-gray-800">
               자격증 / 어학 <span className="font-normal text-gray-400">(선택)</span>
             </label>
-            <div className="rounded-xl border border-gray-200 p-4">
+            <div className="rounded-xl border border-gray-200 p-4 bg-gray-50">
               <div className="mb-3 grid grid-cols-2 gap-3">
                 <input
                   placeholder="이름 (예: 정보처리기사, TOEIC)"
