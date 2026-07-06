@@ -16,7 +16,6 @@ export default function RightTab({
   const [selectedEvents, setSelectedEvents] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [weeklyEvents, setWeeklyEvents] = useState<any[]>([]);
-  const navigate = useNavigate();
 
   return (
     <div className="w-[95%] bg-[F8FAFC]">
