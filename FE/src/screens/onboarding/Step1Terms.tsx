@@ -87,9 +87,9 @@ export default function Step1Terms() {
           <button
             type="button"
             onClick={handleAll}
-            className={`mb-5 flex w-full items-center gap-3 rounded-xl px-5 py-4 text-left transition-colors ${
-              allChecked ? "bg-[#EEF0FD]" : "bg-[#F3F4F8]"
-            }`}
+            className={`mb-5 flex w-full items-center gap-3 border ${
+              allChecked ? "border-[#2563EB] bg-[#EEF0FD]" : "border-gray-300 bg-[#F3F4F8]"
+            } rounded-xl px-5 py-4 text-left transition-colors`}
           >
             <Checkbox checked={allChecked} onChange={handleAll} />
             <span className="font-semibold text-gray-800 text-sm">전체 동의할게요</span>
