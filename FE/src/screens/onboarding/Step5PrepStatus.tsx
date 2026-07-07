@@ -138,7 +138,7 @@ export default function Step5PrepStatus() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA]">
+    <div className="min-h-screen bg-[#F9FAFC]">
       {/* Top-left logo */}
       <div className="flex items-center gap-2 px-40 py-5">
         <PickdLogoIcon size={28} />

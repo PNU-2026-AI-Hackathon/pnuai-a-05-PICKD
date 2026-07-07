@@ -79,7 +79,7 @@ export default function LoginScreen() {
   }, [navigate]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[#F5F6FA] px-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[#F9FAFC] px-4">
       {/* Logo */}
       <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-[#E8EAFB]">
         <PickdLogoIcon size={48} />

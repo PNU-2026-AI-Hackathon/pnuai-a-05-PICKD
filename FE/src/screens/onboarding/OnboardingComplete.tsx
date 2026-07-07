@@ -29,7 +29,7 @@ export default function OnboardingComplete() {
   ].filter(Boolean) as { icon: string; label: string }[];
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA]">
+    <div className="min-h-screen bg-[#F9FAFC]">
       <div className="flex items-center gap-2 px-40 py-5">
         <PickdLogoIcon size={28} />
         <span className="text-base font-bold text-gray-900">Pickd</span>
