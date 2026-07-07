@@ -90,7 +90,7 @@ export default function Step3Education() {
             <div>
               <label className="mb-2 block text-sm font-bold text-gray-800">학교</label>
               <input
-                placeholder="학교명 검색"
+                placeholder="학교명"
                 value={form.schoolName}
                 onChange={(e) => setForm((prev) => ({ ...prev, schoolName: e.target.value }))}
                 className={inputClass}
@@ -99,7 +99,7 @@ export default function Step3Education() {
             <div>
               <label className="mb-2 block text-sm font-bold text-gray-800">전공</label>
               <input
-                placeholder="전공 검색"
+                placeholder="전공"
                 value={form.department}
                 onChange={(e) => setForm((prev) => ({ ...prev, department: e.target.value }))}
                 className={inputClass}
@@ -150,18 +150,16 @@ export default function Step3Education() {
           {/* 학적 상태 */}
           <div className="mb-6">
             <label className="mb-2 block text-sm font-bold text-gray-800">학적 상태</label>
-            <div className="flex w-full overflow-hidden rounded-xl">
-              {STATUS_OPTIONS.map((o, i) => (
+            <div className="flex w-full rounded-xl bg-gray-100 p-1">
+              {STATUS_OPTIONS.map((o) => (
                 <button
                   key={o.value}
                   type="button"
                   onClick={() => setForm((prev) => ({ ...prev, enrollmentStatus: o.value }))}
-                  className={`flex-1 py-3 text-sm font-medium transition-colors ${
-                    i !== 0 ? "" : ""
-                  } ${
+                  className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-colors ${
                     form.enrollmentStatus === o.value
-                      ? "bg-[#2563EB] text-white"
-                      : "bg-gray-100 text-gray-500 hover:bg-gray-50"
+                      ? "bg-white font-bold text-gray-900 shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
                   }`}
                 >
                   {o.label}

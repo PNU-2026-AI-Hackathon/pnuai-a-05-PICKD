@@ -98,20 +98,26 @@ export default function Step1Terms() {
           {/* 개별 항목 */}
           <div className="space-y-4 px-1">
             {TERMS.map((t) => (
-              <button
-                key={t.key}
-                type="button"
-                onClick={() => handleChange(t.key)}
-                className="flex w-full items-center gap-3 text-left"
-              >
-                <Checkbox checked={form[t.key]} onChange={() => handleChange(t.key)} />
-                <span className="text-sm text-gray-700">
-                  <span className={`mr-3 font-semibold ${t.required ? "text-[#2563EB]" : "text-gray-400"}`}>
-                    {t.required ? "[필수]" : "[선택]"}
+              <div key={t.key}>
+                <button
+                  type="button"
+                  onClick={() => handleChange(t.key)}
+                  className="flex w-full items-center gap-3 text-left"
+                >
+                  <Checkbox checked={form[t.key]} onChange={() => handleChange(t.key)} />
+                  <span className="text-sm text-gray-700">
+                    <span className={`mr-3 font-semibold ${t.required ? "text-[#2563EB]" : "text-gray-400"}`}>
+                      {t.required ? "[필수]" : "[선택]"}
+                    </span>
+                    {t.label}
                   </span>
-                  {t.label}
-                </span>
-              </button>
+                </button>
+                {t.key === "pushAgreed" && form.pushAgreed && (
+                  <p className="ml-14 mt-3 rounded-lg bg-gray-50 px-4 py-3 text-xs text-gray-500">
+                    관심 직무의 새 공고, 마감 임박 알림, 채용 설명회 소식을 보내드려요. 언제든 끌 수 있어요.
+                  </p>
+                )}
+              </div>
             ))}
           </div>
 
