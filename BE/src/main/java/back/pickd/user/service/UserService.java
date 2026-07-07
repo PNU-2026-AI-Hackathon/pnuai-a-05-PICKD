@@ -49,6 +49,18 @@ public class UserService {
     }
 
     @Transactional
+    public void updateRefreshToken(String email, String refreshToken) {
+        User user = findByEmail(email);
+        user.updateRefreshToken(refreshToken);
+    }
+
+    @Transactional
+    public void clearRefreshToken(String email) {
+        User user = findByEmail(email);
+        user.clearRefreshToken();
+    }
+
+    @Transactional
     public UserProfileDto updateProfile(String email, UserProfileUpdateRequest request) {
         User user = findByEmail(email);
 

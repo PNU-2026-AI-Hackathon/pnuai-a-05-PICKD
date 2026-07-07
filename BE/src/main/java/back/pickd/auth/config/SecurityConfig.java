@@ -1,9 +1,9 @@
 package back.pickd.auth.config;
 
+import back.pickd.auth.cookie.AuthCookieManager;
 import back.pickd.auth.jwt.JwtTokenProvider;
 import back.pickd.auth.oauth.OAuth2SuccessHandler;
 import back.pickd.auth.security.JwtAuthFilter;
-import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,6 +30,7 @@ public class SecurityConfig {
     private final JwtTokenProvider jwtTokenProvider;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final OAuth2AuthorizedClientRepository authorizedClientRepository;
+    private final AuthCookieManager authCookieManager;
 
     @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:5173}")
     private String allowedOrigins;
@@ -103,13 +104,10 @@ public class SecurityConfig {
                 .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
                 .logoutSuccessUrl("/")
                 .addLogoutHandler((request, response, authentication) -> {
-                    Cookie cookie = new Cookie("accessToken", null);
-                    cookie.setPath("/");
-                    cookie.setMaxAge(0);
-                    response.addCookie(cookie);
+                    authCookieManager.clearAuthCookies(response);
                 })
                 .invalidateHttpSession(true)
-                .deleteCookies("accessToken", "JSESSIONID")
+                .deleteCookies("accessToken", "refreshToken", "JSESSIONID")
             );
 
         return http.build();

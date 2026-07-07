@@ -1,8 +1,8 @@
 package back.pickd.auth.oauth;
 
+import back.pickd.auth.cookie.AuthCookieManager;
 import back.pickd.auth.jwt.JwtTokenProvider;
 import back.pickd.user.service.UserService;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +25,7 @@ import java.util.Map;
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final AuthCookieManager authCookieManager;
     private final OAuth2AuthorizedClientService authorizedClientService;
     private final UserService userService;
 
@@ -44,9 +45,12 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                     (String) attributes.get("picture")
             );
 
-            // JWT 발급 및 쿠키 설정 (핵심 로그인 흐름 — 먼저 처리)
-            String token = jwtTokenProvider.createToken(email, authentication.getAuthorities());
-            setTokenCookie(response, token);
+            // JWT 발급 및 쿠키 설정 (핵심 로그인 흐름 - 먼저 처리)
+            String accessToken = jwtTokenProvider.createAccessToken(email, authentication.getAuthorities());
+            String refreshToken = jwtTokenProvider.createRefreshToken(email);
+            userService.updateRefreshToken(email, refreshToken);
+            authCookieManager.addAccessToken(response, accessToken, jwtTokenProvider.getAccessExpirationMs());
+            authCookieManager.addRefreshToken(response, refreshToken, jwtTokenProvider.getRefreshExpirationMs());
 
             // Google Calendar/Drive 클라이언트 저장 (실패해도 로그인은 정상 처리)
             try {
@@ -65,13 +69,5 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
             response.sendRedirect("http://localhost:5173/onboarding");
         }
-    }
-
-    private void setTokenCookie(HttpServletResponse response, String token) {
-        Cookie cookie = new Cookie("accessToken", token);
-        cookie.setHttpOnly(true);
-        cookie.setPath("/");
-        cookie.setMaxAge(86400);
-        response.addCookie(cookie);
     }
 }

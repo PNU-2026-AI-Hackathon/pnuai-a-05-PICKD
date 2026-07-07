@@ -26,7 +26,7 @@ public class OpenApiConfig {
                                         .type(SecurityScheme.Type.APIKEY)
                                         .in(SecurityScheme.In.COOKIE)
                                         .name("accessToken")
-                                        .description("로그인 후 발급되는 JWT accessToken 쿠키")
+                                        .description("로그인 후 Set-Cookie로 발급되는 JWT accessToken 쿠키입니다. 만료 시 POST /api/auth/reissue를 호출하면 refreshToken 쿠키로 새 accessToken이 발급됩니다.")
                         ));
     }
 }
