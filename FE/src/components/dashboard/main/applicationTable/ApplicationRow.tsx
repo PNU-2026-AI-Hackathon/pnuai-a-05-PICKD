@@ -1,17 +1,16 @@
 import { Star } from "lucide-react";
-import { createPortal } from "react-dom";
 import ApplicationMenu from "../ApplicationMenu";
-import { useEffect, useRef, useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { getPositionColor } from "../../../../utils/application";
-import { getDDay, formatApplicationDate } from "../../../../utils/date";
-import { getStatusStyle, getNextStep } from "../../../../utils/status";
+import {
+  formatApplicationDate,
+  getDDay,
+  toBackendLocalDateTime,
+  toDateInputValue,
+} from "../../../../utils/date";
+import { getStatusStyle } from "../../../../utils/status";
 import { getRelativeTime } from "../../../../utils/document";
 import { useApplication } from "../../../../context/ApplicationContext";
-import {
-  APPLICATION_STATUSES,
-  type ApplicationStatus,
-} from "../../../../types/application";
-import { useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 
 interface Props {
@@ -26,10 +25,13 @@ interface Props {
   deleteApplications: any;
   addDocument: any;
   setCheckedIds: any;
-  visibleColumns: any;
+  tableColumns: readonly (readonly [string, string])[];
   setIsDetailModalOpen: any;
   widths: Record<string, number>;
 }
+
+const getEmploymentType = (row: any) =>
+  row.employmentType || row.employType || row.careerType || row.jobType || "-";
 
 export default function ApplicationRow({
   row,
@@ -43,11 +45,10 @@ export default function ApplicationRow({
   deleteApplications,
   addDocument,
   setCheckedIds,
-  visibleColumns,
+  tableColumns,
   setIsDetailModalOpen,
   widths,
 }: Props) {
-  const navigate = useNavigate();
   const { updateApplication } = useApplication();
   const isChecked = checkedIds.includes(row.id);
   const totalCount = row.todos?.length || 0;
@@ -77,30 +78,15 @@ export default function ApplicationRow({
         totalCount ??
         0,
     ) || 0;
-  const [statusOpen, setStatusOpen] = useState(false);
-  const statusRef = useRef<HTMLDivElement | null>(null);
-  const statusButtonRef = useRef<HTMLButtonElement | null>(null);
-  const [statusPosition, setStatusPosition] = useState({
-    top: 0,
-    left: 0,
-  });
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
-  const statuses: ApplicationStatus[] = [...APPLICATION_STATUSES];
+  const [isEditingDeadline, setIsEditingDeadline] = useState(false);
+  const [deadlineValue, setDeadlineValue] = useState(
+    toDateInputValue(row.deadlineDate),
+  );
 
-  const getCurrentDeadlineDate = (row: any) => {
-    switch (row.status) {
-      case "면접전형":
-        return row.interviewDate || row.deadlineDate;
-      case "전형완료":
-        return row.interviewDate || row.deadlineDate || row.applyDate;
-      default:
-        return row.deadlineDate || row.applyDate || row.interviewDate;
-    }
-  };
-
-  const currentDeadlineDate = getCurrentDeadlineDate(row);
-  const currentDday = getDDay(currentDeadlineDate);
+  const status = row.status ?? "작성 중";
+  const finalResult = row.finalResult ?? null;
+  const currentDday = getDDay(row.deadlineDate);
 
   const cellStyle = (key: string) => ({
     width: widths[key] ?? 120,
@@ -108,53 +94,281 @@ export default function ApplicationRow({
     maxWidth: widths[key] ?? 120,
   });
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as Node;
-      const clickedDropdown = dropdownRef.current?.contains(target);
-      const clickedButton = statusButtonRef.current?.contains(target);
+  const openStatusModal = (event?: MouseEvent) => {
+    event?.stopPropagation();
+    setFocusedApplication(row);
+    setIsDetailModalOpen(true);
+  };
 
-      if (!clickedDropdown && !clickedButton) {
-        setStatusOpen(false);
-      }
+  const saveDeadline = async () => {
+    setIsEditingDeadline(false);
+
+    const nextDeadlineDate = toBackendLocalDateTime(deadlineValue) ?? null;
+    const currentDeadlineDate =
+      toBackendLocalDateTime(row.deadlineDate) ?? null;
+    if (nextDeadlineDate === currentDeadlineDate) return;
+
+    const updated = {
+      ...row,
+      deadlineDate: nextDeadlineDate ?? undefined,
     };
 
-    if (statusOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
+    try {
+      await updateApplication(row.id, () => updated);
+      await onChange?.();
+    } catch (error) {
+      console.error("마감일 수정 실패:", error);
+      setDeadlineValue(toDateInputValue(row.deadlineDate));
+      alert("마감일 수정에 실패했습니다.");
     }
+  };
 
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [statusOpen]);
+  const renderTableCell = (key: string) => {
+    switch (key) {
+      case "company":
+        return (
+          <td
+            key={key}
+            className="border-b whitespace-nowrap border-r border-[#F1F5F9] overflow-hidden"
+            style={cellStyle(key)}
+          >
+            <span
+              className="block truncate px-3 text-black font-medium text-sm"
+              title={row.company}
+            >
+              {row.company || "-"}
+            </span>
+          </td>
+        );
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setStatusOpen(false);
-    };
+      case "jobTitle":
+        return (
+          <td
+            key={key}
+            className="px-3 border-b whitespace-nowrap text-sm border-r border-[#F1F5F9] overflow-hidden truncate"
+            style={cellStyle(key)}
+            title={row.jobTitle}
+          >
+            <span className="font-medium text-[#0F172A]">
+              {row.jobTitle || "-"}
+            </span>
+          </td>
+        );
 
-    if (statusOpen) {
-      window.addEventListener("scroll", handleScroll, true);
+      case "position":
+        return (
+          <td
+            key={key}
+            className="border-b whitespace-nowrap text-sm text-center border-r border-[#F1F5F9] overflow-hidden"
+            style={cellStyle(key)}
+          >
+            <span
+              className={`inline-flex items-center justify-center px-2 py-[2px] text-xs font-semibold rounded ${getPositionColor(
+                row.position || "-",
+              )}`}
+              title={row.position}
+            >
+              {row.position || "-"}
+            </span>
+          </td>
+        );
+
+      case "employmentType":
+        return (
+          <td
+            key={key}
+            className="px-3 border-b whitespace-nowrap text-sm text-[#64748B] border-r border-[#F1F5F9] overflow-hidden truncate"
+            style={cellStyle(key)}
+            title={getEmploymentType(row)}
+          >
+            {getEmploymentType(row)}
+          </td>
+        );
+
+      case "status":
+        return (
+          <td
+            key={key}
+            className="border-b border-r border-[#F1F5F9] overflow-hidden"
+            style={cellStyle(key)}
+          >
+            <div className="flex items-center justify-center">
+              <button
+                type="button"
+                onClick={openStatusModal}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold ${getStatusStyle(status)}`}
+                title="지원상태 관리"
+              >
+                <span>{status}</span>
+                {status === "최종 결과" && finalResult && (
+                  <span className="ml-1 rounded bg-white/70 px-1.5 py-0.5 text-[10px]">
+                    {finalResult}
+                  </span>
+                )}
+              </button>
+            </div>
+          </td>
+        );
+
+      case "deadlineDate":
+        return (
+          <td
+            key={key}
+            className="px-3 border-b whitespace-nowrap text-sm text-[#334155] border-r border-[#F1F5F9]"
+            style={cellStyle(key)}
+            onClick={(event) => event.stopPropagation()}
+          >
+            {isEditingDeadline ? (
+              <input
+                type="date"
+                value={deadlineValue}
+                autoFocus
+                onChange={(event) => setDeadlineValue(event.target.value)}
+                onBlur={saveDeadline}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.currentTarget.blur();
+                  }
+                  if (event.key === "Escape") {
+                    setDeadlineValue(toDateInputValue(row.deadlineDate));
+                    setIsEditingDeadline(false);
+                  }
+                }}
+                className="w-full rounded-md border border-[#CBD5E1] px-2 py-1 text-sm outline-none focus:border-[#2563EB]"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setDeadlineValue(toDateInputValue(row.deadlineDate));
+                  setIsEditingDeadline(true);
+                }}
+                className="rounded px-1 py-1 hover:bg-[#F1F5F9] hover:text-[#2563EB]"
+                title="마감일 수정"
+              >
+                {formatApplicationDate(row.deadlineDate)}
+              </button>
+            )}
+          </td>
+        );
+
+      case "dday":
+        return (
+          <td
+            key={key}
+            className={`px-3 border-b whitespace-nowrap text-sm font-semibold border-r border-[#F1F5F9] ${
+              currentDday === "-"
+                ? "text-[#64748B]"
+                : currentDday.startsWith("D+")
+                  ? "text-[#94A3B8]"
+                  : currentDday === "D-Day" ||
+                      (currentDday.startsWith("D-") &&
+                        parseInt(currentDday.replace("D-", "")) <= 7)
+                    ? "text-[#EF4444]"
+                    : "text-[#64748B]"
+            }`}
+            style={cellStyle(key)}
+          >
+            {currentDday}
+          </td>
+        );
+
+      case "checklistInComplete":
+        return (
+          <td
+            key={key}
+            className="px-3 border-b whitespace-nowrap border-r border-[#F1F5F9] overflow-hidden"
+            style={cellStyle(key)}
+            onClick={openStatusModal}
+          >
+            <button
+              type="button"
+              className="flex h-full w-full items-center justify-center gap-3 text-[13px] text-[#475569]"
+              title="지원상태 관리"
+            >
+              {scheduleCount > 0 && (
+                <span className="flex items-center gap-1">
+                  <Icon
+                    icon="lucide:calendar-days"
+                    className="h-4 w-4 text-[#94A3B8]"
+                  />
+                  <span>{scheduleCount}</span>
+                </span>
+              )}
+
+              {todoCount > 0 && (
+                <span className="flex items-center gap-1">
+                  <Icon
+                    icon="lucide:square-check"
+                    className="h-4 w-4 text-[#94A3B8]"
+                  />
+                  <span>{todoCount}</span>
+                </span>
+              )}
+
+              {scheduleCount === 0 && todoCount === 0 && (
+                <span className="text-[#CBD5E1]">-</span>
+              )}
+            </button>
+          </td>
+        );
+
+      case "industry":
+        return (
+          <td
+            key={key}
+            className="px-3 border-b whitespace-nowrap text-sm font-semibold border-r border-[#F1F5F9] overflow-hidden truncate"
+            style={cellStyle(key)}
+            title={row.industry}
+          >
+            {row.industry || "-"}
+          </td>
+        );
+
+      case "recentUpdated":
+        return (
+          <td
+            key={key}
+            className="px-3 border-b whitespace-nowrap text-sm text-[#64748B] border-r border-[#F1F5F9]"
+            style={cellStyle(key)}
+          >
+            {row.updatedAt
+              ? getRelativeTime(row.updatedAt)
+              : row.documents?.[0]?.updatedAt
+                ? getRelativeTime(row.documents[0].updatedAt)
+                : "-"}
+          </td>
+        );
+
+      case "createdAt":
+        return (
+          <td
+            key={key}
+            className="px-3 border-b whitespace-nowrap text-sm text-[#64748B] border-r border-[#F1F5F9]"
+            style={cellStyle(key)}
+          >
+            {formatApplicationDate(row.createdAt)}
+          </td>
+        );
+
+      default:
+        return (
+          <td
+            key={key}
+            className="px-3 border-b whitespace-nowrap text-sm text-[#64748B] border-r border-[#F1F5F9]"
+            style={cellStyle(key)}
+          >
+            -
+          </td>
+        );
     }
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll, true);
-    };
-  }, [statusOpen]);
+  };
 
   return (
     <tr
-      onClick={() => {
-        setFocusedApplication(row);
-      }}
-      onDoubleClick={() => {
-        setFocusedApplication(row);
-        setIsDetailModalOpen(true);
-      }}
-      className={`
-        cursor-pointer hover:bg-[#F8FAFC]
-        ${focusedApplication?.id === row.id ? "bg-[#F8FAFC]" : ""}
-      `}
+      className={`hover:bg-[#F8FAFC] ${
+        focusedApplication?.id === row.id ? "bg-[#F8FAFC]" : ""
+      }`}
     >
       <td className="w-[48px] min-w-[48px] max-w-[48px] border-b text-sm border-r border-[#F1F5F9]">
         <label
@@ -195,6 +409,7 @@ export default function ApplicationRow({
             await onChange?.();
           }}
           className="flex h-[48px] w-full items-center justify-center"
+          title="관심 공고"
         >
           <Star
             size={18}
@@ -205,249 +420,8 @@ export default function ApplicationRow({
         </button>
       </td>
 
-      <td
-        className="border-b whitespace-nowrap border-r border-[#F1F5F9] overflow-hidden"
-        style={cellStyle("company")}
-      >
-        <span
-          className="px-3 text-black font-medium text-sm"
-          title={row.company}
-        >
-          {row.company}
-        </span>
-      </td>
-      <td
-        className="px-3 border-b whitespace-nowrap text-sm border-r border-[#F1F5F9] overflow-hidden truncate"
-        style={cellStyle("jobTitle")}
-      >
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/applications/${row.id}`, {
-              state: { application: row },
-            });
-          }}
-          className="max-w-full truncate text-left font-medium text-[#0F172A] hover:text-[#2563EB] hover:underline"
-          title={row.jobTitle}
-        >
-          {row.jobTitle}
-        </button>
-      </td>
-      {visibleColumns.includes("position") && (
-        <td
-          className="border-b whitespace-nowrap text-sm text-center border-r border-[#F1F5F9] overflow-hidden"
-          style={cellStyle("position")}
-        >
-          <span
-            className={`inline-flex items-center justify-center px-2 py-[2px] text-xs font-semibold rounded ${getPositionColor(
-              row.position,
-            )}`}
-          >
-            {row.position || "-"}
-          </span>
-        </td>
-      )}
-      {visibleColumns.includes("industry") && (
-        <td
-          className="border-b whitespace-nowrap text-sm font-semibold border-r border-[#F1F5F9] overflow-hidden"
-          style={cellStyle("industry")}
-        >
-          {row.industry || "-"}
-        </td>
-      )}
-      {visibleColumns.includes("status") && (
-        <td
-          className="border-b border-r border-[#F1F5F9] relative overflow-hidden"
-          style={cellStyle("status")}
-        >
-          <div
-            ref={statusRef}
-            className="flex items-center justify-center relative"
-          >
-            <button
-              ref={statusButtonRef}
-              onClick={(e) => {
-                e.stopPropagation();
-                const rect = statusButtonRef.current?.getBoundingClientRect();
-                if (rect) {
-                  setStatusPosition({
-                    top: rect.bottom + 8,
-                    left: rect.left,
-                  });
-                }
-                setStatusOpen((prev) => !prev);
-              }}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold  ${getStatusStyle(row.status)}`}
-            >
-              <span>{row.status}</span>
-              {row.status === "전형완료" && row.finalResult && (
-                <span className="ml-1 rounded bg-white/70 px-1.5 py-0.5 text-[10px]">
-                  {row.finalResult}
-                </span>
-              )}
-              <svg
-                className="w-3 h-3"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-            {statusOpen &&
-              createPortal(
-                <div
-                  ref={dropdownRef}
-                  className="fixed z-[9999]"
-                  style={{
-                    top: statusPosition.top,
-                    left: statusPosition.left,
-                  }}
-                >
-                  <div className="absolute -top-[7px] left-6 w-4 h-4 bg-white border-l border-t border-[#E2E8F0] rotate-45 pointer-events-none z-10" />
-                  <div className="relative z-20 bg-white border border-[#E2E8F0] rounded-2xl shadow-xl p-1 min-w-[100px]">
-                    {statuses.map((status) => (
-                      <div
-                        key={status}
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          const updated = {
-                            ...row,
-                            status,
-                          };
-                          await updateApplication(row.id, () => updated);
-                          await onChange?.();
-                          setStatusOpen(false);
-                        }}
-                        className={`px-2 py-2 text-sm font-medium rounded-lg cursor-pointer  whitespace-nowrap text-center transition-colors
-                        ${
-                          row.status === status
-                            ? "bg-[#2563EB] text-white"
-                            : "text-[#334155] hover:bg-gray-100"
-                        }
-                        `}
-                      >
-                        {status}
-                      </div>
-                    ))}
-                  </div>
-                </div>,
-                document.body,
-              )}
-          </div>
-        </td>
-      )}
-      {visibleColumns.includes("nextStep") && (
-        <td
-          className="px-4 py-2 border-b whitespace-nowrap text-sm text-[#64748B] border-r border-[#F1F5F9]"
-          style={cellStyle("nextStep")}
-        >
-          {getNextStep(row.status)}
-        </td>
-      )}
-      {visibleColumns.includes("deadlineDate") && (
-        <td
-          className="px-3 border-b whitespace-nowrap text-sm text-[#334155] border-r border-[#F1F5F9]"
-          style={cellStyle("deadlineDate")}
-        >
-          {formatApplicationDate(currentDeadlineDate)}
-        </td>
-      )}
+      {tableColumns.map(([key]) => renderTableCell(key))}
 
-      {visibleColumns.includes("dday") && (
-        <td
-          className={`px-3 border-b whitespace-nowrap text-sm font-semibold border-r border-[#F1F5F9] ${
-            currentDday === "-"
-              ? "text-[#64748B]"
-              : currentDday.startsWith("D+")
-                ? "text-[#94A3B8]"
-                : currentDday === "D-Day" ||
-                    (currentDday.startsWith("D-") &&
-                      parseInt(currentDday.replace("D-", "")) <= 7)
-                  ? "text-[#EF4444]"
-                  : "text-[#64748B]"
-          }`}
-          style={cellStyle("dday")}
-        >
-          {currentDday}
-        </td>
-      )}
-      {visibleColumns.includes("documents") && (
-        <td
-          className="px-3 border-b border-r border-[#F1F5F9] overflow-hidden"
-          style={cellStyle("documents")}
-        >
-          {row.documents?.length ? (
-            <div className="flex flex-col gap-1">
-              {row.documents.slice(0, 2).map((doc: any) => (
-                <div key={doc.id} className="truncate text-[13px]">
-                  <span className="text-[#334155] text-sm">{doc.type}</span>
-                  <span className="text-[#94A3B8] mx-1">·</span>
-                  <span className="text-[#94A3B8]">{doc.status || "—"}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            "-"
-          )}
-        </td>
-      )}
-      {visibleColumns.includes("checklistInComplete") && (
-        <td
-          className="px-3 border-b whitespace-nowrap border-r border-[#F1F5F9] overflow-hidden"
-          style={cellStyle("checklistInComplete")}
-        >
-          <div className="flex h-full items-center justify-center gap-3 text-[13px] text-[#475569]">
-            {scheduleCount > 0 && (
-              <div className="flex items-center gap-1">
-                <Icon
-                  icon="lucide:calendar-days"
-                  className="h-4 w-4 text-[#94A3B8]"
-                />
-                <span>{scheduleCount}</span>
-              </div>
-            )}
-
-            {todoCount > 0 && (
-              <div className="flex items-center gap-1">
-                <Icon
-                  icon="lucide:square-check"
-                  className="h-4 w-4 text-[#94A3B8]"
-                />
-                <span>{todoCount}</span>
-              </div>
-            )}
-
-            {scheduleCount === 0 && todoCount === 0 && (
-              <span className="text-[#CBD5E1]">-</span>
-            )}
-          </div>
-        </td>
-      )}
-      {visibleColumns.includes("recentUpdated") && (
-        <td
-          className="border-b whitespace-nowrap text-sm text-[#64748B] border-r border-[#F1F5F9]"
-          style={cellStyle("recentUpdated")}
-        >
-          {row.documents?.[0]?.updatedAt
-            ? getRelativeTime(row.documents[0].updatedAt)
-            : "-"}
-        </td>
-      )}
-      {visibleColumns.includes("memo") && (
-        <td
-          className="px-3 border-b text-sm text-[#64748B] truncate border-r border-[#F1F5F9] overflow-hidden"
-          style={cellStyle("memo")}
-        >
-          {row.memo || "-"}
-        </td>
-      )}
       <td
         className="w-[56px] min-w-[56px] max-w-[56px] border-b border-[#F1F5F9] sticky right-0 bg-white z-10"
         onClick={(e) => e.stopPropagation()}

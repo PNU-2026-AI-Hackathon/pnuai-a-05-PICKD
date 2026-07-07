@@ -8,9 +8,9 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum ApplicationFinalResult {
-    PASSED("최종합격"),
+    PASSED("합격"),
     REJECTED("불합격"),
-    ON_HOLD("보류");
+    WITHDRAWN("포기");
 
     @JsonValue
     private final String label;
