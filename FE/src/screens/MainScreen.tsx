@@ -11,6 +11,7 @@ import ApplicationTable from "../components/dashboard/main/applicationTable/Appl
 import CompletedSection from "../components/dashboard/main/CompleteSection";
 import { Icon } from "@iconify/react";
 import { getCalendarEvents } from "../api/calendar";
+import { getUserProfile } from "../api/user";
 
 export default function MainScreen() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -60,15 +61,19 @@ export default function MainScreen() {
   );
 
   useEffect(() => {
-    fetch("/api/user", {
-      credentials: "include",
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error();
-        return res.json();
+    let ignore = false;
+
+    getUserProfile()
+      .then((data) => {
+        if (!ignore) setUser(data);
       })
-      .then((data) => setUser(data))
-      .catch(() => setUser(null));
+      .catch(() => {
+        if (!ignore) setUser(null);
+      });
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const loadCalendarEvents = async () => {

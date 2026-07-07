@@ -106,7 +106,7 @@ export const useSidePanelData = () => {
         let step = "일반 일정";
 
         if (summary.includes("면접")) {
-          step = "면접전형";
+          step = "면접 전형";
         } else if (summary.includes("마감")) {
           step = "지원 마감";
         } else if (summary.includes("제출")) {

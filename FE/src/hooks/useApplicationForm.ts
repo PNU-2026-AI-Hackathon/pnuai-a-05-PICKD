@@ -17,7 +17,7 @@ export const useApplicationForm = (initialData?: any) => {
     jobTitle: initialData?.jobTitle || "",
     position: initialData?.position || "",
     industry: initialData?.industry || "",
-    status: initialData?.status || "작성중",
+    status: initialData?.status ?? "작성 중",
     finalResult: initialData?.finalResult ?? null,
     applyDate: toDateInputValue(initialData?.applyDate),
     interviewDate: toDateInputValue(initialData?.interviewDate),

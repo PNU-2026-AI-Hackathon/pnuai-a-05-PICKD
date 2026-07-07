@@ -18,5 +18,12 @@ export interface DocumentItem {
     deadlineDate?: string;
     company?: string;
     jobTitle?: string;
+    position?: string;
+    employmentType?: string;
+    employType?: string;
+    careerType?: string;
+    jobType?: string;
+    status?: string;
+    important?: boolean;
   };
 }

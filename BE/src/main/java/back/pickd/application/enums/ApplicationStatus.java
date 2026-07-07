@@ -8,12 +8,11 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum ApplicationStatus {
-    WRITING("작성중"),
-    SUBMITTED("지원완료"),
-    DOCUMENT("서류전형"),
-    WRITTEN_TEST("필기전형"),
-    INTERVIEW("면접전형"),
-    COMPLETED("전형완료");
+    WRITING("작성 중"),
+    SUBMITTED("결과 대기"),
+    WRITTEN_TEST("필기 전형"),
+    INTERVIEW("면접 전형"),
+    COMPLETED("최종 결과");
 
     @JsonValue
     private final String label;
@@ -24,8 +23,9 @@ public enum ApplicationStatus {
             return WRITING;
         }
 
+        String trimmed = value.trim();
         for (ApplicationStatus status : values()) {
-            if (status.name().equals(value) || status.label.equals(value)) {
+            if (status.name().equals(trimmed) || status.label.equals(trimmed)) {
                 return status;
             }
         }
@@ -42,6 +42,6 @@ public enum ApplicationStatus {
     }
 
     public boolean needsDeadlineEvent() {
-        return this != COMPLETED;
+        return true;
     }
 }

@@ -1,13 +1,24 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@iconify/react";
 import DocumentCard from "./DocumentCard";
 import DocumentList from "./DocumentList";
 import type { DocumentItem } from "../../../../types/document";
 import { updateDocument } from "../../../../api/document";
+import { parseLocalDateTime } from "../../../../utils/date";
 
 interface Props {
   documents?: DocumentItem[];
 }
+
+const isWritingDocument = (document: DocumentItem) => {
+  const documentStatus = String(document.status ?? "").replace(/\s/g, "");
+  return documentStatus === "작성중" && document.application?.status === "작성 중";
+};
+
+const getDeadlineTime = (document: DocumentItem) => {
+  const parsed = parseLocalDateTime(document.application?.deadlineDate);
+  return parsed?.getTime() ?? Number.MAX_SAFE_INTEGER;
+};
 
 export default function DocumentSection({
   documents: initialDocuments = [],
@@ -18,6 +29,19 @@ export default function DocumentSection({
   useEffect(() => {
     setDocuments(initialDocuments);
   }, [initialDocuments]);
+
+  const displayDocuments = useMemo(() => {
+    return documents
+      .filter(isWritingDocument)
+      .sort((a, b) => {
+        const importantDiff =
+          Number(Boolean(b.application?.important)) -
+          Number(Boolean(a.application?.important));
+
+        if (importantDiff !== 0) return importantDiff;
+        return getDeadlineTime(a) - getDeadlineTime(b);
+      });
+  }, [documents]);
 
   const handleStatusChange = async (
     id: number,
@@ -52,7 +76,7 @@ export default function DocumentSection({
       <div className="flex items-center justify-between px-5 pt-2 pb-1.5">
         <div className="flex items-center gap-2">
           <h2 className="text-ms font-[600] text-[#0F172A]">작성중인 서류</h2>
-          <span className="text-sm text-[#94A3B8]">{documents.length}건</span>
+          <span className="text-sm text-[#94A3B8]">{displayDocuments.length}건</span>
         </div>
 
         <div className="flex items-center rounded-lg border border-[#D8E0EA] bg-[#F8FAFC] p-[2px]">
@@ -63,6 +87,7 @@ export default function DocumentSection({
                 ? "bg-white text-[#334155] shadow-sm"
                 : "text-[#64748B] hover:bg-white/70"
             }`}
+            title="카드형"
           >
             <Icon icon="mdi:view-grid-outline" width={16} />
           </button>
@@ -74,29 +99,33 @@ export default function DocumentSection({
                 ? "bg-white text-[#334155] shadow-sm"
                 : "text-[#64748B] hover:bg-white/70"
             }`}
+            title="리스트형"
           >
             <Icon icon="mdi:table-large" width={16} />
           </button>
         </div>
       </div>
       {view === "card" ? (
-        <div className="h-[195px] overflow-y-auto snap-y snap-mandatory px-5 pb-5">
-          <div className="flex flex-wrap gap-4">
-            {documents.map((doc) => (
-              <div key={doc.id} className="snap-start">
+        <div className="max-h-[320px] overflow-y-auto overflow-x-hidden px-5 pb-5">
+          {displayDocuments.length === 0 ? (
+            <div className="flex h-[140px] items-center justify-center text-sm text-[#94A3B8]">
+              작성중인 서류가 없습니다.
+            </div>
+          ) : (
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(270px,1fr))] gap-4">
+              {displayDocuments.map((doc) => (
                 <DocumentCard
+                  key={doc.id}
                   item={doc}
-                  onStatusChange={(status) =>
-                    handleStatusChange(doc.id, status)
-                  }
+                  onStatusChange={(status) => handleStatusChange(doc.id, status)}
                 />
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       ) : (
         <DocumentList
-          documents={documents}
+          documents={displayDocuments}
           onStatusChange={handleStatusChange}
         />
       )}
