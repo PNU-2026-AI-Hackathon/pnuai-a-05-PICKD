@@ -109,7 +109,6 @@ const getDateFieldScheduleCount = (application: Application, events: any[]) => {
 
 export default function ApplicationTable({
   onEdit,
-  onCompanyClick,
   onChange,
   onDelete,
   focusedApplication,
@@ -146,6 +145,10 @@ export default function ApplicationTable({
     Record<string, Partial<Application>>
   >({});
 
+  useEffect(() => {
+    setApplicationOverrides({});
+  }, [applications]);
+
   const mergedApplications = applications.map((application) => {
     const mergedApplication = {
       ...application,
@@ -164,6 +167,7 @@ export default function ApplicationTable({
         getDateFieldScheduleCount(mergedApplication, linkedCalendarEvents),
     };
   });
+
 
   const [columnOrder, setColumnOrder] = useState<string[]>(() => {
     try {
@@ -757,7 +761,6 @@ export default function ApplicationTable({
                       widths={widths}
                       checkedIds={checkedIds}
                       toggleCheck={toggleCheck}
-                      onCompanyClick={onCompanyClick}
                       setFocusedApplication={setFocusedApplication}
                       focusedApplication={focusedApplication}
                       onEdit={onEdit}

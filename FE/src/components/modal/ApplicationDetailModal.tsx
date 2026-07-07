@@ -80,10 +80,10 @@ export default function ApplicationDetailModal({
 
                   <div>
                     <h1 className="text-[25px] font-bold leading-none text-[#0F172A]">
-                      {application.company}
+                      {currentApplication.company}
                     </h1>
                     <p className="mt-1 text-[14px] text-[#64748B]">
-                      {application.jobTitle} · {application.position}
+                      {currentApplication.jobTitle} · {currentApplication.position}
                     </p>
                   </div>
                 </div>

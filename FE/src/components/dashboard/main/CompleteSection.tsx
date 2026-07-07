@@ -3,7 +3,6 @@ import { Icon } from "@iconify/react";
 
 interface CompletedSectionProps {
   applications?: any[];
-  onCompanyClick?: (application: any) => void;
 }
 
 const COMPLETED_STATUSES = new Set(["전형완료"]);
@@ -90,7 +89,6 @@ function getRegistrationLabel(app: any) {
 
 export default function CompletedSection({
   applications = [],
-  onCompanyClick = () => {},
 }: CompletedSectionProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [viewMode, setViewMode] = useState<"file" | "grid">("file");
@@ -167,10 +165,8 @@ export default function CompletedSection({
                   app.deadlineDate;
 
                 return (
-                  <button
+                  <div
                     key={app.id}
-                    type="button"
-                    onClick={() => onCompanyClick(app)}
                     className="group flex w-[96px] flex-col items-center text-center"
                   >
                     <Icon
@@ -185,7 +181,7 @@ export default function CompletedSection({
                     <span className="max-w-[88px] truncate text-sm font-medium leading-5 text-[#64748B]">
                       {companyName}
                     </span>
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -200,11 +196,9 @@ export default function CompletedSection({
                 const resultLabel = getResultLabel(app);
 
                 return (
-                  <button
+                  <div
                     key={app.id}
-                    type="button"
-                    onClick={() => onCompanyClick(app)}
-                    className="relative min-h-[144px] w-full max-w-[568px] rounded-xl border border-[#D8E0EA] bg-[#F8FAFC] p-4 text-left transition hover:border-[#CBD5E1] hover:bg-[#F1F5F9]"
+                    className="relative min-h-[144px] w-full max-w-[568px] rounded-xl border border-[#D8E0EA] bg-[#F8FAFC] p-4 text-left"
                   >
                     <div className="absolute right-4 top-4 flex items-center gap-1.5">
                       <span className="rounded-full bg-white px-2.5 py-1 text-xs text-[#64748B]">
@@ -231,7 +225,7 @@ export default function CompletedSection({
                         결과 확인일 {resultDate}
                       </p>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>

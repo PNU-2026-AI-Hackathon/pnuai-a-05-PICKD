@@ -18,7 +18,6 @@ interface Props {
   row: any;
   checkedIds: number[];
   toggleCheck: (id: number) => void;
-  onCompanyClick: any;
   setFocusedApplication: any;
   focusedApplication: any;
   onEdit: any;
@@ -36,7 +35,6 @@ export default function ApplicationRow({
   row,
   checkedIds,
   toggleCheck,
-  onCompanyClick,
   setFocusedApplication,
   focusedApplication,
   onEdit,
@@ -212,11 +210,8 @@ export default function ApplicationRow({
         style={cellStyle("company")}
       >
         <span
-          className="cursor-pointer px-3 text-black font-medium text-sm hover:text-green-600"
-          onClick={(e) => {
-            e.stopPropagation();
-            onCompanyClick(row);
-          }}
+          className="px-3 text-black font-medium text-sm"
+          title={row.company}
         >
           {row.company}
         </span>
@@ -479,6 +474,7 @@ export default function ApplicationRow({
             alert("삭제되었습니다");
           }}
           onAddDocument={addDocument}
+          onChange={onChange}
         />
       </td>
     </tr>

@@ -503,15 +503,15 @@ function buildRawSource(
 
   const sections = notice?.sections ?? [];
   const lines = [
-    `[${notice?.companyName ?? application?.company ?? "기업"}] ${notice?.noticeName ?? application?.jobTitle ?? "채용공고"}`,
+    `[${application?.company ?? notice?.companyName ?? "기업"}] ${application?.jobTitle ?? notice?.noticeName ?? "채용공고"}`,
     "",
     "■ 기본 정보",
-    `기업명: ${notice?.companyName ?? application?.company ?? "-"}`,
-    `공고명: ${notice?.noticeName ?? application?.jobTitle ?? "-"}`,
+    `기업명: ${application?.company ?? notice?.companyName ?? "-"}`,
+    `공고명: ${application?.jobTitle ?? notice?.noticeName ?? "-"}`,
     `직무: ${application?.position ?? sections[0]?.jobTitle ?? "-"}`,
     `산업: ${application?.industry ?? "-"}`,
     `근무지: ${notice?.workplaceAddress ?? sections[0]?.workplace ?? notice?.region1depth ?? "-"}`,
-    `접수 기간: ${notice?.startedAt ?? "-"} ~ ${notice?.endedAt ?? application?.deadlineDate ?? "-"}`,
+    `접수 기간: ${notice?.startedAt ?? "-"} ~ ${application?.deadlineDate ?? notice?.endedAt ?? "-"}`,
     "",
     "■ 모집 부문",
     ...sections.flatMap((section) =>
@@ -557,16 +557,19 @@ function buildJobFromBackend(
   const firstSection = sections[0];
   const essays = mapCoverLettersToEssays(coverLetters);
   const periodStart = notice?.startedAt ? formatDate(notice.startedAt) : "-";
-  const periodEnd = notice?.endedAt
-    ? formatDate(notice.endedAt)
-    : formatDate(application?.deadlineDate);
+  const periodEnd = application?.deadlineDate
+    ? formatDate(application.deadlineDate)
+    : formatDate(notice?.endedAt);
   const sourceUrl =
-    notice?.noticeUrl || application?.sourceUrl || application?.url || "#";
+    application?.sourceUrl || application?.url || notice?.noticeUrl || "#";
 
   return {
-    company: notice?.companyName ?? application?.company ?? "-",
-    division: firstSection?.sectionName ?? labelCategory(notice?.category),
-    title: notice?.noticeName ?? application?.jobTitle ?? "지원 공고 상세",
+    company: application?.company || notice?.companyName || "-",
+    division:
+      application?.industry ||
+      firstSection?.sectionName ||
+      labelCategory(notice?.category),
+    title: application?.jobTitle || notice?.noticeName || "지원 공고 상세",
     role:
       application?.position ||
       firstSection?.jobTitle ||
@@ -581,8 +584,8 @@ function buildJobFromBackend(
     docsInProgress: application?.documents ?? [],
     sourceUrl,
     basic: {
-      기업명: notice?.companyName ?? application?.company ?? "-",
-      공고명: notice?.noticeName ?? application?.jobTitle ?? "-",
+      기업명: application?.company || notice?.companyName || "-",
+      공고명: application?.jobTitle || notice?.noticeName || "-",
       "모집 직무": application?.position || firstSection?.jobTitle || "-",
       산업: application?.industry ?? "-",
       근무지:
@@ -863,6 +866,26 @@ export default function ApplicationJobDetailPage() {
 
   useEffect(() => {
     void loadDetail();
+  }, [applicationId]);
+
+  useEffect(() => {
+    const handleApplicationRefresh = () => {
+      void loadDetail();
+    };
+
+    window.addEventListener("applicationUpdated", handleApplicationRefresh);
+    window.addEventListener("googleCalendarUpdated", handleApplicationRefresh);
+
+    return () => {
+      window.removeEventListener(
+        "applicationUpdated",
+        handleApplicationRefresh,
+      );
+      window.removeEventListener(
+        "googleCalendarUpdated",
+        handleApplicationRefresh,
+      );
+    };
   }, [applicationId]);
 
   useEffect(() => {
