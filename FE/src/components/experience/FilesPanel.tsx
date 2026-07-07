@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, FileText, Folder, Image as ImageIcon, MoreHorizontal, Star, Trash2, Upload, X } from "lucide-react";
-import { uploadProfileImage } from "../../api/user";
+import { uploadFile, getFiles, renameFile as renameFileApi, deleteFile as deleteFileApi } from "../../api/file";
+import type { FileUploadType } from "../../api/file";
 
 type FileKind =
   | "증명사진"
@@ -12,6 +13,28 @@ type FileKind =
   | "수상 증빙"
   | "교육 수료증"
   | "기타 제출서류";
+
+const UPLOAD_TYPE_TO_KIND: Record<FileUploadType, FileKind> = {
+  PROFILE: "증명사진",
+  EDUCATION: "성적증명서",
+  LANGUAGE: "어학 성적표",
+  LICENSE: "자격증 사본",
+  AWARD: "수상 증빙",
+  TEMP_RESUME: "기타 제출서류",
+  GENERAL: "기타 제출서류",
+};
+
+const KIND_TO_UPLOAD_TYPE = {
+  증명사진: "PROFILE",
+  성적증명서: "EDUCATION",
+  졸업증명서: "EDUCATION",
+  재학증명서: "EDUCATION",
+  "어학 성적표": "LANGUAGE",
+  "자격증 사본": "LICENSE",
+  "수상 증빙": "AWARD",
+  "교육 수료증": "GENERAL",
+  "기타 제출서류": "GENERAL",
+} as const;
 
 const FILE_KINDS: FileKind[] = [
   "증명사진",
@@ -33,13 +56,6 @@ type FileItem = {
   url?: string;
 };
 
-const INITIAL_FILES: FileItem[] = [
-  { id: "f0", kind: "증명사진", name: "profile_photo.jpg", fileKind: "image" },
-  { id: "f1", kind: "성적증명서", name: "성적증명서_2025.pdf", fileKind: "pdf" },
-  { id: "f2", kind: "어학 성적표", name: "toeic_score.png", fileKind: "image" },
-];
-
-const LS_FILES = "specs.files.v1";
 const LS_PHOTO_ID = "specs.basicPhoto.id";
 
 function lsGet<T>(key: string, fallback: T): T {
@@ -61,16 +77,29 @@ function lsSet(key: string, value: unknown) {
 
 export default function FilesPanel() {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const [files, setFiles] = useState<FileItem[]>(() => lsGet<FileItem[]>(LS_FILES, INITIAL_FILES));
-  const [basicPhotoId, setBasicPhotoId] = useState<string>(() => lsGet<string>(LS_PHOTO_ID, "f0"));
+  const [files, setFiles] = useState<FileItem[]>([]);
+  const [basicPhotoId, setBasicPhotoId] = useState<string>(() => lsGet<string>(LS_PHOTO_ID, ""));
   const [preview, setPreview] = useState<FileItem | null>(null);
   const [pendingKind, setPendingKind] = useState<FileKind>("기타 제출서류");
   const [menuFileId, setMenuFileId] = useState<string | null>(null);
   const [fileTypePopover, setFileTypePopover] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  useEffect(() => lsSet(LS_FILES, files), [files]);
   useEffect(() => lsSet(LS_PHOTO_ID, basicPhotoId), [basicPhotoId]);
+
+  useEffect(() => {
+    getFiles().then((data) => {
+      setFiles(
+        data.map((item) => ({
+          id: String(item.id),
+          kind: UPLOAD_TYPE_TO_KIND[item.uploadType] ?? "기타 제출서류",
+          name: item.fileName,
+          fileKind: item.contentType.startsWith("image") ? "image" : "pdf",
+          url: item.fileUrl,
+        }))
+      );
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!menuFileId) return;
@@ -123,50 +152,49 @@ export default function FilesPanel() {
     if (!file) return;
     const isImage = file.type.startsWith("image") || /\.(png|jpe?g|gif|webp)$/i.test(file.name);
 
-    if (isImage) {
-      setUploading(true);
-      try {
-        const { profileImageUrl } = await uploadProfileImage(file);
-        setFiles((prev) => [
-          ...prev,
-          {
-            id: `f${Date.now()}`,
-            kind: pendingKind,
-            name: file.name,
-            fileKind: "image",
-            url: profileImageUrl,
-          },
-        ]);
-      } catch {
-        alert("이미지 업로드에 실패했습니다. 다시 시도해주세요.");
-      } finally {
-        setUploading(false);
-      }
-    } else {
+    setUploading(true);
+    try {
+      const uploadType = KIND_TO_UPLOAD_TYPE[pendingKind];
+      const { fileUrl } = await uploadFile(uploadType, file);
       setFiles((prev) => [
         ...prev,
         {
           id: `f${Date.now()}`,
           kind: pendingKind,
           name: file.name,
-          fileKind: "pdf",
+          fileKind: isImage ? "image" : "pdf",
+          url: fileUrl,
         },
       ]);
+    } catch {
+      alert("파일 업로드에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setUploading(false);
     }
   };
 
-  const renameFile = (fileId: string) => {
+  const renameFile = async (fileId: string) => {
     const target = files.find((file) => file.id === fileId);
     if (!target) return;
     const nextName = window.prompt("파일 이름을 입력해주세요.", target.name);
     if (!nextName?.trim()) return;
-    setFiles((prev) => prev.map((file) => (file.id === fileId ? { ...file, name: nextName.trim() } : file)));
+    try {
+      await renameFileApi(Number(fileId), nextName.trim());
+      setFiles((prev) => prev.map((file) => (file.id === fileId ? { ...file, name: nextName.trim() } : file)));
+    } catch {
+      alert("파일 이름 변경에 실패했습니다. 다시 시도해주세요.");
+    }
     setMenuFileId(null);
   };
 
-  const deleteFile = (fileId: string) => {
-    setFiles((prev) => prev.filter((file) => file.id !== fileId));
-    if (preview?.id === fileId) setPreview(null);
+  const deleteFile = async (fileId: string) => {
+    try {
+      await deleteFileApi(Number(fileId));
+      setFiles((prev) => prev.filter((file) => file.id !== fileId));
+      if (preview?.id === fileId) setPreview(null);
+    } catch {
+      alert("파일 삭제에 실패했습니다. 다시 시도해주세요.");
+    }
     setMenuFileId(null);
   };
 
@@ -222,7 +250,7 @@ export default function FilesPanel() {
                   className="flex h-9 w-full items-center gap-2 px-4 text-left text-[13px] font-[600] text-[#334155] hover:bg-[#F8FAFC]"
                 >
                   <ImageIcon size={15} className="text-[#64748B]" />
-                  이미지 (JPG / PNG)
+                  JPG / PNG
                 </button>
                 <button
                   type="button"
@@ -325,11 +353,12 @@ export default function FilesPanel() {
             <div className="flex min-h-[360px] items-center justify-center bg-[#F8FAFC] p-8">
               {preview.fileKind === "image" && preview.url ? (
                 <img src={preview.url} alt={preview.name} className="max-h-[420px] max-w-full rounded-xl object-contain" />
+              ) : preview.fileKind === "pdf" && preview.url ? (
+                <iframe src={preview.url} title={preview.name} className="h-[500px] w-full rounded-xl border-0" />
               ) : (
                 <div className="text-center text-[#64748B]">
                   <FileText className="mx-auto mb-3" size={52} />
-                  <p className="text-sm font-[700]">PDF 미리보기 영역</p>
-                  <p className="mt-1 text-xs">실제 파일 업로드 시 브라우저 미리보기로 확장 가능합니다.</p>
+                  <p className="text-sm font-[700]">미리보기를 불러올 수 없습니다.</p>
                 </div>
               )}
             </div>

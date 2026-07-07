@@ -1,13 +1,8 @@
 import { CalendarDays, CheckSquare, GripVertical, Star } from "lucide-react";
 import { useMemo, useState } from "react";
-import type { Application } from "../../../../types/application";
+import type { Application, ApplicationStatus } from "../../../../types/application";
 
-type BoardViewStatus =
-  | "작성 중"
-  | "결과 대기"
-  | "필기 전형"
-  | "면접 전형"
-  | "최종 결과";
+type BoardViewStatus = ApplicationStatus;
 
 type ApplicationId = Application["id"];
 
@@ -26,14 +21,14 @@ type FlexibleApplication = Application & {
   employType?: string;
   careerType?: string;
   jobType?: string;
-  status?: string;
+  status?: ApplicationStatus;
   deadlineDate?: string;
   dday?: string | number;
   important?: boolean;
   scheduleCount?: number;
   todoCount?: number;
   checklistInComplete?: number;
-  finalResult?: string | null;
+  finalResult?: Application["finalResult"];
 };
 
 const columns: {
@@ -45,41 +40,49 @@ const columns: {
   borderClassName: string;
 }[] = [
   {
-    key: "작성 중",
-    title: "작성 중",
+    key: "작성중",
+    title: "작성중",
     nextStatus: "작성중",
     headerClassName: "bg-slate-50 text-slate-700",
     dotClassName: "bg-slate-400",
     borderClassName: "border-t-slate-300",
   },
   {
-    key: "결과 대기",
-    title: "결과 대기",
+    key: "지원완료",
+    title: "지원완료",
     nextStatus: "지원완료",
     headerClassName: "bg-blue-50 text-blue-700",
     dotClassName: "bg-blue-600",
     borderClassName: "border-t-blue-600",
   },
   {
-    key: "필기 전형",
-    title: "필기 전형",
+    key: "서류전형",
+    title: "서류전형",
+    nextStatus: "서류전형",
+    headerClassName: "bg-indigo-50 text-indigo-700",
+    dotClassName: "bg-indigo-600",
+    borderClassName: "border-t-indigo-600",
+  },
+  {
+    key: "필기전형",
+    title: "필기전형",
     nextStatus: "필기전형",
     headerClassName: "bg-violet-50 text-violet-700",
     dotClassName: "bg-violet-600",
     borderClassName: "border-t-violet-600",
   },
   {
-    key: "면접 전형",
-    title: "면접 전형",
+    key: "면접전형",
+    title: "면접전형",
     nextStatus: "면접전형",
     headerClassName: "bg-amber-50 text-amber-700",
     dotClassName: "bg-amber-500",
     borderClassName: "border-t-amber-500",
   },
   {
-    key: "최종 결과",
-    title: "최종 결과",
-    nextStatus: "최종결과",
+    key: "전형완료",
+    title: "전형완료",
+    nextStatus: "전형완료",
     headerClassName: "bg-emerald-50 text-emerald-700",
     dotClassName: "bg-emerald-600",
     borderClassName: "border-t-emerald-600",
@@ -91,49 +94,6 @@ const cn = (...classNames: Array<string | false | null | undefined>) =>
 
 const compact = (value?: string | null) =>
   String(value ?? "").replace(/\s/g, "");
-
-const normalizeStatus = (status?: string | null): BoardViewStatus => {
-  const value = compact(status);
-
-  if (
-    value === "작성중" ||
-    value === "작성" ||
-    value === "지원예정" ||
-    value === "서류작성"
-  ) {
-    return "작성 중";
-  }
-
-  if (
-    value === "지원완료" ||
-    value === "제출완료" ||
-    value === "결과대기" ||
-    value === "서류제출"
-  ) {
-    return "결과 대기";
-  }
-
-  if (value === "필기전형" || value === "필기") {
-    return "필기 전형";
-  }
-
-  if (value === "면접전형" || value === "면접") {
-    return "면접 전형";
-  }
-
-  if (
-    value === "최종결과" ||
-    value === "최종합격" ||
-    value === "합격" ||
-    value === "불합격" ||
-    value === "탈락" ||
-    value === "포기"
-  ) {
-    return "최종 결과";
-  }
-
-  return "작성 중";
-};
 
 const parseDate = (date?: string) => {
   if (!date) return null;
@@ -215,14 +175,7 @@ const getDday = (application: Application) => {
 };
 
 const getFinalResult = (application: Application) => {
-  const item = application as FlexibleApplication;
-  const value = compact(item.finalResult || item.status);
-
-  if (value.includes("불합격") || value.includes("탈락")) return "불합격";
-  if (value.includes("합격")) return "합격";
-  if (value.includes("포기")) return "포기";
-
-  return "최종 결과";
+  return application.finalResult ?? "전형완료";
 };
 
 const compareApplications = (a: Application, b: Application) => {
@@ -260,9 +213,7 @@ export default function ApplicationStatusBoard({
     );
 
     applications.forEach((application) => {
-      const status = normalizeStatus(
-        (application as FlexibleApplication).status,
-      );
+      const status = (application as FlexibleApplication).status ?? "작성중";
       grouped[status].push(application);
     });
 
@@ -275,7 +226,7 @@ export default function ApplicationStatusBoard({
 
   return (
     <div className="h-full overflow-x-auto bg-white">
-      <div className="flex min-w-[1180px] gap-5 px-8 py-8">
+      <div className="flex min-w-[1500px] gap-5 px-8 py-8">
         {columns.map((column) => {
           const columnApplications = groupedApplications[column.key];
 
@@ -326,7 +277,7 @@ export default function ApplicationStatusBoard({
                 ) : (
                   columnApplications.map((application) => {
                     const dday = getDday(application);
-                    const isFinalColumn = column.key === "최종 결과";
+                    const isFinalColumn = column.key === "전형완료";
                     const isImportant = getImportant(application);
                     const scheduleCount = getScheduleCount(application);
                     const todoCount = getTodoCount(application);
@@ -399,13 +350,13 @@ export default function ApplicationStatusBoard({
                             <span
                               className={cn(
                                 "rounded-full px-3 py-1 text-xs font-semibold",
-                                getFinalResult(application) === "합격" &&
+                                getFinalResult(application) === "최종합격" &&
                                   "bg-emerald-50 text-emerald-700",
                                 getFinalResult(application) === "불합격" &&
                                   "bg-red-50 text-red-600",
-                                getFinalResult(application) === "포기" &&
+                                getFinalResult(application) === "보류" &&
                                   "bg-slate-100 text-slate-500",
-                                getFinalResult(application) === "최종 결과" &&
+                                getFinalResult(application) === "전형완료" &&
                                   "bg-emerald-50 text-emerald-700",
                               )}
                             >

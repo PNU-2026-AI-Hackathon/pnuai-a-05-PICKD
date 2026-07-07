@@ -92,14 +92,14 @@ export default function ActiveFilter({
   return (
     <div className="relative">
       <div className="ml-auto flex items-center gap-2 w-fit">
-        <div className="flex items-center rounded-[10px] border border-[#D5DEEA] bg-white p-[2px]">
+        <div className="flex items-center rounded-lg border border-[#D8E0EA] bg-[#F8FAFC] p-[2px]">
           <button
             type="button"
             onClick={() => setViewMode("table")}
-            className={`flex h-8 w-8 items-center justify-center rounded-[8px] transition ${
+            className={`flex h-8 w-8 items-center justify-center rounded-md transition ${
               viewMode === "table"
-                ? "bg-[#F1F5F9] text-[#111827]"
-                : "text-[#64748B] hover:bg-[#F8FAFC]"
+                ? "bg-white text-[#334155] shadow-sm"
+                : "text-[#64748B] hover:bg-white/70"
             }`}
             title="표 보기"
           >
@@ -109,10 +109,10 @@ export default function ActiveFilter({
           <button
             type="button"
             onClick={() => setViewMode("board")}
-            className={`flex h-8 w-8 items-center justify-center rounded-[8px] transition ${
+            className={`flex h-8 w-8 items-center justify-center rounded-md transition ${
               viewMode === "board"
-                ? "bg-[#F1F5F9] text-[#111827]"
-                : "text-[#64748B] hover:bg-[#F8FAFC]"
+                ? "bg-white text-[#334155] shadow-sm"
+                : "text-[#64748B] hover:bg-white/70"
             }`}
             title="카드 보기"
           >

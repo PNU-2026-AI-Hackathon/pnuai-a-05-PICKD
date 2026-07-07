@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Application } from "../types/application";
 import Header from "../components/dashboard/main/Header";
-import CompanyInfo from "../components/modal/CompanyInfo";
 import RightTab from "../components/dashboard/right/RightTab";
 import { useApplication } from "../context/ApplicationContext";
 import ApplyInput from "../components/dashboard/main/ApplyInput";
@@ -15,7 +14,6 @@ import { getCalendarEvents } from "../api/calendar";
 
 export default function MainScreen() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState<any>(null);
   const [focusedApplication, setFocusedApplication] = useState<any>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -25,8 +23,23 @@ export default function MainScreen() {
   const [googleEvents, setGoogleEvents] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
 
-  const { loadData } = useApplication();
-  const { applications } = useApplication();
+  const { loadData, applications } = useApplication();
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    if (!focusedApplication) return;
+
+    const latestApplication = applications.find(
+      (application) => application.id === focusedApplication.id,
+    );
+
+    if (latestApplication && latestApplication !== focusedApplication) {
+      setFocusedApplication(latestApplication);
+    }
+  }, [applications, focusedApplication]);
 
   const allTodos = applications.flatMap((app) =>
     (app.todos || []).map((todo) => ({
@@ -66,18 +79,32 @@ export default function MainScreen() {
       console.error(e);
     }
   };
+
   useEffect(() => {
     loadCalendarEvents();
+  }, []);
+
+  useEffect(() => {
+    const handleGoogleCalendarUpdated = () => {
+      void loadCalendarEvents();
+    };
+
+    window.addEventListener(
+      "googleCalendarUpdated",
+      handleGoogleCalendarUpdated,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "googleCalendarUpdated",
+        handleGoogleCalendarUpdated,
+      );
+    };
   }, []);
 
   const handleAfterChange = async () => {
     await loadData();
     setTimeout(loadCalendarEvents, 300);
-  };
-
-  const handleCompanyClick = (application: any) => {
-    setSelectedApplication(application);
-    setIsCompanyModalOpen(true);
   };
 
   return (
@@ -103,18 +130,16 @@ export default function MainScreen() {
                 }}
                 onDelete={() => {}}
                 onChange={handleAfterChange}
-                onCompanyClick={handleCompanyClick}
                 focusedApplication={focusedApplication}
                 setFocusedApplication={setFocusedApplication}
                 setIsDetailModalOpen={setIsDetailModalOpen}
+                calendarEvents={googleEvents}
               />
             </div>
+
             <DocumentSection documents={documents} />
 
-            <CompletedSection
-              applications={applications}
-              onCompanyClick={handleCompanyClick}
-            />
+            <CompletedSection applications={applications} />
           </>
         )}
       </div>
@@ -128,7 +153,7 @@ export default function MainScreen() {
 
       {user && (
         <div
-          className={`absolute top-0 right-0 h-full w-[350px] bg-white shadow-xl z-30 flex flex-col transform transition-transform duration-300 ease-in-out ${
+          className={`fixed top-0 right-0 h-screen w-[350px] bg-white shadow-xl z-30 flex flex-col transform transition-transform duration-300 ease-in-out ${
             isSidebarOpen ? "translate-x-0" : "translate-x-full"
           }`}
         >
@@ -195,15 +220,9 @@ export default function MainScreen() {
         open={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
         application={focusedApplication}
+        calendarEvents={googleEvents}
+        onChange={handleAfterChange}
       />
-
-      {isCompanyModalOpen && selectedApplication && (
-        <CompanyInfo
-          isOpen={isCompanyModalOpen}
-          onClose={() => setIsCompanyModalOpen(false)}
-          data={selectedApplication}
-        />
-      )}
     </div>
   );
 }

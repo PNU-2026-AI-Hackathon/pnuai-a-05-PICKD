@@ -1,5 +1,6 @@
 package back.pickd.application.entity;
 
+import back.pickd.application.enums.ApplicationFinalResult;
 import back.pickd.application.enums.ApplicationStatus;
 import back.pickd.coverletter.entity.CoverLetterItem;
 import back.pickd.document.entity.Document;
@@ -36,6 +37,10 @@ public class Application {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ApplicationStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private ApplicationFinalResult finalResult;
 
     private String company;
     private String jobTitle;
@@ -88,13 +93,17 @@ public class Application {
     // ── 도메인 메서드 ──────────────────────────────────────────────────────────
 
     public void update(String company, String jobTitle, String position, String industry,
-                       ApplicationStatus status, boolean important, String memo,
+                       ApplicationStatus status, ApplicationFinalResult finalResult,
+                       boolean important, String memo,
                        LocalDateTime applyDate, LocalDateTime interviewDate, LocalDateTime deadlineDate) {
         this.company = company;
         this.jobTitle = jobTitle;
         this.position = position;
         this.industry = industry;
         this.status = status;
+        this.finalResult = status == ApplicationStatus.COMPLETED
+                ? finalResult
+                : null;
         this.important = important;
         this.memo = memo;
         this.applyDate = applyDate;

@@ -10,12 +10,12 @@ import {
   type Application,
 } from "../../../../types/application";
 import type { DocumentItem } from "../../../../types/document";
-import type { Todo } from "../../../../types/todo";
 import ApplicationStatusBoard from "./ApplicationStatusBoard";
 import {
   ResizeHandle,
   useResizableCols,
 } from "../../../../hooks/useResizableCols";
+import { getSchedulesForApplication } from "../../../../utils/calendarEvent";
 
 const DEFAULT_WIDTHS: Record<string, number> = {
   company: 180,
@@ -83,14 +83,38 @@ const isReorderableColumnKey = (key: string) => {
   return REORDERABLE_COLUMN_KEY_SET.has(key);
 };
 
+const hasLinkedScheduleKeyword = (events: any[], keywords: string[]) => {
+  return events.some((event) => {
+    const summary = String(event?.summary ?? "");
+    return keywords.some((keyword) => summary.includes(keyword));
+  });
+};
+
+const getDateFieldScheduleCount = (application: Application, events: any[]) => {
+  const applyCount =
+    application.applyDate && !hasLinkedScheduleKeyword(events, ["지원", "제출"])
+      ? 1
+      : 0;
+  const deadlineCount =
+    application.deadlineDate && !hasLinkedScheduleKeyword(events, ["마감"])
+      ? 1
+      : 0;
+  const interviewCount =
+    application.interviewDate && !hasLinkedScheduleKeyword(events, ["면접"])
+      ? 1
+      : 0;
+
+  return applyCount + deadlineCount + interviewCount;
+};
+
 export default function ApplicationTable({
   onEdit,
-  onCompanyClick,
   onChange,
   onDelete,
   focusedApplication,
   setFocusedApplication,
   setIsDetailModalOpen,
+  calendarEvents = [],
 }: any) {
   const [checkedIds, setCheckedIds] = useState<number[]>([]);
   const [showActiveFilters, setShowActiveFilters] = useState(false);
@@ -121,10 +145,29 @@ export default function ApplicationTable({
     Record<string, Partial<Application>>
   >({});
 
-  const mergedApplications = applications.map((application) => ({
-    ...application,
-    ...(applicationOverrides[String(application.id)] ?? {}),
-  }));
+  useEffect(() => {
+    setApplicationOverrides({});
+  }, [applications]);
+
+  const mergedApplications = applications.map((application) => {
+    const mergedApplication = {
+      ...application,
+      ...(applicationOverrides[String(application.id)] ?? {}),
+    };
+    const linkedCalendarEvents = getSchedulesForApplication(
+      calendarEvents,
+      mergedApplication,
+    );
+
+    return {
+      ...mergedApplication,
+      calendarEvents: linkedCalendarEvents,
+      calendarEventCount:
+        linkedCalendarEvents.length +
+        getDateFieldScheduleCount(mergedApplication, linkedCalendarEvents),
+    };
+  });
+
 
   const [columnOrder, setColumnOrder] = useState<string[]>(() => {
     try {
@@ -330,10 +373,9 @@ export default function ApplicationTable({
     const headers = activeColumns.map((column) => column.label);
 
     const getColumnValue = (row: any, key: string) => {
-      const completedCount =
-        row.todos?.filter((todo: Todo) => todo.completed).length || 0;
-
-      const totalCount = row.todos?.length || 0;
+      const scheduleCount =
+        Number(row.calendarEventCount ?? row.calendarEvents?.length ?? 0) || 0;
+      const todoCount = Number(row.todos?.length ?? 0) || 0;
 
       switch (key) {
         case "company":
@@ -360,7 +402,7 @@ export default function ApplicationTable({
                 .join(", ")
             : "—";
         case "checklistInComplete":
-          return `${completedCount}/${totalCount}`;
+          return `일정 ${scheduleCount} / 할 일 ${todoCount}`;
         case "important":
           return row.important ? "★" : "☆";
         case "recentUpdated":
@@ -497,8 +539,12 @@ export default function ApplicationTable({
       }
 
       if (sort.key === "checklistInComplete") {
-        aValue = a.todos?.filter((t) => !t.completed).length || 0;
-        bValue = b.todos?.filter((t) => !t.completed).length || 0;
+        aValue =
+          (Number((a as any).calendarEventCount ?? (a as any).calendarEvents?.length ?? 0) || 0) +
+          (a.todos?.length || 0);
+        bValue =
+          (Number((b as any).calendarEventCount ?? (b as any).calendarEvents?.length ?? 0) || 0) +
+          (b.todos?.length || 0);
       }
       return sort.order === "asc" ? aValue - bValue : bValue - aValue;
     });
@@ -715,7 +761,6 @@ export default function ApplicationTable({
                       widths={widths}
                       checkedIds={checkedIds}
                       toggleCheck={toggleCheck}
-                      onCompanyClick={onCompanyClick}
                       setFocusedApplication={setFocusedApplication}
                       focusedApplication={focusedApplication}
                       onEdit={onEdit}

@@ -33,6 +33,7 @@ interface Props {
   item: ExperienceItem | null;
   onClose: () => void;
   onChange: (item: ExperienceItem) => void;
+  onSave?: (item: ExperienceItem) => void;
   onDelete?: (id: ExperienceItem["id"]) => void;
   onCopyToast?: () => void;
 }
@@ -52,6 +53,7 @@ export default function ExperienceDetailModal({
   item,
   onClose,
   onChange,
+  onSave,
   onDelete,
   onCopyToast,
 }: Props) {
@@ -610,6 +612,19 @@ export default function ExperienceDetailModal({
                 </button>
               ))}
             </div>
+
+            {onSave && (
+              <button
+                type="button"
+                onClick={() => onSave(item)}
+                disabled={!item.name.trim()}
+                className="inline-flex h-9 items-center gap-1.5 rounded-[8px] bg-[#2563EB] px-3 text-[13px] font-[800] text-white transition-colors hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:bg-[#94A3B8]"
+                title="현재 작성한 내용을 저장"
+              >
+                <Check size={15} />
+                저장
+              </button>
+            )}
 
             <button
               onClick={() => updateItem({ pinned: !item.pinned })}

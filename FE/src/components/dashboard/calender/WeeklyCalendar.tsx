@@ -1,9 +1,9 @@
-import { type CalendarEvent } from "../../../hooks/useMainCalendar";
+import { type CalendarEvent, type EventType } from "../../../hooks/useMainCalendar";
 
 interface WeeklyCalendarProps {
   date: Date;
   filteredEvents: CalendarEvent[];
-  getEventColor: (type: string) => string;
+  getEventColor: (type: EventType) => string;
   onDateChange: (date: Date) => void;
 }
 

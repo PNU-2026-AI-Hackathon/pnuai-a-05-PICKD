@@ -2,15 +2,24 @@ import type { Todo } from "./todo";
 import type { DocumentItem } from "./document";
 
 export const APPLICATION_STATUSES = [
-  "지원 예정",
   "작성중",
-  "제출 완료",
-  "결과 대기",
-  "면접 전형",
-  "최종 결과",
+  "지원완료",
+  "서류전형",
+  "필기전형",
+  "면접전형",
+  "전형완료",
+] as const;
+
+export const APPLICATION_FINAL_RESULTS = [
+  "최종합격",
+  "불합격",
+  "보류",
 ] as const;
 
 export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
+export type ApplicationFinalResult =
+  | (typeof APPLICATION_FINAL_RESULTS)[number]
+  | null;
 
 export type Application = {
   id: number;
@@ -35,7 +44,7 @@ export type Application = {
   employType?: string;
   careerType?: string;
   jobType?: string;
-  finalResult?: string | null;
+  finalResult?: ApplicationFinalResult;
   sourceUrl?: string;
   url?: string;
   submitted?: boolean;
