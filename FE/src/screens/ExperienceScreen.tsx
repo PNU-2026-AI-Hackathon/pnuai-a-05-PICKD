@@ -29,8 +29,6 @@ import BasicInfoPanel from "../components/experience/BasicInfoPanel";
 import FilesPanel from "../components/experience/FilesPanel";
 import ExperiencePasteView from "../components/experience/ExperiencePasteView";
 import { useClickOutside } from "../hooks/useClickOutside";
-
-import { MOCK_EXPERIENCES } from "../constants/experience/mockExperiences";
 import {
   EXPERIENCE_PRESETS,
   EXPERIENCE_TYPES,
@@ -48,21 +46,22 @@ import {
 } from "../api/experience";
 
 const FILTERS = ["전체", "고정됨", ...EXPERIENCE_TYPES];
-const LS_EXPERIENCES = "pickd.experiences.items";
 const LS_VISIBLE_COLUMNS = "pickd.experience.visibleColumns.v3";
 
 type ActiveTab = "db" | "basic-info" | "files";
 type ViewMode = "list" | "card" | "paste";
 
 export default function ExperienceScreen() {
-  const [experiences, setExperiences] = useState<ExperienceItem[]>(() =>
-    loadExperiences(),
-  );
+  const [experiences, setExperiences] = useState<ExperienceItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<ExperienceItem | null>(null);
+  const [isCreatingExperience, setIsCreatingExperience] = useState(false);
   const [entryOpen, setEntryOpen] = useState(false);
   const [extractOpen, setExtractOpen] = useState(false);
-  const [extractMode, setExtractMode] = useState<"extract" | "pending">("extract");
-  const [pendingFocusItemId, setPendingFocusItemId] = useState<ExperienceId | null>(null);
+  const [extractMode, setExtractMode] = useState<"extract" | "pending">(
+    "extract",
+  );
+  const [pendingFocusItemId, setPendingFocusItemId] =
+    useState<ExperienceId | null>(null);
   const [loadingExperiences, setLoadingExperiences] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState("전체");
   const [searchText, setSearchText] = useState("");
@@ -112,7 +111,7 @@ export default function ExperienceScreen() {
         prev.filter((id) => nextItems.some((item) => item.id === id)),
       );
       setSelectedItem((prev) =>
-        prev ? nextItems.find((item) => item.id === prev.id) ?? prev : prev,
+        prev ? (nextItems.find((item) => item.id === prev.id) ?? prev) : prev,
       );
     } catch (error) {
       showToast(`경험 목록을 불러오지 못했습니다. ${getErrorMessage(error)}`);
@@ -131,14 +130,6 @@ export default function ExperienceScreen() {
       // 미처리 batch 조회 실패는 목록 사용을 막지 않습니다.
     }
   }
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(LS_EXPERIENCES, JSON.stringify(experiences));
-    } catch {
-      // ignore
-    }
-  }, [experiences]);
 
   useEffect(() => {
     try {
@@ -286,20 +277,10 @@ export default function ExperienceScreen() {
     setEntryOpen(false);
     setActiveTab("db");
 
-    try {
-      const createdId = await createExperienceApi(draftItem);
-      const createdItem = { ...draftItem, id: createdId };
-      setExperiences((prev) => [createdItem, ...prev]);
-      setSelectedItem(createdItem);
-      showToast("경험이 저장되었습니다.");
-      void reloadExperiences();
-      return createdItem;
-    } catch (error) {
-      setExperiences((prev) => [draftItem, ...prev]);
-      setSelectedItem(draftItem);
-      showToast(`백엔드 저장에 실패해 화면에만 임시 추가했습니다. ${getErrorMessage(error)}`);
-      return draftItem;
-    }
+    setSelectedItem(draftItem);
+    setIsCreatingExperience(true);
+
+    return draftItem;
   };
 
   const updateExperience = (updatedItem: ExperienceItem) => {
@@ -308,23 +289,51 @@ export default function ExperienceScreen() {
       updatedAt: "방금 전",
     };
 
+    // 상세 모달에서 입력 중인 값은 selectedItem draft에만 반영합니다.
+    // 표 목록(experiences)과 백엔드는 저장 버튼을 눌렀을 때만 갱신됩니다.
     setSelectedItem(normalizedItem);
-    setExperiences((prev) =>
-      prev.map((experience) =>
-        experience.id === normalizedItem.id ? normalizedItem : experience,
-      ),
-    );
+  };
 
-    if (String(normalizedItem.id).startsWith("local-")) return;
+  const saveExperience = async (item: ExperienceItem) => {
+    const normalizedItem: ExperienceItem = {
+      ...item,
+      updatedAt: "방금 전",
+    };
 
-    if (updateTimerRef.current) window.clearTimeout(updateTimerRef.current);
-    updateTimerRef.current = window.setTimeout(async () => {
-      try {
-        await updateExperienceApi(normalizedItem.id, normalizedItem);
-      } catch (error) {
-        showToast(`경험 수정 저장에 실패했습니다. ${getErrorMessage(error)}`);
+    try {
+      if (
+        isCreatingExperience ||
+        String(normalizedItem.id).startsWith("local-")
+      ) {
+        const createdId = await createExperienceApi(normalizedItem);
+        const createdItem = {
+          ...normalizedItem,
+          id: createdId,
+        };
+
+        setExperiences((prev) => [createdItem, ...prev]);
+        setSelectedItem(createdItem);
+        setIsCreatingExperience(false);
+
+        showToast("경험이 저장되었습니다.");
+        void reloadExperiences();
+        return;
       }
-    }, 650);
+
+      await updateExperienceApi(normalizedItem.id, normalizedItem);
+
+      setExperiences((prev) =>
+        prev.map((experience) =>
+          experience.id === normalizedItem.id ? normalizedItem : experience,
+        ),
+      );
+
+      setSelectedItem(normalizedItem);
+      showToast("수정 내용이 저장되었습니다.");
+      void reloadExperiences();
+    } catch (error) {
+      showToast(`경험 저장에 실패했습니다. ${getErrorMessage(error)}`);
+    }
   };
 
   const toggleSelect = (id: ExperienceId) => {
@@ -757,13 +766,19 @@ export default function ExperienceScreen() {
               <ExperiencePasteView
                 items={baseFilteredExperiences}
                 onCopy={copyText}
-                onOpenItem={(item) => setSelectedItem(item)}
+                onOpenItem={(item) => {
+                  setIsCreatingExperience(false);
+                  setSelectedItem(item);
+                }}
                 onTogglePin={togglePin}
               />
             ) : viewMode === "list" ? (
               <ExperienceTable
                 items={filteredExperiences}
-                onRowClick={(item) => setSelectedItem(item)}
+                onRowClick={(item) => {
+                  setIsCreatingExperience(false);
+                  setSelectedItem(item);
+                }}
                 selectedIds={selectedIds}
                 onToggleSelect={toggleSelect}
                 onToggleSelectAll={toggleSelectAll}
@@ -781,7 +796,10 @@ export default function ExperienceScreen() {
             ) : (
               <ExperienceCardGrid
                 items={filteredExperiences}
-                onOpen={(item) => setSelectedItem(item)}
+                onOpen={(item) => {
+                  setIsCreatingExperience(false);
+                  setSelectedItem(item);
+                }}
                 onToggleImportant={toggleImportant}
                 onTogglePin={togglePin}
               />
@@ -823,9 +841,13 @@ export default function ExperienceScreen() {
         <ExperienceDetailModal
           open={!!selectedItem}
           item={selectedItem}
-          onClose={() => setSelectedItem(null)}
+          onClose={() => {
+            setSelectedItem(null);
+            setIsCreatingExperience(false);
+          }}
           onChange={updateExperience}
-          onDelete={deleteSingleExperience}
+          onSave={saveExperience}
+          onDelete={isCreatingExperience ? undefined : deleteSingleExperience}
           onCopyToast={() => showToast("복사되었습니다.")}
         />
 
@@ -1103,10 +1125,7 @@ function mergeExperienceItems(
   incoming: ExperienceItem[],
 ) {
   const incomingIds = new Set(incoming.map((item) => item.id));
-  return [
-    ...incoming,
-    ...previous.filter((item) => !incomingIds.has(item.id)),
-  ];
+  return [...incoming, ...previous.filter((item) => !incomingIds.has(item.id))];
 }
 
 function markPendingDuplicateExperiences(
@@ -1136,19 +1155,6 @@ function getErrorMessage(error: unknown) {
   }
 
   return "요청 처리 중 오류가 발생했습니다.";
-}
-
-function loadExperiences() {
-  try {
-    const raw = localStorage.getItem(LS_EXPERIENCES);
-    if (raw) {
-      const parsed = JSON.parse(raw) as ExperienceItem[];
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch {
-    // ignore
-  }
-  return MOCK_EXPERIENCES;
 }
 
 function loadVisibleColumns() {

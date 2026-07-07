@@ -16,6 +16,7 @@ import Step2BasicInfo from "./screens/onboarding/Step2BasicInfo.tsx";
 import Step3Education from "./screens/onboarding/Step3Education.tsx";
 import Step4Interest from "./screens/onboarding/Step4Interest.tsx";
 import Step5PrepStatus from "./screens/onboarding/Step5PrepStatus.tsx";
+import OnboardingComplete from "./screens/onboarding/OnboardingComplete.tsx";
 
 import { ApplicationProvider } from "./context/ApplicationContext";
 
@@ -37,6 +38,7 @@ function App() {
           <Route path="/onboarding/step3" element={<Step3Education />} />
           <Route path="/onboarding/step4" element={<Step4Interest />} />
           <Route path="/onboarding/step5" element={<Step5PrepStatus />} />
+          <Route path="/onboarding/complete" element={<OnboardingComplete />} />
 
           <Route
             path="/applications/:applicationId"

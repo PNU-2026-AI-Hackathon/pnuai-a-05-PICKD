@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Check, Clipboard, Eye, EyeOff, Pencil, RotateCcw } from "lucide-react";
-import { getUserProfile } from "../../api/user";
+import { getUserProfile, updateUserProfile } from "../../api/user";
+
+// "20050226" → "2005-02-26"
+function toInputDate(val: string) {
+  return val && /^\d{8}$/.test(val) ? `${val.slice(0, 4)}-${val.slice(4, 6)}-${val.slice(6, 8)}` : val;
+}
+
+// "2005-02-26" → "20050226"
+function toApiDate(val: string) {
+  return val && /^\d{4}-\d{2}-\d{2}$/.test(val) ? val.replace(/-/g, "") : val;
+}
 
 type InfoKey =
   | "name"
@@ -53,15 +63,15 @@ const INFO_FIELDS: { key: InfoKey; label: string }[] = [
   { key: "graduationDate", label: "졸업일" },
   { key: "gpa", label: "학점 (GPA)" },
   { key: "campus", label: "캠퍼스" },
-  { key: "industries", label: "희망 산업" },
+  { key: "industries", label: "관심 산업" },
   { key: "jobGroups", label: "희망 직군" },
   { key: "employmentType", label: "고용 형태" },
   { key: "companyTypes", label: "희망 기업 유형" },
   { key: "targetCompany", label: "목표 기업" },
   { key: "salaryRange", label: "희망 연봉" },
-  { key: "targetPeriod", label: "목표 취업 시기" },
+  { key: "targetPeriod", label: "목표 취업 기간" },
   { key: "currentStage", label: "현재 준비 단계" },
-  { key: "focusItems", label: "집중 항목" },
+  { key: "focusItems", label: "집중 준비 항목" },
   { key: "hasResume", label: "이력서 보유" },
   { key: "hasBaseEssay", label: "기본 자소서 보유" },
   { key: "hasPortfolio", label: "포트폴리오 보유" },
@@ -150,6 +160,7 @@ export default function BasicInfoPanel() {
     lsGet<InfoKey[]>(LS_INFO_VISIBLE, DEFAULT_VISIBLE),
   );
   const [editMode, setEditMode] = useState(false);
+  const [snapshot, setSnapshot] = useState<Record<InfoKey, string> | null>(null);
   const [copiedKey, setCopiedKey] = useState<InfoKey | null>(null);
   const [maskedKeys, setMaskedKeys] = useState<Set<InfoKey>>(new Set());
 
@@ -161,7 +172,7 @@ export default function BasicInfoPanel() {
           nickname: profile.nickname ?? "",
           email: profile.email ?? "",
           phone: profile.phone ?? "",
-          birthDate: profile.birthDate ?? "",
+          birthDate: toInputDate(profile.birthDate ?? ""),
           intro: profile.intro ?? "",
           currentResidence: profile.currentResidence ?? "",
           detailedAddress: profile.detailedAddress ?? "",
@@ -211,6 +222,51 @@ export default function BasicInfoPanel() {
     [visibleKeys],
   );
 
+  const toArray = (val: string) =>
+    val ? val.split(",").map((s) => s.trim()).filter(Boolean) : [];
+
+  const splitArr = (val: string) =>
+    val ? val.split(",").map((s) => s.trim()).filter(Boolean) : [];
+
+  const handleSave = async () => {
+    lsSet(LS_INFO_VALUES, values);
+    lsSet(LS_INFO_VISIBLE, visibleKeys);
+
+    const payload: Parameters<typeof updateUserProfile>[0] = {};
+    if (values.name) payload.name = values.name;
+    if (values.nickname) payload.nickname = values.nickname;
+    if (values.phone) payload.phone = values.phone;
+    if (values.birthDate) payload.birthDate = toApiDate(values.birthDate);
+    if (values.intro) payload.intro = values.intro;
+    if (values.currentResidence) payload.currentResidence = values.currentResidence;
+    if (values.desiredLocations) payload.desiredLocations = splitArr(values.desiredLocations);
+    if (values.detailedAddress) payload.detailedAddress = values.detailedAddress;
+    if (values.schoolName) payload.schoolName = values.schoolName;
+    if (values.department) payload.department = values.department;
+    if (values.doubleMajor) payload.doubleMajor = values.doubleMajor;
+    if (values.minor) payload.minor = values.minor;
+    if (values.degreeType) payload.degreeType = values.degreeType;
+    if (values.enrollmentStatus) payload.enrollmentStatus = values.enrollmentStatus;
+    if (values.graduationDate) payload.graduationDate = values.graduationDate;
+    if (values.gpa) payload.gpa = Number(values.gpa);
+    if (values.campus) payload.campus = values.campus;
+    if (values.industries) payload.industries = splitArr(values.industries);
+    if (values.jobGroups) payload.jobGroups = splitArr(values.jobGroups);
+    if (values.employmentType) payload.employmentType = values.employmentType;
+    if (values.companyTypes) payload.companyTypes = splitArr(values.companyTypes);
+    if (values.targetCompany) payload.targetCompany = values.targetCompany;
+    if (values.salaryRange) payload.salaryRange = values.salaryRange;
+    if (values.targetPeriod) payload.targetPeriod = values.targetPeriod;
+    if (values.currentStage) payload.currentStage = values.currentStage;
+    if (values.focusItems) payload.focusItems = splitArr(values.focusItems);
+
+    try {
+      await updateUserProfile(payload);
+    } catch {
+      alert("프로필 저장에 실패했습니다. 다시 시도해주세요.");
+    }
+  };
+
   const copyValue = async (key: InfoKey) => {
     const value = values[key];
     if (!value) return;
@@ -249,24 +305,33 @@ export default function BasicInfoPanel() {
 
           <button
             type="button"
-            onClick={() => setEditMode((prev) => !prev)}
+            onClick={async () => {
+              if (editMode) {
+                await handleSave();
+              } else {
+                setSnapshot(values);
+              }
+              setEditMode((prev) => !prev);
+            }}
             className="inline-flex h-9 items-center gap-2 rounded-[8px] border border-[#E2E8F0] bg-white px-3 text-[13px] font-[700] text-[#334155] hover:bg-[#F8FAFC]"
           >
             <Pencil size={15} />
-            {editMode ? "보기" : "전체 편집"}
+            {editMode ? "저장" : "전체 편집"}
           </button>
 
-          <button
-            type="button"
-            onClick={() => {
-              setValues(INFO_DEFAULTS);
-              setVisibleKeys(DEFAULT_VISIBLE);
-            }}
-            className="inline-flex h-9 items-center gap-2 rounded-[8px] border border-[#E2E8F0] bg-white px-3 text-[13px] font-[700] text-[#64748B] hover:bg-[#F8FAFC]"
-          >
-            <RotateCcw size={15} />
-            초기화
-          </button>
+          {editMode && (
+            <button
+              type="button"
+              onClick={() => {
+                if (snapshot) setValues(snapshot);
+                setEditMode(false);
+              }}
+              className="inline-flex h-9 items-center gap-2 rounded-[8px] border border-[#E2E8F0] bg-white px-3 text-[13px] font-[700] text-[#64748B] hover:bg-[#F8FAFC]"
+            >
+              <RotateCcw size={15} />
+              취소
+            </button>
+          )}
         </div>
       </div>
 
@@ -292,14 +357,187 @@ export default function BasicInfoPanel() {
                     {visible ? "표시" : "숨김"}
                   </button>
                 </div>
-                <input
-                  value={values[field.key] ?? ""}
-                  onChange={(event) =>
-                    setValues((prev) => ({ ...prev, [field.key]: event.target.value }))
-                  }
-                  placeholder={`${field.label} 입력`}
-                  className="h-9 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[13px] outline-none focus:border-[#2563EB]"
-                />
+                {(field.key === "hasResume" || field.key === "hasBaseEssay" || field.key === "hasPortfolio") ? (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={values[field.key] === "있음"}
+                      onChange={(event) =>
+                        setValues((prev) => ({ ...prev, [field.key]: event.target.checked ? "있음" : "없음" }))
+                      }
+                      className="h-4 w-4 rounded border-[#E2E8F0] accent-[#2563EB]"
+                    />
+                    <span className="text-[13px] text-[#475569]">보유</span>
+                  </label>
+                ) : field.key === "focusItems" ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {["서류", "코딩테스트", "면접", "포트폴리오", "경험정리"].map((item) => {
+                      const selected = toArray(values.focusItems).includes(item);
+                      return (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => {
+                            const current = toArray(values.focusItems);
+                            const next = selected
+                              ? current.filter((v) => v !== item)
+                              : [...current, item];
+                            setValues((prev) => ({ ...prev, focusItems: next.join(", ") }));
+                          }}
+                          className={`rounded-lg border px-3 py-1 text-[12px] font-[600] transition-colors ${
+                            selected
+                              ? "border-[#2563EB] bg-[#2563EB] text-white"
+                              : "border-[#E2E8F0] bg-white text-[#475569]"
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : field.key === "salaryRange" ? (
+                  <select
+                    value={values.salaryRange ?? ""}
+                    onChange={(event) =>
+                      setValues((prev) => ({ ...prev, salaryRange: event.target.value }))
+                    }
+                    className="h-9 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[13px] outline-none focus:border-[#2563EB]"
+                  >
+                    <option value="">선택</option>
+                    <option value="3000">3000만원+</option>
+                    <option value="4000">4000만원+</option>
+                    <option value="5000">5000만원+</option>
+                  </select>
+                ) : field.key === "companyTypes" ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {["대기업", "중견기업", "스타트업"].map((item) => {
+                      const selected = toArray(values.companyTypes).includes(item);
+                      return (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => {
+                            const current = toArray(values.companyTypes);
+                            const next = selected
+                              ? current.filter((v) => v !== item)
+                              : [...current, item];
+                            setValues((prev) => ({ ...prev, companyTypes: next.join(", ") }));
+                          }}
+                          className={`rounded-lg border px-3 py-1 text-[12px] font-[600] transition-colors ${
+                            selected
+                              ? "border-[#2563EB] bg-[#2563EB] text-white"
+                              : "border-[#E2E8F0] bg-white text-[#475569]"
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : field.key === "jobGroups" ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {["개발", "기획", "디자인"].map((item) => {
+                      const selected = toArray(values.jobGroups).includes(item);
+                      return (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => {
+                            const current = toArray(values.jobGroups);
+                            const next = selected
+                              ? current.filter((v) => v !== item)
+                              : [...current, item];
+                            setValues((prev) => ({ ...prev, jobGroups: next.join(", ") }));
+                          }}
+                          className={`rounded-lg border px-3 py-1 text-[12px] font-[600] transition-colors ${
+                            selected
+                              ? "border-[#2563EB] bg-[#2563EB] text-white"
+                              : "border-[#E2E8F0] bg-white text-[#475569]"
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : field.key === "industries" ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {["IT", "금융", "제조", "마케팅"].map((item) => {
+                      const selected = toArray(values.industries).includes(item);
+                      return (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => {
+                            const current = toArray(values.industries);
+                            const next = selected
+                              ? current.filter((v) => v !== item)
+                              : [...current, item];
+                            setValues((prev) => ({ ...prev, industries: next.join(", ") }));
+                          }}
+                          className={`rounded-lg border px-3 py-1 text-[12px] font-[600] transition-colors ${
+                            selected
+                              ? "border-[#2563EB] bg-[#2563EB] text-white"
+                              : "border-[#E2E8F0] bg-white text-[#475569]"
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : field.key === "employmentType" ? (
+                  <select
+                    value={values.employmentType ?? ""}
+                    onChange={(event) =>
+                      setValues((prev) => ({ ...prev, employmentType: event.target.value }))
+                    }
+                    className="h-9 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[13px] outline-none focus:border-[#2563EB]"
+                  >
+                    <option value="">선택</option>
+                    <option value="FULL_TIME">정규직</option>
+                    <option value="INTERN">인턴</option>
+                  </select>
+                ) : field.key === "degreeType" ? (
+                  <select
+                    value={values.degreeType ?? ""}
+                    onChange={(event) =>
+                      setValues((prev) => ({ ...prev, degreeType: event.target.value }))
+                    }
+                    className="h-9 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[13px] outline-none focus:border-[#2563EB]"
+                  >
+                    <option value="">선택</option>
+                    <option value="ASSOCIATE">전문학사</option>
+                    <option value="BACHELOR">학사</option>
+                    <option value="MASTER">석사</option>
+                    <option value="DOCTOR">박사</option>
+                  </select>
+                ) : field.key === "enrollmentStatus" ? (
+                  <select
+                    value={values.enrollmentStatus ?? ""}
+                    onChange={(event) =>
+                      setValues((prev) => ({ ...prev, enrollmentStatus: event.target.value }))
+                    }
+                    className="h-9 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[13px] outline-none focus:border-[#2563EB]"
+                  >
+                    <option value="">선택</option>
+                    <option value="ENROLLED">재학</option>
+                    <option value="GRADUATED">졸업</option>
+                    <option value="EXPECTED">졸업예정</option>
+                    <option value="LOA">휴학</option>
+                    <option value="DROPOUT">중퇴</option>
+                  </select>
+                ) : (
+                  <input
+                    type={field.key === "graduationDate" ? "month" : field.key === "birthDate" ? "date" : "text"}
+                    value={values[field.key] ?? ""}
+                    onChange={(event) =>
+                      setValues((prev) => ({ ...prev, [field.key]: event.target.value }))
+                    }
+                    placeholder={`${field.label} 입력`}
+                    className="h-9 w-full rounded-lg border border-[#E2E8F0] bg-white px-3 text-[13px] outline-none focus:border-[#2563EB]"
+                  />
+                )}
               </div>
             );
           })}

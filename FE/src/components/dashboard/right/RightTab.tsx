@@ -5,7 +5,6 @@ import TodoList from "../../modal/TodoList";
 import ScheduleSection from "./ScheduleSection";
 import ModalLayout from "../../modal/ModalLayout";
 import ScheduleList from "../../modal/ScheduleList";
-import { useNavigate } from "react-router-dom";
 
 export default function RightTab({
   todoData,
@@ -17,14 +16,10 @@ export default function RightTab({
   const [selectedEvents, setSelectedEvents] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [weeklyEvents, setWeeklyEvents] = useState<any[]>([]);
-  const navigate = useNavigate();
 
   return (
     <div className="w-[95%] bg-[F8FAFC]">
-      <div
-        onClick={() => navigate("/calendar")}
-        className="cursor-pointer hover:opacity-60 transition-opacity"
-      >
+      <div>
         <CalendarBox
           defaultEvents={googleEvents}
           setDefaultEvents={setGoogleEvents}
