@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Check, Clipboard, Eye, EyeOff, Pencil, RotateCcw } from "lucide-react";
-import { getUserProfile } from "../../api/user";
+import { getUserProfile, updateUserProfile } from "../../api/user";
+
+// "20050226" → "2005-02-26"
+function toInputDate(val: string) {
+  return val && /^\d{8}$/.test(val) ? `${val.slice(0, 4)}-${val.slice(4, 6)}-${val.slice(6, 8)}` : val;
+}
+
+// "2005-02-26" → "20050226"
+function toApiDate(val: string) {
+  return val && /^\d{4}-\d{2}-\d{2}$/.test(val) ? val.replace(/-/g, "") : val;
+}
 
 type InfoKey =
   | "name"
@@ -162,7 +172,7 @@ export default function BasicInfoPanel() {
           nickname: profile.nickname ?? "",
           email: profile.email ?? "",
           phone: profile.phone ?? "",
-          birthDate: profile.birthDate ?? "",
+          birthDate: toInputDate(profile.birthDate ?? ""),
           intro: profile.intro ?? "",
           currentResidence: profile.currentResidence ?? "",
           detailedAddress: profile.detailedAddress ?? "",
@@ -215,9 +225,46 @@ export default function BasicInfoPanel() {
   const toArray = (val: string) =>
     val ? val.split(",").map((s) => s.trim()).filter(Boolean) : [];
 
-  const handleSave = () => {
+  const splitArr = (val: string) =>
+    val ? val.split(",").map((s) => s.trim()).filter(Boolean) : [];
+
+  const handleSave = async () => {
     lsSet(LS_INFO_VALUES, values);
     lsSet(LS_INFO_VISIBLE, visibleKeys);
+
+    const payload: Parameters<typeof updateUserProfile>[0] = {};
+    if (values.name) payload.name = values.name;
+    if (values.nickname) payload.nickname = values.nickname;
+    if (values.phone) payload.phone = values.phone;
+    if (values.birthDate) payload.birthDate = toApiDate(values.birthDate);
+    if (values.intro) payload.intro = values.intro;
+    if (values.currentResidence) payload.currentResidence = values.currentResidence;
+    if (values.desiredLocations) payload.desiredLocations = splitArr(values.desiredLocations);
+    if (values.detailedAddress) payload.detailedAddress = values.detailedAddress;
+    if (values.schoolName) payload.schoolName = values.schoolName;
+    if (values.department) payload.department = values.department;
+    if (values.doubleMajor) payload.doubleMajor = values.doubleMajor;
+    if (values.minor) payload.minor = values.minor;
+    if (values.degreeType) payload.degreeType = values.degreeType;
+    if (values.enrollmentStatus) payload.enrollmentStatus = values.enrollmentStatus;
+    if (values.graduationDate) payload.graduationDate = values.graduationDate;
+    if (values.gpa) payload.gpa = Number(values.gpa);
+    if (values.campus) payload.campus = values.campus;
+    if (values.industries) payload.industries = splitArr(values.industries);
+    if (values.jobGroups) payload.jobGroups = splitArr(values.jobGroups);
+    if (values.employmentType) payload.employmentType = values.employmentType;
+    if (values.companyTypes) payload.companyTypes = splitArr(values.companyTypes);
+    if (values.targetCompany) payload.targetCompany = values.targetCompany;
+    if (values.salaryRange) payload.salaryRange = values.salaryRange;
+    if (values.targetPeriod) payload.targetPeriod = values.targetPeriod;
+    if (values.currentStage) payload.currentStage = values.currentStage;
+    if (values.focusItems) payload.focusItems = splitArr(values.focusItems);
+
+    try {
+      await updateUserProfile(payload);
+    } catch {
+      alert("프로필 저장에 실패했습니다. 다시 시도해주세요.");
+    }
   };
 
   const copyValue = async (key: InfoKey) => {
@@ -258,9 +305,9 @@ export default function BasicInfoPanel() {
 
           <button
             type="button"
-            onClick={() => {
+            onClick={async () => {
               if (editMode) {
-                handleSave();
+                await handleSave();
               } else {
                 setSnapshot(values);
               }
