@@ -60,7 +60,7 @@ export default function Step2BasicInfo() {
     "w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20";
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA]">
+    <div className="min-h-screen bg-[#F9FAFC]">
       {/* Top-left logo */}
       <div className="flex items-center gap-2 px-40 py-5">
         <PickdLogoIcon size={28} />
