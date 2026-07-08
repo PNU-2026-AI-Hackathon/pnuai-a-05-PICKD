@@ -87,7 +87,7 @@ export default function CompletedSection({
   const [viewMode, setViewMode] = useState<"file" | "grid">("file");
 
   const displayApps = applications.filter((app) => {
-    return (app.status ?? app.resultStatus) === "최종 결과";
+    return (app.status ?? app.resultStatus) === "COMPLETED";
   });
 
   return (

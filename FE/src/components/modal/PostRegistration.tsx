@@ -117,7 +117,7 @@ function toReviewForm(notice: NoticeDetail): ReviewForm {
     industry: notice.region1depth ?? "",
     category: (notice.category ??
       DEFAULT_CATEGORY) as ApplicationPayload["category"],
-    status: "작성 중",
+    status: "WRITING",
     finalResult: null,
     applyDate: "",
     interviewDate: "",
@@ -129,7 +129,7 @@ function toReviewForm(notice: NoticeDetail): ReviewForm {
 function toApplicationPayload(
   data: Partial<ReviewForm> & Partial<Application>,
 ) {
-  const status = data.status ?? "작성 중";
+  const status = data.status ?? "WRITING";
 
   return {
     noticeId: data.noticeId ?? undefined,
@@ -141,7 +141,7 @@ function toApplicationPayload(
       (data as any).category ??
       ((data as any).employmentType || DEFAULT_CATEGORY),
     status,
-    finalResult: status === "최종 결과" ? (data.finalResult ?? null) : null,
+    finalResult: status === "COMPLETED" ? (data.finalResult ?? null) : null,
     memo: data.memo ?? "",
     important: Boolean(data.important),
     applyDate: toBackendLocalDateTime(data.applyDate) ?? null,
@@ -618,7 +618,7 @@ function ManualFields({ formData, updateField }: any) {
       </div>
 
       <SharedSelects
-        status={formData.status || "작성 중"}
+        status={formData.status || "WRITING"}
         finalResult={formData.finalResult ?? null}
         category={(formData as any).employmentType || DEFAULT_CATEGORY}
         onStatusChange={(status) => updateField("status", status)}
@@ -675,7 +675,7 @@ function SharedSelects({
         ))}
       </select>
 
-      {status === "최종 결과" && (
+      {status === "COMPLETED" && (
         <select
           className="w-full rounded-xl border border-[#E2E8F0] bg-white px-4 py-3 text-[14px] text-[#0F172A] outline-none"
           value={finalResult ?? ""}

@@ -32,7 +32,7 @@ export default function ApplicationDetailModal({
   const [todoModalOpen, setTodoModalOpen] = useState(false);
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [draftStatus, setDraftStatus] =
-    useState<Application["status"]>("작성 중");
+    useState<Application["status"]>("WRITING");
   const [draftFinalResult, setDraftFinalResult] =
     useState<Application["finalResult"]>(null);
   const [draftMemo, setDraftMemo] = useState("");
@@ -49,7 +49,7 @@ export default function ApplicationDetailModal({
   useEffect(() => {
     if (!foundApplication) return;
 
-    setDraftStatus(foundApplication.status ?? "작성 중");
+    setDraftStatus(foundApplication.status ?? "WRITING");
     setDraftFinalResult(foundApplication.finalResult ?? null);
     setDraftMemo(foundApplication.memo ?? "");
   }, [
@@ -77,7 +77,7 @@ export default function ApplicationDetailModal({
   const handleSave = async () => {
     if (isSaving) return;
 
-    if (draftStatus === "최종 결과" && !draftFinalResult) {
+    if (draftStatus === "COMPLETED" && !draftFinalResult) {
       alert("최종 결과를 선택해주세요.");
       return;
     }
@@ -87,7 +87,7 @@ export default function ApplicationDetailModal({
       await updateApplication(currentApplication.id, {
         ...foundApplication,
         status: draftStatus,
-        finalResult: draftStatus === "최종 결과" ? draftFinalResult : null,
+        finalResult: draftStatus === "COMPLETED" ? draftFinalResult : null,
         memo: draftMemo,
       });
       await onChange?.();
@@ -172,7 +172,7 @@ export default function ApplicationDetailModal({
                       )
                     }
                   />
-                  {draftStatus === "최종 결과" && (
+                  {draftStatus === "COMPLETED" && (
                     <InfoRow
                       label="세부 결과"
                       value={draftFinalResult || "미선택"}
@@ -206,7 +206,7 @@ export default function ApplicationDetailModal({
                           type="button"
                           onClick={() => {
                             setDraftStatus(step);
-                            if (step !== "최종 결과") {
+                            if (step !== "COMPLETED") {
                               setDraftFinalResult(null);
                             }
                           }}

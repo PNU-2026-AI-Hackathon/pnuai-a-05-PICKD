@@ -128,7 +128,7 @@ const emptyJob = {
   deadlineDate: null,
   dday: null,
   expired: false,
-  status: "작성 중",
+  status: "WRITING",
   docsInProgress: [],
   sourceUrl: "#",
   basic: {
@@ -580,7 +580,7 @@ function buildJobFromBackend(
     deadlineDate: toDate(deadlineValue),
     dday,
     expired,
-    status: application?.status ?? "작성 중",
+    status: application?.status ?? "WRITING",
     docsInProgress: application?.documents ?? [],
     sourceUrl,
     basic: {

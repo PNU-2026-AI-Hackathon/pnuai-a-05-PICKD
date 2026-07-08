@@ -12,7 +12,7 @@ interface Props {
 
 const isWritingDocument = (document: DocumentItem) => {
   const documentStatus = String(document.status ?? "").replace(/\s/g, "");
-  return documentStatus === "작성중" && document.application?.status === "작성 중";
+  return documentStatus === "작성중" && document.application?.status === "WRITING";
 };
 
 const getDeadlineTime = (document: DocumentItem) => {
