@@ -92,4 +92,34 @@ public class CalendarAsyncService {
             log.error("할 일 구글 캘린더 생성 실패", e);
         }
     }
+    @Async
+    @Transactional
+    public void syncTodoEventAsync(Long todoId, Authentication authentication) {
+        try {
+            Todo todo = todoRepository.findById(todoId)
+                    .orElseThrow(() -> new RuntimeException("할 일을 찾을 수 없습니다."));
+
+            if (todo.getDueDateTime() == null) {
+                if (todo.getCalendarEventId() != null && !todo.getCalendarEventId().isBlank()) {
+                    calendarService.deleteEvent(authentication, todo.getCalendarEventId());
+                    todo.clearCalendarEventId();
+                    todoRepository.save(todo);
+                }
+                return;
+            }
+
+            if (todo.getCalendarEventId() != null && !todo.getCalendarEventId().isBlank()) {
+                calendarService.updateTodoEvent(authentication, todo.getCalendarEventId(), todo);
+            } else {
+                Event createdEvent = calendarService.createTodoEvent(authentication, todo);
+                if (createdEvent != null && createdEvent.getId() != null) {
+                    todo.assignCalendarEventId(createdEvent.getId());
+                    todoRepository.save(todo);
+                }
+            }
+        } catch (Exception e) {
+            log.error("할 일 구글 캘린더 동기화 실패", e);
+        }
+    }
+
 }

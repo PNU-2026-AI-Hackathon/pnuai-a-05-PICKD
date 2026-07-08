@@ -3,18 +3,7 @@ import { Icon } from "@iconify/react";
 
 interface CompletedSectionProps {
   applications?: any[];
-  onCompanyClick?: (application: any) => void;
 }
-
-const COMPLETED_STATUSES = new Set(["전형완료"]);
-
-const REGISTRATION_LABEL_MAP: Record<string, string> = {
-  MANUAL: "수기등록",
-  USER: "수기등록",
-  DIRECT: "수기등록",
-  AI: "AI등록",
-  AUTO: "AI등록",
-};
 
 function getText(...values: unknown[]) {
   const value = values.find(
@@ -42,12 +31,23 @@ function getCompanyName(app: any) {
   );
 }
 
-function getJobType(app: any) {
+function getEmploymentType(app: any) {
   return getText(
-    app.jobType,
     app.employmentType,
+    app.employType,
     app.careerType,
+    app.jobType,
     app.notice?.jobType,
+  ) ?? "고용형태 없음";
+}
+
+function getPosition(app: any) {
+  return (
+    getText(
+      app.position,
+      app.notice?.position,
+      app.notice?.jobTitle,
+    ) ?? "직무 없음"
   );
 }
 
@@ -55,10 +55,10 @@ function getJobTitle(app: any) {
   return (
     getText(
       app.jobTitle,
-      app.position,
+      app.noticeName,
+      app.notice?.noticeName,
       app.notice?.jobTitle,
-      app.notice?.position,
-    ) ?? "직무 없음"
+    ) ?? "공고명 없음"
   );
 }
 
@@ -72,32 +72,22 @@ function getResultDate(app: any) {
   );
 }
 
-function getResultLabel(app: any) {
-  return getText(app.finalResult, app.status) ?? "전형완료";
-}
+function getFileTitle(app: any) {
+  const year = getYear(
+    app.resultDate ?? app.updatedAt ?? app.deadlineDate ?? app.createdAt,
+  );
 
-function getRegistrationLabel(app: any) {
-  const raw =
-    getText(
-      app.registrationTypeLabel,
-      app.registrationType,
-      app.sourceType,
-      app.source,
-    ) ?? "수기등록";
-
-  return REGISTRATION_LABEL_MAP[raw] ?? raw;
+  return [year, getCompanyName(app), getPosition(app), getEmploymentType(app)].join("_");
 }
 
 export default function CompletedSection({
   applications = [],
-  onCompanyClick = () => {},
 }: CompletedSectionProps) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"file" | "grid">("file");
 
   const displayApps = applications.filter((app) => {
-    const status = String(app.status ?? app.resultStatus ?? "");
-    return COMPLETED_STATUSES.has(status);
+    return (app.status ?? app.resultStatus) === "COMPLETED";
   });
 
   return (
@@ -120,33 +110,35 @@ export default function CompletedSection({
           <span className="text-sm text-[#64748B]">{displayApps.length}건</span>
         </button>
 
-        <div className="flex rounded-lg border border-[#D8E0EA] bg-[#F8FAFC] p-[2px]">
-          <button
-            type="button"
-            onClick={() => setViewMode("file")}
-            className={`flex h-8 w-8 items-center justify-center rounded-md transition ${
-              viewMode === "file"
-                ? "bg-white text-[#334155] shadow-sm"
-                : "text-[#64748B] hover:bg-white/70"
-            }`}
-            title="파일 보기"
-          >
-            <Icon icon="lucide:folder" className="h-4 w-4" />
-          </button>
+        {isOpen && (
+          <div className="flex rounded-lg border border-[#D8E0EA] bg-[#F8FAFC] p-[2px]">
+            <button
+              type="button"
+              onClick={() => setViewMode("file")}
+              className={`flex h-8 w-8 items-center justify-center rounded-md transition ${
+                viewMode === "file"
+                  ? "bg-white text-[#334155] shadow-sm"
+                  : "text-[#64748B] hover:bg-white/70"
+              }`}
+              title="파일함형"
+            >
+              <Icon icon="lucide:folder" className="h-4 w-4" />
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setViewMode("grid")}
-            className={`flex h-8 w-8 items-center justify-center rounded-md transition ${
-              viewMode === "grid"
-                ? "bg-white text-[#334155] shadow-sm"
-                : "text-[#64748B] hover:bg-white/70"
-            }`}
-            title="그리드 보기"
-          >
-            <Icon icon="lucide:layout-grid" className="h-4 w-4" />
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              className={`flex h-8 w-8 items-center justify-center rounded-md transition ${
+                viewMode === "grid"
+                  ? "bg-white text-[#334155] shadow-sm"
+                  : "text-[#64748B] hover:bg-white/70"
+              }`}
+              title="카드형"
+            >
+              <Icon icon="lucide:layout-grid" className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </div>
 
       {isOpen && (
@@ -156,82 +148,56 @@ export default function CompletedSection({
               완료된 공고가 없습니다.
             </div>
           ) : viewMode === "file" ? (
-            <div className="flex min-h-[150px] flex-wrap items-start gap-8 px-2 pt-4">
-              {displayApps.map((app) => {
-                const companyName = getCompanyName(app);
-                const resultDate =
-                  app.resultDate ??
-                  app.resultCheckedDate ??
-                  app.finalResultDate ??
-                  app.updatedAt ??
-                  app.deadlineDate;
+            <div className="grid min-h-[150px] grid-cols-[repeat(auto-fill,minmax(132px,1fr))] gap-6 px-2 pt-4">
+              {displayApps.map((app) => (
+                <div
+                  key={app.id}
+                  className="group flex w-[132px] flex-col items-center text-center"
+                >
+                  <Icon
+                    icon="lucide:folder"
+                    className="h-[72px] w-[72px] text-[#94A3B8] transition group-hover:text-[#64748B]"
+                  />
 
-                return (
-                  <button
-                    key={app.id}
-                    type="button"
-                    onClick={() => onCompanyClick(app)}
-                    className="group flex w-[96px] flex-col items-center text-center"
+                  <span
+                    className="mt-2 line-clamp-2 max-w-[128px] text-sm font-medium leading-5 text-[#64748B]"
+                    title={getFileTitle(app)}
                   >
-                    <Icon
-                      icon="lucide:folder"
-                      className="h-[72px] w-[72px] text-[#94A3B8] transition group-hover:text-[#64748B]"
-                    />
-
-                    <span className="mt-1 text-xs leading-4 text-[#94A3B8]">
-                      {getYear(resultDate)}
-                    </span>
-
-                    <span className="max-w-[88px] truncate text-sm font-medium leading-5 text-[#64748B]">
-                      {companyName}
-                    </span>
-                  </button>
-                );
-              })}
+                    {getFileTitle(app)}
+                  </span>
+                </div>
+              ))}
             </div>
           ) : (
-            <div className="flex min-h-[150px] flex-wrap gap-4">
+            <div className="grid min-h-[150px] grid-cols-[repeat(auto-fill,minmax(270px,1fr))] gap-4">
               {displayApps.map((app) => {
                 const companyName = getCompanyName(app);
-                const jobType = getJobType(app);
+                const employmentType = getEmploymentType(app);
+                const position = getPosition(app);
                 const jobTitle = getJobTitle(app);
                 const resultDate = getResultDate(app);
-                const registrationLabel = getRegistrationLabel(app);
-                const resultLabel = getResultLabel(app);
 
                 return (
-                  <button
+                  <div
                     key={app.id}
-                    type="button"
-                    onClick={() => onCompanyClick(app)}
-                    className="relative min-h-[144px] w-full max-w-[568px] rounded-xl border border-[#D8E0EA] bg-[#F8FAFC] p-4 text-left transition hover:border-[#CBD5E1] hover:bg-[#F1F5F9]"
+                    className="min-h-[144px] rounded-xl border border-[#D8E0EA] bg-[#F8FAFC] p-4 text-left"
                   >
-                    <div className="absolute right-4 top-4 flex items-center gap-1.5">
-                      <span className="rounded-full bg-white px-2.5 py-1 text-xs text-[#64748B]">
-                        {registrationLabel}
-                      </span>
+                    <h3 className="truncate text-[15px] font-semibold text-[#0F172A]" title={companyName}>
+                      {companyName}
+                    </h3>
 
-                      <span className="rounded-full bg-[#F1F5F9] px-2.5 py-1 text-xs font-medium text-[#475569]">
-                        {resultLabel}
-                      </span>
-                    </div>
+                    <p className="mt-2 truncate text-sm text-[#64748B]" title={jobTitle}>
+                      {jobTitle}
+                    </p>
 
-                    <div className="pr-28">
-                      <h3 className="text-[15px] font-semibold text-[#0F172A]">
-                        {companyName}
-                      </h3>
+                    <p className="mt-2 text-sm text-[#64748B]">
+                      {position} · {employmentType}
+                    </p>
 
-                      {jobType && (
-                        <p className="mt-2 text-sm text-[#64748B]">{jobType}</p>
-                      )}
-
-                      <p className="mt-2 text-sm text-[#64748B]">{jobTitle}</p>
-
-                      <p className="mt-3 text-sm text-[#64748B]">
-                        결과 확인일 {resultDate}
-                      </p>
-                    </div>
-                  </button>
+                    <p className="mt-3 text-sm text-[#64748B]">
+                      결과 확인일 {resultDate}
+                    </p>
+                  </div>
                 );
               })}
             </div>

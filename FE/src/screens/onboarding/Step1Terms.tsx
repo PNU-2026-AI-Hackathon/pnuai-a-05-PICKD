@@ -7,28 +7,38 @@ const TERMS = [
   { key: "marketingAgreed", label: "만 14세 이상이에요", required: true },
   { key: "serviceAgreed", label: "이용약관 동의", required: true },
   { key: "privacyAgreed", label: "개인정보 수집·이용 동의", required: true },
-  { key: "pushAgreed", label: "합격에 도움되는 공고·일정 소식 받기", required: false },
+  {
+    key: "pushAgreed",
+    label: "합격에 도움되는 공고·일정 소식 받기",
+    required: false,
+  },
 ] as const;
 
-type FormKey = "serviceAgreed" | "privacyAgreed" | "marketingAgreed" | "pushAgreed";
+type FormKey =
+  | "serviceAgreed"
+  | "privacyAgreed"
+  | "marketingAgreed"
+  | "pushAgreed";
 
-function Checkbox({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+function Checkbox({ checked }: { checked: boolean }) {
   return (
-    <button
-      type="button"
-      onClick={onChange}
+    <span
       className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
-        checked
-          ? "border-[#2563EB] bg-[#2563EB]"
-          : "border-gray-300 bg-white"
+        checked ? "border-[#2563EB] bg-[#2563EB]" : "border-gray-300 bg-white"
       }`}
     >
       {checked && (
         <svg width="11" height="8" viewBox="0 0 11 8" fill="none">
-          <path d="M1 3.5L4 6.5L10 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M1 3.5L4 6.5L10 1"
+            stroke="white"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       )}
-    </button>
+    </span>
   );
 }
 
@@ -43,7 +53,9 @@ export default function Step1Terms() {
   });
 
   const allChecked = TERMS.every((t) => form[t.key]);
-  const requiredChecked = TERMS.filter((t) => t.required).every((t) => form[t.key]);
+  const requiredChecked = TERMS.filter((t) => t.required).every(
+    (t) => form[t.key],
+  );
 
   const handleChange = (key: FormKey) => {
     setForm((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -51,7 +63,12 @@ export default function Step1Terms() {
 
   const handleAll = () => {
     const value = !allChecked;
-    setForm({ serviceAgreed: value, privacyAgreed: value, marketingAgreed: value, pushAgreed: value });
+    setForm({
+      serviceAgreed: value,
+      privacyAgreed: value,
+      marketingAgreed: value,
+      pushAgreed: value,
+    });
   };
 
   const submit = async () => {
@@ -76,7 +93,9 @@ export default function Step1Terms() {
       <div className="flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-[600px] rounded-2xl bg-white p-10 shadow-sm">
           {/* Header */}
-          <p className="mb-2 text-sm font-semibold text-[#2563EB]">시작하기 전에</p>
+          <p className="mb-2 text-sm font-semibold text-[#2563EB]">
+            시작하기 전에
+          </p>
           <h1 className="mb-8 text-2xl font-bold leading-snug text-gray-900">
             서비스 이용을 위해
             <br />
@@ -88,11 +107,15 @@ export default function Step1Terms() {
             type="button"
             onClick={handleAll}
             className={`mb-5 flex w-full items-center gap-3 border ${
-              allChecked ? "border-[#2563EB] bg-[#EEF0FD]" : "border-gray-300 bg-[#F3F4F8]"
+              allChecked
+                ? "border-[#2563EB] bg-[#EEF0FD]"
+                : "border-gray-300 bg-[#F3F4F8]"
             } rounded-xl px-5 py-4 text-left transition-colors`}
           >
-            <Checkbox checked={allChecked} onChange={handleAll} />
-            <span className="font-semibold text-gray-800 text-sm">전체 동의할게요</span>
+            <Checkbox checked={allChecked} />
+            <span className="font-semibold text-gray-800 text-sm">
+              전체 동의할게요
+            </span>
           </button>
 
           {/* 개별 항목 */}
@@ -104,9 +127,11 @@ export default function Step1Terms() {
                   onClick={() => handleChange(t.key)}
                   className="flex w-full items-center gap-3 text-left"
                 >
-                  <Checkbox checked={form[t.key]} onChange={() => handleChange(t.key)} />
+                  <Checkbox checked={form[t.key]} />
                   <span className="text-sm text-gray-700">
-                    <span className={`mr-3 font-semibold ${t.required ? "text-[#2563EB]" : "text-gray-400"}`}>
+                    <span
+                      className={`mr-3 font-semibold ${t.required ? "text-[#2563EB]" : "text-gray-400"}`}
+                    >
                       {t.required ? "[필수]" : "[선택]"}
                     </span>
                     {t.label}
@@ -114,7 +139,8 @@ export default function Step1Terms() {
                 </button>
                 {t.key === "pushAgreed" && form.pushAgreed && (
                   <p className="ml-14 mt-3 rounded-lg bg-gray-50 px-4 py-3 text-xs text-gray-500">
-                    관심 직무의 새 공고, 마감 임박 알림, 채용 설명회 소식을 보내드려요. 언제든 끌 수 있어요.
+                    관심 직무의 새 공고, 마감 임박 알림, 채용 설명회 소식을
+                    보내드려요. 언제든 끌 수 있어요.
                   </p>
                 )}
               </div>

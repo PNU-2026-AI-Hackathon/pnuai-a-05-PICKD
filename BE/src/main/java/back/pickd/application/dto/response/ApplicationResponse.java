@@ -1,6 +1,7 @@
 package back.pickd.application.dto.response;
 
 import back.pickd.application.entity.Application;
+import back.pickd.application.enums.ApplicationFinalResult;
 import back.pickd.application.enums.ApplicationStatus;
 import back.pickd.document.entity.Document;
 import lombok.Builder;
@@ -20,7 +21,9 @@ public class ApplicationResponse {
     private String jobTitle;
     private String position;
     private String industry;
-    private ApplicationStatus status;   // @JsonValue → "지원 예정" 형태로 직렬화
+    private String employmentType;
+    private ApplicationStatus status;   // @JsonValue → "작성 중" 형태로 직렬화
+    private ApplicationFinalResult finalResult;
     private String memo;
     private LocalDateTime applyDate;
     private LocalDateTime interviewDate;
@@ -42,7 +45,9 @@ public class ApplicationResponse {
                 .jobTitle(app.getJobTitle())
                 .position(app.getPosition())
                 .industry(app.getIndustry())
+                .employmentType(resolveEmploymentType(app))
                 .status(app.getStatus())
+                .finalResult(app.getFinalResult())
                 .memo(app.getMemo())
                 .applyDate(app.getApplyDate())
                 .interviewDate(app.getInterviewDate())
@@ -55,6 +60,29 @@ public class ApplicationResponse {
                 .updatedAt(app.getUpdatedAt())
                 .documents(app.getDocuments().stream().map(DocumentSummary::from).toList())
                 .build();
+    }
+
+
+    private static String resolveEmploymentType(Application app) {
+        if (app.getNotice() == null) {
+            return null;
+        }
+
+        if (app.getNotice().getEmploymentType() != null) {
+            return app.getNotice().getEmploymentType().getDescription();
+        }
+
+        if (app.getNotice().getCategory() == null) {
+            return null;
+        }
+
+        return switch (app.getNotice().getCategory()) {
+            case FULL_TIME -> "정규직";
+            case INTERN -> "인턴";
+            case EXPERIENTIAL_INTERN -> "체험형 인턴";
+            case CONTRACT -> "계약직";
+            case FREELANCER -> "프리랜서";
+        };
     }
 
     @Getter

@@ -1,15 +1,13 @@
 import { useEffect, useRef, useState, type DragEvent } from "react";
-import TableFilter from "./TableFilter";
 import ActiveFilter from "./ActiveFilter";
 import ApplicationRow from "./ApplicationRow";
 import { getDDay, parseLocalDateTime } from "../../../../utils/date";
 import { useApplication } from "../../../../context/ApplicationContext";
-import { getNextStep } from "../../../../utils/status";
+import { isActiveStatus } from "../../../../utils/status";
 import {
   DEFAULT_COLUMNS,
   type Application,
 } from "../../../../types/application";
-import type { DocumentItem } from "../../../../types/document";
 import ApplicationStatusBoard from "./ApplicationStatusBoard";
 import {
   ResizeHandle,
@@ -21,45 +19,42 @@ const DEFAULT_WIDTHS: Record<string, number> = {
   company: 180,
   jobTitle: 240,
   position: 140,
+  employmentType: 120,
   industry: 120,
   status: 130,
-  nextStep: 130,
   deadlineDate: 130,
   dday: 100,
-  documents: 180,
   checklistInComplete: 130,
   recentUpdated: 130,
-  memo: 150,
+  createdAt: 130,
 };
 
 const MIN_WIDTHS: Record<string, number> = {
   company: 120,
   jobTitle: 160,
   position: 100,
+  employmentType: 100,
   industry: 90,
   status: 100,
-  nextStep: 100,
   deadlineDate: 110,
   dday: 80,
-  documents: 140,
   checklistInComplete: 100,
   recentUpdated: 110,
-  memo: 140,
+  createdAt: 110,
 };
 
 const ALL_TABLE_COLUMNS = [
   ["company", "기업명"],
   ["jobTitle", "공고명"],
   ["position", "직무"],
-  ["industry", "산업"],
+  ["employmentType", "고용형태"],
   ["status", "현재 상태"],
-  ["nextStep", "다음 단계"],
   ["deadlineDate", "마감일"],
-  ["dday", "남은 기간"],
-  ["documents", "작성중인 서류"],
+  ["dday", "D-day"],
   ["checklistInComplete", "일정/할 일"],
+  ["industry", "산업"],
   ["recentUpdated", "최근 수정일"],
-  ["memo", "메모"],
+  ["createdAt", "등록일"],
 ] as const;
 
 type TableColumn = (typeof ALL_TABLE_COLUMNS)[number];
@@ -109,7 +104,6 @@ const getDateFieldScheduleCount = (application: Application, events: any[]) => {
 
 export default function ApplicationTable({
   onEdit,
-  onCompanyClick,
   onChange,
   onDelete,
   focusedApplication,
@@ -125,7 +119,7 @@ export default function ApplicationTable({
   const [sort, setSort] = useState<{
     key: string;
     order: "asc" | "desc";
-  } | null>(null);
+  } | null>({ key: "deadlineDate", order: "asc" });
 
   const applicationContext = useApplication() as any;
   const {
@@ -145,6 +139,10 @@ export default function ApplicationTable({
   const [applicationOverrides, setApplicationOverrides] = useState<
     Record<string, Partial<Application>>
   >({});
+
+  useEffect(() => {
+    setApplicationOverrides({});
+  }, [applications]);
 
   const mergedApplications = applications.map((application) => {
     const mergedApplication = {
@@ -279,9 +277,11 @@ export default function ApplicationTable({
   const handleChangeStatusFromBoard = (
     applicationId: Application["id"],
     nextStatus: string,
+    finalResult?: Application["finalResult"],
   ) => {
     applyApplicationPatch(applicationId, {
       status: nextStatus as Application["status"],
+      finalResult: nextStatus === "COMPLETED" ? (finalResult ?? null) : null,
       recentUpdated: new Date().toISOString().slice(0, 10),
     } as Partial<Application>);
   };
@@ -347,16 +347,15 @@ export default function ApplicationTable({
       { key: "company", label: "기업명" },
       { key: "jobTitle", label: "공고명" },
       { key: "position", label: "직무" },
-      { key: "industry", label: "산업" },
+      { key: "employmentType", label: "고용형태" },
       { key: "status", label: "현재 상태" },
-      { key: "nextStep", label: "다음 단계" },
       { key: "deadlineDate", label: "마감일" },
-      { key: "dday", label: "남은 기간" },
-      { key: "documents", label: "작성중인 서류" },
+      { key: "dday", label: "D-day" },
       { key: "checklistInComplete", label: "일정/할 일" },
-      { key: "important", label: "중요" },
+      { key: "industry", label: "산업" },
       { key: "recentUpdated", label: "최근 수정일" },
-      { key: "memo", label: "메모" },
+      { key: "createdAt", label: "등록일" },
+      { key: "important", label: "중요" },
     ];
 
     const activeColumns = COPY_COLUMNS.filter(
@@ -380,31 +379,35 @@ export default function ApplicationTable({
           return row.jobTitle;
         case "position":
           return row.position;
+        case "employmentType":
+          return (
+            row.employmentType ||
+            row.employType ||
+            row.careerType ||
+            row.jobType ||
+            "-"
+          );
         case "industry":
           return row.industry;
         case "status":
           return row.status;
-        case "nextStep":
-          return getNextStep(row.status);
         case "deadlineDate":
           return row.deadlineDate || "-";
         case "dday":
           return getDDay(row.deadlineDate);
-        case "documents":
-          return row.documents?.length
-            ? row.documents
-                .slice(0, 2)
-                .map((doc: DocumentItem) => `${doc.type} · ${doc.status}`)
-                .join(", ")
-            : "—";
         case "checklistInComplete":
           return `일정 ${scheduleCount} / 할 일 ${todoCount}`;
         case "important":
           return row.important ? "★" : "☆";
         case "recentUpdated":
-          return row.documents?.[0]?.updatedAt || "-";
-        case "memo":
-          return row.memo || "-";
+          return (
+            row.updatedAt ||
+            row.recentUpdated ||
+            row.documents?.[0]?.updatedAt ||
+            "-"
+          );
+        case "createdAt":
+          return row.createdAt || "-";
         default:
           return "-";
       }
@@ -479,6 +482,25 @@ export default function ApplicationTable({
     return [...new Set(values)];
   };
 
+  const finalRecentThreshold = new Date();
+  finalRecentThreshold.setMonth(finalRecentThreshold.getMonth() - 1);
+  finalRecentThreshold.setHours(0, 0, 0, 0);
+
+  const activeApplications = mergedApplications.filter((application) =>
+    isActiveStatus(application.status),
+  );
+
+  const boardApplications = mergedApplications.filter((application) => {
+    if (isActiveStatus(application.status)) return true;
+
+    const updatedAt =
+      parseLocalDateTime(application.updatedAt) ??
+      parseLocalDateTime(application.recentUpdated);
+
+    if (!updatedAt) return false;
+    return updatedAt.getTime() >= finalRecentThreshold.getTime();
+  });
+
   const groupedFilters = filters.reduce(
     (acc, filter) => {
       if (!acc[filter.key]) {
@@ -492,13 +514,15 @@ export default function ApplicationTable({
     {} as Record<string, string[]>,
   );
 
-  const filteredRows = mergedApplications.filter((row) => {
+  const filteredRows = activeApplications.filter((row) => {
     return Object.entries(groupedFilters).every(([key, values]) => {
       const rowValue = (row as any)[key];
 
       if (rowValue == null) return false;
 
-      return (values as string[]).some((value) => String(rowValue).includes(String(value)));
+      return (values as string[]).some((value) =>
+        String(rowValue).includes(String(value)),
+      );
     });
   });
 
@@ -521,27 +545,37 @@ export default function ApplicationTable({
 
   if (sort) {
     sortedRows.sort((a, b) => {
-      let aValue = 0;
-      let bValue = 0;
-
-      if (sort.key === "applyDate") {
-        aValue = parseLocalDateTime(a.applyDate)?.getTime() ?? 0;
-        bValue = parseLocalDateTime(b.applyDate)?.getTime() ?? 0;
+      if (sort.key === "company") {
+        const result = String(a.company ?? "").localeCompare(
+          String(b.company ?? ""),
+          "ko",
+        );
+        return sort.order === "asc" ? result : -result;
       }
 
-      if (sort.key === "dday") {
-        aValue = parseLocalDateTime(a.deadlineDate)?.getTime() ?? 0;
-        bValue = parseLocalDateTime(b.deadlineDate)?.getTime() ?? 0;
-      }
+      const getDateValue = (row: Application) => {
+        if (sort.key === "deadlineDate") {
+          return (
+            parseLocalDateTime(row.deadlineDate)?.getTime() ??
+            Number.MAX_SAFE_INTEGER
+          );
+        }
+        if (sort.key === "createdAt") {
+          return parseLocalDateTime(row.createdAt)?.getTime() ?? 0;
+        }
+        if (sort.key === "updatedAt") {
+          return (
+            parseLocalDateTime(row.updatedAt)?.getTime() ??
+            parseLocalDateTime(row.recentUpdated)?.getTime() ??
+            0
+          );
+        }
 
-      if (sort.key === "checklistInComplete") {
-        aValue =
-          (Number((a as any).calendarEventCount ?? (a as any).calendarEvents?.length ?? 0) || 0) +
-          (a.todos?.length || 0);
-        bValue =
-          (Number((b as any).calendarEventCount ?? (b as any).calendarEvents?.length ?? 0) || 0) +
-          (b.todos?.length || 0);
-      }
+        return 0;
+      };
+
+      const aValue = getDateValue(a);
+      const bValue = getDateValue(b);
       return sort.order === "asc" ? aValue - bValue : bValue - aValue;
     });
   }
@@ -550,7 +584,7 @@ export default function ApplicationTable({
     setSort({ key, order });
   };
 
-  const EMPTY_COUNT = Math.max(0, 8 - sortedRows.length);
+  const EMPTY_COUNT = Math.max(0, 5 - sortedRows.length);
 
   const visibleRowIds = sortedRows.map((row) => row.id);
 
@@ -628,12 +662,12 @@ export default function ApplicationTable({
           className={
             viewMode === "board"
               ? "overflow-x-auto overflow-y-visible"
-              : "overflow-x-auto overflow-y-visible max-h-[400px]"
+              : "overflow-x-auto overflow-y-auto max-h-[340px] min-h-[285px]"
           }
         >
           {viewMode === "board" ? (
             <ApplicationStatusBoard
-              applications={sortedRows}
+              applications={boardApplications}
               onOpenApplication={handleOpenApplicationFromBoard}
               onToggleImportant={handleToggleImportant}
               onChangeStatus={handleChangeStatusFromBoard}
@@ -682,7 +716,7 @@ export default function ApplicationTable({
                         </div>
                       </label>
                     </th>
-                    <th className="w-[60px] min-w-[60px] max-w-[60px] px-3 py-3 bg-[#F1F5F9] border-r border-[#E2E8F0] text-center select-none">
+                    <th className="w-[48px] min-w-[48px] max-w-[48px] px-3 py-3 bg-[#F1F5F9] border-r border-[#E2E8F0] text-center select-none">
                       중요
                     </th>
                     {tableColumns.map(([key, label], idx) => (
@@ -713,33 +747,6 @@ export default function ApplicationTable({
                           }`}
                         >
                           {label}
-
-                          {[
-                            "applyDate",
-                            "dday",
-                            "checklistInComplete",
-                          ].includes(key) ? (
-                            <TableFilter
-                              mode="sort"
-                              columnKey={key}
-                              setFilters={setFilters}
-                              setSort={setSort}
-                              handleSort={handleSort}
-                            />
-                          ) : ![
-                              "documents",
-                              "important",
-                              "recentUpdated",
-                              "nextStep",
-                              "memo",
-                            ].includes(key) ? (
-                            <TableFilter
-                              mode="filter"
-                              columnKey={key}
-                              values={getUniqueValues(key)}
-                              setFilters={setFilters}
-                            />
-                          ) : null}
                         </div>
 
                         <ResizeHandle onMouseDown={onMouseDown(key)} />
@@ -753,11 +760,10 @@ export default function ApplicationTable({
                     <ApplicationRow
                       key={row.id}
                       row={row}
-                      visibleColumns={visibleColumns}
+                      tableColumns={tableColumns}
                       widths={widths}
                       checkedIds={checkedIds}
                       toggleCheck={toggleCheck}
-                      onCompanyClick={onCompanyClick}
                       setFocusedApplication={setFocusedApplication}
                       focusedApplication={focusedApplication}
                       onEdit={onEdit}

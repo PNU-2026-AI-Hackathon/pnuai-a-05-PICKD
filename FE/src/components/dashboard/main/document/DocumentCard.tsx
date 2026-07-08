@@ -8,17 +8,34 @@ interface Props {
   onStatusChange?: (status: DocumentItem["status"]) => void;
 }
 
+const getEmploymentType = (item: DocumentItem) =>
+  item.application?.employmentType ||
+  item.application?.employType ||
+  item.application?.careerType ||
+  item.application?.jobType ||
+  "-";
+
+const getDocumentTitle = (item: DocumentItem) => {
+  const company = item.application?.company || item.company || "회사명 없음";
+  const position = item.application?.position || item.application?.jobTitle || "직무 없음";
+  const employmentType = getEmploymentType(item);
+
+  return [company, position, employmentType].filter(Boolean).join(" ");
+};
+
 export default function DocumentCard({ item, onStatusChange }: Props) {
+  const deadlineDate = item.application?.deadlineDate;
+
   return (
     <div className="w-[270px] rounded-[18px] border border-[#E2E8F0] bg-white p-5 shadow-sm">
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="text-[20px] font-[600] text-[#0F172A]">
-            {item.title}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="truncate text-[18px] font-[600] text-[#0F172A]" title={getDocumentTitle(item)}>
+            {getDocumentTitle(item)}
           </h3>
 
           <p className="mt-1 text-sm text-[#64748B]">
-            {item.company} · {item.type}
+            {item.type} · {item.status}
           </p>
         </div>
 
@@ -49,16 +66,16 @@ export default function DocumentCard({ item, onStatusChange }: Props) {
         </div>
       </div>
 
-      <div className="mt-5 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-[#64748B]">
-          <span>마감 {formatApplicationDate(item.application?.applyDate)}</span>
+      <div className="mt-5 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2 text-sm text-[#64748B]">
+          <span>마감 {formatApplicationDate(deadlineDate)}</span>
 
           <span>·</span>
 
-          <span>{getDDay(item.application?.applyDate)}</span>
+          <span>{getDDay(deadlineDate)}</span>
         </div>
 
-        <span className="text-sm text-[#64748B]">
+        <span className="shrink-0 text-sm text-[#64748B]">
           {getRelativeTime(item.updatedAt)}
         </span>
       </div>

@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import {LogoIcon, DashboardIcon, PortfolioIcon, DocumentIcon, SettingsIcon, HelpIcon, CalendarIcon } from "../assets";
+import {PickdLogoIcon, DashboardIcon, PortfolioIcon, DocumentIcon, SettingsIcon, HelpIcon, CalendarIcon } from "../assets";
 
 export default function Sidebar() {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ export default function Sidebar() {
   return (
     <nav className="w-[60px] min-h-screen bg-white border-r border-gray-200 flex flex-col items-center py-6 sticky top-0 h-screen">
       <div className="mb-7 cursor-pointer" onClick={() => navigate("/main")}>
-        <LogoIcon size={32} />
+        <PickdLogoIcon size={32} />
       </div>
 
       <div className="flex-1 flex flex-col gap-3">

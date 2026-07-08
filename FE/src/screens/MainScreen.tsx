@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Application } from "../types/application";
 import Header from "../components/dashboard/main/Header";
-import CompanyInfo from "../components/modal/CompanyInfo";
 import RightTab from "../components/dashboard/right/RightTab";
 import { useApplication } from "../context/ApplicationContext";
 import ApplyInput from "../components/dashboard/main/ApplyInput";
@@ -12,10 +11,10 @@ import ApplicationTable from "../components/dashboard/main/applicationTable/Appl
 import CompletedSection from "../components/dashboard/main/CompleteSection";
 import { Icon } from "@iconify/react";
 import { getCalendarEvents } from "../api/calendar";
+import { getUserProfile } from "../api/user";
 
 export default function MainScreen() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState<any>(null);
   const [focusedApplication, setFocusedApplication] = useState<any>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -30,6 +29,18 @@ export default function MainScreen() {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (!focusedApplication) return;
+
+    const latestApplication = applications.find(
+      (application) => application.id === focusedApplication.id,
+    );
+
+    if (latestApplication && latestApplication !== focusedApplication) {
+      setFocusedApplication(latestApplication);
+    }
+  }, [applications, focusedApplication]);
 
   const allTodos = applications.flatMap((app) =>
     (app.todos || []).map((todo) => ({
@@ -50,15 +61,19 @@ export default function MainScreen() {
   );
 
   useEffect(() => {
-    fetch("/api/user", {
-      credentials: "include",
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error();
-        return res.json();
+    let ignore = false;
+
+    getUserProfile()
+      .then((data) => {
+        if (!ignore) setUser(data);
       })
-      .then((data) => setUser(data))
-      .catch(() => setUser(null));
+      .catch(() => {
+        if (!ignore) setUser(null);
+      });
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const loadCalendarEvents = async () => {
@@ -97,11 +112,6 @@ export default function MainScreen() {
     setTimeout(loadCalendarEvents, 300);
   };
 
-  const handleCompanyClick = (application: any) => {
-    setSelectedApplication(application);
-    setIsCompanyModalOpen(true);
-  };
-
   return (
     <div className="relative flex px-[150px] min-h-full overflow-hidden bg-gray-50">
       <div className="flex-1 min-w-0 p-6">
@@ -125,7 +135,6 @@ export default function MainScreen() {
                 }}
                 onDelete={() => {}}
                 onChange={handleAfterChange}
-                onCompanyClick={handleCompanyClick}
                 focusedApplication={focusedApplication}
                 setFocusedApplication={setFocusedApplication}
                 setIsDetailModalOpen={setIsDetailModalOpen}
@@ -135,10 +144,7 @@ export default function MainScreen() {
 
             <DocumentSection documents={documents} />
 
-            <CompletedSection
-              applications={applications}
-              onCompanyClick={handleCompanyClick}
-            />
+            <CompletedSection applications={applications} />
           </>
         )}
       </div>
@@ -222,14 +228,6 @@ export default function MainScreen() {
         calendarEvents={googleEvents}
         onChange={handleAfterChange}
       />
-
-      {isCompanyModalOpen && selectedApplication && (
-        <CompanyInfo
-          isOpen={isCompanyModalOpen}
-          onClose={() => setIsCompanyModalOpen(false)}
-          data={selectedApplication}
-        />
-      )}
     </div>
   );
 }

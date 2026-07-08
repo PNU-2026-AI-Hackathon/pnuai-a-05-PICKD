@@ -9,8 +9,9 @@ import { useApplication } from "../../../context/ApplicationContext";
 interface Props {
   row: Application;
   onEdit?: (row: Application) => void;
-  onDelete?: () => void;
-  onAddDocument: (applicationId: number, document: DocumentItem) => void;
+  onDelete?: () => void | Promise<void>;
+  onAddDocument: (applicationId: number, document: DocumentItem) => void | Promise<void>;
+  onChange?: () => void | Promise<void>;
 }
 
 export default function ApplicationMenu({
@@ -18,6 +19,7 @@ export default function ApplicationMenu({
   onEdit,
   onDelete,
   onAddDocument,
+  onChange,
 }: Props) {
   const { addTodo } = useApplication();
   const [open, setOpen] = useState(false);
@@ -43,6 +45,7 @@ export default function ApplicationMenu({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
   useEffect(() => {
     const handleScroll = () => {
       setOpen(false);
@@ -61,7 +64,7 @@ export default function ApplicationMenu({
     <div className="relative flex justify-center">
       <button
         ref={buttonRef}
-        className="w-full h-full py-2 text-[20px] text-gray-400"
+        className="w-full h-full py-2 text-[20px] text-gray-400 hover:text-[#334155]"
         onClick={(e) => {
           e.stopPropagation();
           const rect = e.currentTarget.getBoundingClientRect();
@@ -167,6 +170,7 @@ export default function ApplicationMenu({
             });
 
             setIsTodoModalOpen(false);
+            await onChange?.();
           }}
         />
       )}
@@ -175,9 +179,10 @@ export default function ApplicationMenu({
         <PostDocument
           application={row}
           onClose={() => setIsDocumentModalOpen(false)}
-          onSubmit={(document: DocumentItem) => {
-            onAddDocument(row.id, document);
+          onSubmit={async (document: DocumentItem) => {
+            await onAddDocument(row.id, document);
             setIsDocumentModalOpen(false);
+            await onChange?.();
           }}
         />
       )}

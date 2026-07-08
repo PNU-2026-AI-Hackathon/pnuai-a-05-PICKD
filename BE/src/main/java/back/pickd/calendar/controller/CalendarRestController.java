@@ -36,7 +36,7 @@ public class CalendarRestController {
     @GetMapping("/events")
     @Operation(
             summary = "일정 목록 조회",
-            description = "현재 시점 기준 1년 전 ~ 1년 후 범위의 Google Calendar 일정을 반환합니다. timeMin/timeMax 파라미터는 현재 미적용(서버 내부 범위 고정)입니다."
+            description = "현재 시점 기준 기본 1년 전 ~ 1년 후 범위의 Google Calendar 일정을 반환합니다. timeMin/timeMax가 있으면 해당 범위로 조회합니다."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공"),
@@ -45,18 +45,29 @@ public class CalendarRestController {
     })
     public List<Event> getEvents(
             @Parameter(hidden = true) Authentication authentication,
-            @Parameter(description = "조회 시작 시각 (현재 미적용)") @RequestParam(required = false) String timeMin,
-            @Parameter(description = "조회 종료 시각 (현재 미적용)") @RequestParam(required = false) String timeMax)
+            @Parameter(description = "조회 시작 시각") @RequestParam(required = false) String timeMin,
+            @Parameter(description = "조회 종료 시각") @RequestParam(required = false) String timeMax)
             throws IOException, GeneralSecurityException {
 
         java.util.TimeZone tz = java.util.TimeZone.getTimeZone("Asia/Seoul");
         java.util.Calendar cal = java.util.Calendar.getInstance(tz);
 
-        cal.add(java.util.Calendar.YEAR, -1);
-        DateTime min = new DateTime(cal.getTime());
+        DateTime min;
+        DateTime max;
 
-        cal.add(java.util.Calendar.YEAR, 2);
-        DateTime max = new DateTime(cal.getTime());
+        if (timeMin != null && !timeMin.isBlank()) {
+            min = new DateTime(timeMin);
+        } else {
+            cal.add(java.util.Calendar.YEAR, -1);
+            min = new DateTime(cal.getTime());
+        }
+
+        if (timeMax != null && !timeMax.isBlank()) {
+            max = new DateTime(timeMax);
+        } else {
+            cal.add(java.util.Calendar.YEAR, 2);
+            max = new DateTime(cal.getTime());
+        }
 
         return calendarService.getEvents(authentication, min, max);
     }
@@ -108,6 +119,16 @@ public class CalendarRestController {
         if (requestDto.getSummary() != null) existingEvent.setSummary(requestDto.getSummary());
         if (requestDto.getLocation() != null) existingEvent.setLocation(requestDto.getLocation());
         if (requestDto.getDescription() != null) existingEvent.setDescription(requestDto.getDescription());
+        if (requestDto.getStart() != null) {
+            existingEvent.setStart(new EventDateTime()
+                    .setDateTime(new DateTime(requestDto.getStart().getDateTime()))
+                    .setTimeZone(requestDto.getStart().getTimeZone()));
+        }
+        if (requestDto.getEnd() != null) {
+            existingEvent.setEnd(new EventDateTime()
+                    .setDateTime(new DateTime(requestDto.getEnd().getDateTime()))
+                    .setTimeZone(requestDto.getEnd().getTimeZone()));
+        }
 
         return calendarService.updateEvent(authentication, eventId, existingEvent);
     }

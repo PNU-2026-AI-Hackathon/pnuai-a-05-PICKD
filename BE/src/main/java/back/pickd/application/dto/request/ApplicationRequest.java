@@ -1,5 +1,6 @@
 package back.pickd.application.dto.request;
 
+import back.pickd.application.enums.ApplicationFinalResult;
 import back.pickd.application.enums.ApplicationStatus;
 import back.pickd.notice.enums.JobCategory;
 import jakarta.validation.constraints.NotNull;
@@ -32,6 +33,8 @@ public class ApplicationRequest {
 
     @NotNull
     private ApplicationStatus status;
+
+    private ApplicationFinalResult finalResult;
 
     private String memo;
 

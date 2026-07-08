@@ -2,6 +2,7 @@ package back.pickd.calendar.service;
 
 import back.pickd.application.entity.Todo;
 import back.pickd.global.error.ApiException;
+import back.pickd.global.error.CalendarConsentRequiredException;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
@@ -23,6 +24,7 @@ import java.security.GeneralSecurityException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -31,6 +33,7 @@ public class CalendarService {
     private final OAuth2AuthorizedClientService authorizedClientService;
     private static final String TIME_ZONE = "Asia/Seoul";
     private static final ZoneId SEOUL_ZONE = ZoneId.of(TIME_ZONE);
+    private static final String CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar";
 
     private Calendar getCalendarClient(Authentication authentication) throws IOException, GeneralSecurityException {
         if (authentication == null) throw ApiException.unauthorized("로그인이 필요합니다.");
@@ -38,6 +41,13 @@ public class CalendarService {
                 authorizedClientService.loadAuthorizedClient("google", authentication.getName());
 
         if (client == null) throw ApiException.unauthorized("Google 계정 연동이 필요합니다.");
+
+        // 캘린더 스코프 동의 여부 확인 (미동의 시 프론트에서 재동의 플로우 트리거)
+        Set<String> grantedScopes = client.getAccessToken().getScopes();
+        if (grantedScopes == null || !grantedScopes.contains(CALENDAR_SCOPE)) {
+            throw new CalendarConsentRequiredException("구글 캘린더 권한 동의가 필요합니다.");
+        }
+
         String token = client.getAccessToken().getTokenValue();
         GoogleCredentials credentials = GoogleCredentials.create(new AccessToken(token, null));
         NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
@@ -132,7 +142,15 @@ public class CalendarService {
 
     public Event createTodoEvent(Authentication authentication, Todo todo)
             throws IOException, GeneralSecurityException {
+        return createEvent(authentication, buildTodoEvent(todo));
+    }
 
+    public Event updateTodoEvent(Authentication authentication, String eventId, Todo todo)
+            throws IOException, GeneralSecurityException {
+        return updateEvent(authentication, eventId, buildTodoEvent(todo));
+    }
+
+    private Event buildTodoEvent(Todo todo) {
         if (todo == null) {
             throw new IllegalArgumentException("Todo가 비어 있습니다.");
         }
@@ -144,7 +162,7 @@ public class CalendarService {
         ZonedDateTime startDateTime = todo.getDueDateTime().atZone(SEOUL_ZONE);
         ZonedDateTime endDateTime = startDateTime.plusMinutes(30);
 
-        Event event = new Event()
+        return new Event()
                 .setSummary("[할일] " + todo.getTitle())
                 .setDescription(makeTodoDescription(todo))
                 .setStart(new EventDateTime()
@@ -153,8 +171,6 @@ public class CalendarService {
                 .setEnd(new EventDateTime()
                         .setDateTime(new DateTime(endDateTime.toInstant().toEpochMilli()))
                         .setTimeZone(TIME_ZONE));
-
-        return createEvent(authentication, event);
     }
 
     private String makeTodoDescription(Todo todo) {

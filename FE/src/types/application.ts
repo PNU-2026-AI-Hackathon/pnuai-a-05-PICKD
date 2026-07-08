@@ -2,19 +2,14 @@ import type { Todo } from "./todo";
 import type { DocumentItem } from "./document";
 
 export const APPLICATION_STATUSES = [
-  "작성중",
-  "지원완료",
-  "서류전형",
-  "필기전형",
-  "면접전형",
-  "전형완료",
+  "WRITING",
+  "SUBMITTED",
+  "WRITTEN_TEST",
+  "INTERVIEW",
+  "COMPLETED",
 ] as const;
 
-export const APPLICATION_FINAL_RESULTS = [
-  "최종합격",
-  "불합격",
-  "보류",
-] as const;
+export const APPLICATION_FINAL_RESULTS = ["합격", "불합격", "포기"] as const;
 
 export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
 export type ApplicationFinalResult =
@@ -57,15 +52,14 @@ export type Application = {
 
 export const COLUMN_OPTIONS = [
   { key: "position", label: "직무", default: true },
+  { key: "employmentType", label: "고용형태", default: true },
   { key: "status", label: "현재 상태", default: true },
-  { key: "nextStep", label: "다음 단계", default: true },
   { key: "deadlineDate", label: "마감일", default: true },
-  { key: "dday", label: "남은 기간", default: true },
-  { key: "documents", label: "작성중인 서류", default: true },
+  { key: "dday", label: "D-day", default: true },
   { key: "checklistInComplete", label: "일정/할 일", default: true },
   { key: "industry", label: "산업", default: false },
-  { key: "recentUpdated", label: "최근 수정일", default: false },
-  { key: "memo", label: "메모", default: true },
+  { key: "recentUpdated", label: "최근 수정일", default: true },
+  { key: "createdAt", label: "등록일", default: true },
 ];
 
 export const DEFAULT_COLUMNS = COLUMN_OPTIONS.filter(

@@ -1,4 +1,4 @@
-import { apiRequest } from "./http";
+import { apiRequest, isCalendarConsentError } from "./http";
 import type { Schedule } from "../types/schedule";
 
 export type CalendarEventPayload = {
@@ -115,6 +115,9 @@ export async function getCalendarEvents(params?: {
       },
     );
   } catch (error) {
+    // 권한 재동의가 필요한 경우 레거시 엔드포인트 폴백 없이 그대로 전파
+    if (isCalendarConsentError(error)) throw error;
+
     return apiRequest<Schedule[]>("/api/calendar", {
       method: "GET",
       skipJsonContentType: true,

@@ -1,5 +1,5 @@
 import { Icon } from "@iconify/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { COLUMN_OPTIONS, DEFAULT_COLUMNS } from "../../../../types/application";
 
 interface Props {
@@ -9,39 +9,38 @@ interface Props {
   sort: { key: string; order: "asc" | "desc" } | null;
   groupedFilters: Record<string, string[]>;
 
-  setFilters: React.Dispatch<
-    React.SetStateAction<{ key: string; value: string }[]>
-  >;
-  setSort: React.Dispatch<
-    React.SetStateAction<{ key: string; order: "asc" | "desc" } | null>
-  >;
+  setFilters: Dispatch<SetStateAction<{ key: string; value: string }[]>>;
+  setSort: Dispatch<SetStateAction<{ key: string; order: "asc" | "desc" } | null>>;
 
   visibleColumns: string[];
-  setVisibleColumns: React.Dispatch<React.SetStateAction<string[]>>;
+  setVisibleColumns: Dispatch<SetStateAction<string[]>>;
   searchKeyword: string;
-  setSearchKeyword: React.Dispatch<React.SetStateAction<string>>;
+  setSearchKeyword: Dispatch<SetStateAction<string>>;
   viewMode: "table" | "board";
-  setViewMode: React.Dispatch<React.SetStateAction<"table" | "board">>;
+  setViewMode: Dispatch<SetStateAction<"table" | "board">>;
 }
 
-const filterLabelMap: Record<string, string> = {
-  company: "기업명",
-  jobTitle: "공고명",
-  position: "직무",
-  industry: "산업",
-  status: "지원상태",
-  submitted: "제출",
-  applyDate: "지원기한",
-  dday: "D-day",
-  checklistInComplete: "할 일",
+const SORT_OPTIONS = [
+  { key: "deadlineDate", order: "asc", label: "마감일 가까운 순" },
+  { key: "deadlineDate", order: "desc", label: "마감일 먼 순" },
+  { key: "createdAt", order: "desc", label: "최근 등록 순" },
+  { key: "createdAt", order: "asc", label: "오래된 등록 순" },
+  { key: "updatedAt", order: "desc", label: "최근 수정 순" },
+  { key: "company", order: "asc", label: "기업명 가나다 순" },
+] as const;
+
+export const getSortLabel = (sort: Props["sort"]) => {
+  if (!sort) return "정렬";
+
+  return (
+    SORT_OPTIONS.find(
+      (option) => option.key === sort.key && option.order === sort.order,
+    )?.label ?? "정렬"
+  );
 };
 
 export default function ActiveFilter({
-  show,
   setShow,
-  filters,
-  sort,
-  groupedFilters,
   setFilters,
   setSort,
   visibleColumns,
@@ -50,20 +49,12 @@ export default function ActiveFilter({
   setSearchKeyword,
   viewMode,
   setViewMode,
+  sort,
 }: Props) {
-  const filterRef = useRef<HTMLDivElement | null>(null);
   const columnRef = useRef<HTMLDivElement | null>(null);
+  const sortRef = useRef<HTMLDivElement | null>(null);
   const [isColumnOpen, setIsColumnOpen] = useState(false);
-
-  const removeFilter = (key: string, value: string) => {
-    setFilters((prev) =>
-      prev.filter((f) => !(f.key === key && f.value === value)),
-    );
-  };
-
-  const removeSort = () => {
-    setSort(null);
-  };
+  const [isSortOpen, setIsSortOpen] = useState(false);
 
   const toggleColumn = (key: string) => {
     setVisibleColumns((prev) =>
@@ -72,15 +63,20 @@ export default function ActiveFilter({
   };
 
   useEffect(() => {
+    setShow(false);
+    setFilters([]);
+  }, []);
+
+  useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
 
-      if (filterRef.current && !filterRef.current.contains(target)) {
-        setShow(false);
-      }
-
       if (columnRef.current && !columnRef.current.contains(target)) {
         setIsColumnOpen(false);
+      }
+
+      if (sortRef.current && !sortRef.current.contains(target)) {
+        setIsSortOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -91,7 +87,45 @@ export default function ActiveFilter({
 
   return (
     <div className="relative">
-      <div className="ml-auto flex items-center gap-2 w-fit">
+      <div className="ml-auto flex w-fit items-center gap-2">
+        <div ref={sortRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setIsSortOpen((prev) => !prev)}
+            className="flex h-10 items-center gap-2 rounded-xl border border-[#D8E0EA] bg-white px-3 text-sm font-medium text-[#334155] hover:bg-[#F8FAFC]"
+            title="정렬"
+          >
+            <Icon icon="lucide:arrow-up-down" width={16} height={16} />
+            <span>{getSortLabel(sort)}</span>
+            <Icon icon="mdi:chevron-down" width={18} />
+          </button>
+
+          {isSortOpen && (
+            <div className="absolute right-0 top-12 z-50 w-[190px] overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white p-2 shadow-lg">
+              {SORT_OPTIONS.map((option) => {
+                const active = sort?.key === option.key && sort?.order === option.order;
+
+                return (
+                  <button
+                    key={`${option.key}-${option.order}`}
+                    type="button"
+                    onClick={() => {
+                      setSort({ key: option.key, order: option.order });
+                      setIsSortOpen(false);
+                    }}
+                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-[#F8FAFC] ${
+                      active ? "font-semibold text-[#2563EB]" : "text-[#334155]"
+                    }`}
+                  >
+                    <span>{option.label}</span>
+                    {active && <Icon icon="mdi:check" className="text-[18px]" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         <div className="flex items-center rounded-lg border border-[#D8E0EA] bg-[#F8FAFC] p-[2px]">
           <button
             type="button"
@@ -114,11 +148,12 @@ export default function ActiveFilter({
                 ? "bg-white text-[#334155] shadow-sm"
                 : "text-[#64748B] hover:bg-white/70"
             }`}
-            title="카드 보기"
+            title="칸반 보기"
           >
             <Icon icon="lucide:columns-3" width={17} height={17} />
           </button>
         </div>
+
         <div className="flex h-10 w-[280px] items-center gap-2 rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] px-3 focus-within:border-[#2563EB] focus-within:ring-2 focus-within:ring-[#BFDBFE]">
           <Icon icon="mdi:magnify" className="text-[20px] text-[#64748B]" />
 
@@ -129,19 +164,12 @@ export default function ActiveFilter({
             className="w-full bg-transparent text-sm text-[#0F172A] outline-none placeholder:text-[#64748B]"
           />
         </div>
-        <button
-          onClick={() => setShow(!show)}
-          className="w-9 h-9 flex items-center justify-center rounded-xl border border-[#F1F5F9] hover:bg-gray-50 transition"
-        >
-          <Icon
-            icon="mdi:filter-variant"
-            className="text-[24px] text-[#64748B]"
-          />
-        </button>
+
         <div ref={columnRef} className="relative">
           <button
             onClick={() => setIsColumnOpen(!isColumnOpen)}
-            className="w-9 h-9 flex items-center justify-center rounded-xl border border-[#F1F5F9] hover:bg-gray-50 transition"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#F1F5F9] transition hover:bg-gray-50"
+            title="컬럼 설정"
           >
             <Icon
               icon="material-symbols:view-column-outline"
@@ -150,8 +178,8 @@ export default function ActiveFilter({
           </button>
 
           {isColumnOpen && (
-            <div className="absolute top-12 right-0 w-[280px] bg-white border border-[#E2E8F0] rounded-2xl shadow-lg z-50 overflow-hidden">
-              <div className="px-6 py-4 border-b border-[#F1F5F9]">
+            <div className="absolute right-0 top-12 z-50 w-[280px] overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-lg">
+              <div className="border-b border-[#F1F5F9] px-6 py-4">
                 <p className="text-[15px] font-semibold text-[#334155]">
                   표시할 컬럼 선택
                 </p>
@@ -165,7 +193,7 @@ export default function ActiveFilter({
                     <button
                       key={column.key}
                       onClick={() => toggleColumn(column.key)}
-                      className="w-full px-6 py-2 flex items-center justify-between hover:bg-[#F8FAFC]"
+                      className="flex w-full items-center justify-between px-6 py-2 hover:bg-[#F8FAFC]"
                     >
                       <span className="text-[15px] text-[#334155]">
                         {column.label}
@@ -184,7 +212,7 @@ export default function ActiveFilter({
 
               <button
                 onClick={() => setVisibleColumns(DEFAULT_COLUMNS)}
-                className="w-full px-6 py-3 border-t border-[#F1F5F9] flex items-center gap-2 text-[#64748B] hover:bg-[#F8FAFC]"
+                className="flex w-full items-center gap-2 border-t border-[#F1F5F9] px-6 py-3 text-[#64748B] hover:bg-[#F8FAFC]"
               >
                 <Icon icon="mdi:restore" className="text-[18px]" />
                 기본값으로 초기화
@@ -193,79 +221,6 @@ export default function ActiveFilter({
           )}
         </div>
       </div>
-
-      {show && (
-        <div
-          ref={filterRef}
-          className="absolute top-12 right-0 w-[280px] bg-white border border-[#E2E8F0] rounded-2xl shadow-xl p-3 z-[40]"
-        >
-          <div className="flex items-center justify-between mb-3 px-1">
-            <span className="text-sm font-[600] text-[#334155]">
-              적용된 필터
-            </span>
-
-            <button
-              onClick={() => setShow(false)}
-              className="text-[#94A3B8] hover:text-[#334155]"
-            >
-              ✕
-            </button>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            {Object.entries(groupedFilters).map(([key, values]) => (
-              <div key={key} className="rounded-xl bg-[#F8FAFC] px-3 py-3">
-                <span className="text-[11px] text-[#94A3B8]">
-                  {filterLabelMap[key] || key}
-                </span>
-
-                <div className="mt-2 flex flex-col gap-2">
-                  {values.map((value) => (
-                    <div
-                      key={value}
-                      className="flex items-center gap-1 rounded-lg px-2 text-sm text-[#334155]"
-                    >
-                      <span>{value}</span>
-                      <button
-                        onClick={() => removeFilter(key, value)}
-                        className="text-[#64748B] hover:text-[#334155]"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-
-            {sort && (
-              <div className="flex items-center justify-between gap-3 bg-[#F8FAFC] rounded-xl px-3 py-2">
-                <div className="flex flex-col">
-                  <span className="text-[11px] text-[#94A3B8]">정렬</span>
-
-                  <span className="text-sm font-[500] text-[#334155]">
-                    {filterLabelMap[sort.key] || sort.key} (
-                    {sort.order === "asc" ? "오름차순" : "내림차순"})
-                  </span>
-                </div>
-
-                <button
-                  onClick={removeSort}
-                  className="shrink-0 text-[#64748B] hover:text-red-500"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-
-            {filters.length === 0 && !sort && (
-              <div className="text-sm text-[#94A3B8] text-center py-4">
-                적용된 필터가 없습니다.
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

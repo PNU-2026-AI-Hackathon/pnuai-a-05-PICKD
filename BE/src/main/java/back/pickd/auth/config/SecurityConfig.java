@@ -1,9 +1,10 @@
 package back.pickd.auth.config;
 
+import back.pickd.auth.cookie.AuthCookieManager;
 import back.pickd.auth.jwt.JwtTokenProvider;
+import back.pickd.auth.oauth.CustomAuthorizationRequestResolver;
 import back.pickd.auth.oauth.OAuth2SuccessHandler;
 import back.pickd.auth.security.JwtAuthFilter;
-import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +15,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
@@ -30,6 +32,8 @@ public class SecurityConfig {
     private final JwtTokenProvider jwtTokenProvider;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final OAuth2AuthorizedClientRepository authorizedClientRepository;
+    private final AuthCookieManager authCookieManager;
+    private final ClientRegistrationRepository clientRegistrationRepository;
 
     @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:5173}")
     private String allowedOrigins;
@@ -95,6 +99,9 @@ public class SecurityConfig {
             )
 
             .oauth2Login(oauth2 -> oauth2
+                .authorizationEndpoint(endpoint -> endpoint
+                    .authorizationRequestResolver(
+                        new CustomAuthorizationRequestResolver(clientRegistrationRepository)))
                 .authorizedClientRepository(authorizedClientRepository)
                 .successHandler(oAuth2SuccessHandler)
             )
@@ -103,13 +110,10 @@ public class SecurityConfig {
                 .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
                 .logoutSuccessUrl("/")
                 .addLogoutHandler((request, response, authentication) -> {
-                    Cookie cookie = new Cookie("accessToken", null);
-                    cookie.setPath("/");
-                    cookie.setMaxAge(0);
-                    response.addCookie(cookie);
+                    authCookieManager.clearAuthCookies(response);
                 })
                 .invalidateHttpSession(true)
-                .deleteCookies("accessToken", "JSESSIONID")
+                .deleteCookies("accessToken", "refreshToken", "JSESSIONID")
             );
 
         return http.build();
