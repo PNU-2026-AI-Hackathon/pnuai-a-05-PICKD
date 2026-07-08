@@ -281,7 +281,7 @@ export default function ApplicationTable({
   ) => {
     applyApplicationPatch(applicationId, {
       status: nextStatus as Application["status"],
-      finalResult: nextStatus === "최종 결과" ? (finalResult ?? null) : null,
+      finalResult: nextStatus === "COMPLETED" ? (finalResult ?? null) : null,
       recentUpdated: new Date().toISOString().slice(0, 10),
     } as Partial<Application>);
   };

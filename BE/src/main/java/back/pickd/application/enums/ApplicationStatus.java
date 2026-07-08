@@ -18,7 +18,7 @@ public enum ApplicationStatus {
     private final String label;
 
     @JsonCreator
-    public static ApplicationStatus from(String value) {
+    public static ApplicationStatus from(String value)  {
         if (value == null || value.isBlank()) {
             return WRITING;
         }

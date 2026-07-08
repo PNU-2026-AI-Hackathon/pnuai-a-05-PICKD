@@ -6,6 +6,7 @@ import {
   type ApplicationFinalResult,
   type ApplicationStatus,
 } from "../../../../types/application";
+import { getStatusDisplay } from "../../../../utils/status";
 
 type BoardViewStatus = ApplicationStatus;
 
@@ -44,41 +45,41 @@ const columns: {
   borderClassName: string;
 }[] = [
   {
-    key: "작성 중",
+    key: "WRITING",
     title: "작성 중",
     headerClassName: "bg-slate-50 text-slate-700",
     dotClassName: "bg-slate-400",
     borderClassName: "border-t-slate-300",
   },
   {
-    key: "결과 대기",
+    key: "SUBMITTED",
     title: "결과 대기",
     headerClassName: "bg-blue-50 text-blue-700",
     dotClassName: "bg-blue-600",
     borderClassName: "border-t-blue-600",
   },
   {
-    key: "필기 전형",
+    key: "WRITTEN_TEST",
     title: "필기 전형",
     headerClassName: "bg-violet-50 text-violet-700",
     dotClassName: "bg-violet-600",
     borderClassName: "border-t-violet-600",
   },
   {
-    key: "면접 전형",
+    key: "INTERVIEW",
     title: "면접 전형",
     headerClassName: "bg-amber-50 text-amber-700",
     dotClassName: "bg-amber-500",
     borderClassName: "border-t-amber-500",
   },
   {
-    key: "최종 결과",
+    key: "COMPLETED",
     title: "최종 결과",
     headerClassName: "bg-emerald-50 text-emerald-700",
     dotClassName: "bg-emerald-600",
     borderClassName: "border-t-emerald-600",
   },
-];
+] as const;
 
 const cn = (...classNames: Array<string | false | null | undefined>) =>
   classNames.filter(Boolean).join(" ");
@@ -197,7 +198,7 @@ export default function ApplicationStatusBoard({
     );
 
     applications.forEach((application) => {
-      const status = (application as FlexibleApplication).status ?? "작성 중";
+      const status = (application as FlexibleApplication).status ?? "WRITING";
       if (status in grouped) {
         grouped[status as BoardViewStatus].push(application);
       }
@@ -213,7 +214,7 @@ export default function ApplicationStatusBoard({
   const handleDrop = (column: BoardViewStatus) => {
     if (draggingId === null) return;
 
-    if (column === "최종 결과") {
+    if (column === "COMPLETED") {
       const draggedApplication =
         applications.find((application) => application.id === draggingId) ??
         null;
@@ -243,7 +244,7 @@ export default function ApplicationStatusBoard({
 
     onChangeStatus(
       pendingFinalMove.applicationId,
-      "최종 결과",
+      "COMPLETED",
       selectedFinalResult,
     );
     closeFinalResultModal();

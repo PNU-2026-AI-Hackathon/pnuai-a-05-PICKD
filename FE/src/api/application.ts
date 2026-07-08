@@ -59,7 +59,7 @@ const toBackendJobCategory = (value?: string | null) => {
 };
 
 export function toApplicationRequest(data: ApplicationPayload) {
-  const status = data.status ?? "작성 중";
+  const status = data.status ?? "WRITING";
 
   return {
     noticeId: data.noticeId ?? null,
@@ -76,7 +76,7 @@ export function toApplicationRequest(data: ApplicationPayload) {
     startedAt: data.startedAt ?? undefined,
     endedAt: data.endedAt ?? undefined,
     status,
-    finalResult: status === "최종 결과" ? (data.finalResult ?? null) : null,
+    finalResult: status === "COMPLETED" ? (data.finalResult ?? null) : null,
     memo: data.memo ?? "",
     applyDate: normalizeNullableDateTime(data.applyDate),
     interviewDate: normalizeNullableDateTime(data.interviewDate),
@@ -86,10 +86,18 @@ export function toApplicationRequest(data: ApplicationPayload) {
 }
 
 export async function getApplications() {
-  return apiRequest<Application[]>("/api/application", {
+  const applications = await apiRequest<Application[]>("/api/application", {
     method: "GET",
     skipJsonContentType: true,
   });
+
+  // 유효하지 않은 status를 처리 (예: PREPARING → WRITING)
+  return (applications ?? []).map((app) => ({
+    ...app,
+    status: (["WRITING", "SUBMITTED", "WRITTEN_TEST", "INTERVIEW", "COMPLETED"].includes(app.status as string)
+      ? app.status
+      : "WRITING") as any,
+  }));
 }
 
 export async function createApplication(data: ApplicationPayload) {

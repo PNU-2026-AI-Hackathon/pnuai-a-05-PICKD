@@ -2,11 +2,11 @@ import type { Todo } from "./todo";
 import type { DocumentItem } from "./document";
 
 export const APPLICATION_STATUSES = [
-  "작성 중",
-  "결과 대기",
-  "필기 전형",
-  "면접 전형",
-  "최종 결과",
+  "WRITING",
+  "SUBMITTED",
+  "WRITTEN_TEST",
+  "INTERVIEW",
+  "COMPLETED",
 ] as const;
 
 export const APPLICATION_FINAL_RESULTS = ["합격", "불합격", "포기"] as const;

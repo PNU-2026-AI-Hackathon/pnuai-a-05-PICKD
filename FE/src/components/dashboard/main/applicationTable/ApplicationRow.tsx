@@ -8,7 +8,7 @@ import {
   toBackendLocalDateTime,
   toDateInputValue,
 } from "../../../../utils/date";
-import { getStatusStyle } from "../../../../utils/status";
+import { getStatusStyle, getStatusDisplay } from "../../../../utils/status";
 import { getRelativeTime } from "../../../../utils/document";
 import { useApplication } from "../../../../context/ApplicationContext";
 import { Icon } from "@iconify/react";
@@ -84,7 +84,7 @@ export default function ApplicationRow({
     toDateInputValue(row.deadlineDate),
   );
 
-  const status = row.status ?? "작성 중";
+  const status = row.status ?? "WRITING";
   const finalResult = row.finalResult ?? null;
   const currentDday = getDDay(row.deadlineDate);
 
@@ -199,8 +199,8 @@ export default function ApplicationRow({
                 className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold ${getStatusStyle(status)}`}
                 title="지원상태 관리"
               >
-                <span>{status}</span>
-                {status === "최종 결과" && finalResult && (
+                <span>{getStatusDisplay(status)}</span>
+                {status === "COMPLETED" && finalResult && (
                   <span className="ml-1 rounded bg-white/70 px-1.5 py-0.5 text-[10px]">
                     {finalResult}
                   </span>
