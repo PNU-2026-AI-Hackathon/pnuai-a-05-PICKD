@@ -2,6 +2,7 @@ package back.pickd.global.error;
 
 import back.pickd.experience.dto.ExperienceMergeDto.Conflict;
 import back.pickd.experience.exception.ExperienceMergeConflictException;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.ClientAbortException;
@@ -45,6 +46,44 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request);
     }
 
+    @ExceptionHandler(CalendarConsentRequiredException.class)
+    public ResponseEntity<ErrorResponse> handleCalendarConsentRequired(CalendarConsentRequiredException e, HttpServletRequest request) {
+        log.warn("Calendar consent required: {}", e.getMessage());
+        return buildErrorResponse(HttpStatus.FORBIDDEN, e.getMessage(),
+                CalendarConsentRequiredException.ERROR_CODE, request);
+    }
+
+    @ExceptionHandler(GoogleJsonResponseException.class)
+    public ResponseEntity<ErrorResponse> handleGoogleJsonException(GoogleJsonResponseException e, HttpServletRequest request) {
+        if (isGooglePermissionError(e)) {
+            log.warn("Google API permission error ({}): {}", e.getStatusCode(), e.getMessage());
+            return buildErrorResponse(HttpStatus.FORBIDDEN,
+                    "구글 캘린더 접근 권한이 없습니다. 권한 재동의가 필요합니다.",
+                    CalendarConsentRequiredException.ERROR_CODE, request);
+        }
+        log.error("Google API Exception: {}", e.getMessage(), e);
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "구글 API 연동 중 오류가 발생했습니다.", request);
+    }
+
+    /**
+     * 구글 401(토큰 만료/무효) 및 403(스코프 부족 등 권한 오류)을 재동의 대상으로 판별.
+     * 쿼터/사용량 제한 403은 제외한다.
+     */
+    private boolean isGooglePermissionError(GoogleJsonResponseException e) {
+        int status = e.getStatusCode();
+        if (status == 401) return true;
+        if (status != 403) return false;
+        if (e.getDetails() == null || e.getDetails().getErrors() == null) return true;
+        return e.getDetails().getErrors().stream().anyMatch(err -> {
+            String reason = err.getReason();
+            if (reason == null) return true;
+            return !reason.equals("rateLimitExceeded")
+                    && !reason.equals("userRateLimitExceeded")
+                    && !reason.equals("quotaExceeded")
+                    && !reason.equals("dailyLimitExceeded");
+        });
+    }
+
     @ExceptionHandler({IOException.class, GeneralSecurityException.class})
     public ResponseEntity<ErrorResponse> handleGoogleApiException(Exception e, HttpServletRequest request) {
         if (e instanceof ClientAbortException) {
@@ -76,11 +115,16 @@ public class GlobalExceptionHandler {
     }
 
     private ResponseEntity<ErrorResponse> buildErrorResponse(HttpStatus status, String message, HttpServletRequest request) {
+        return buildErrorResponse(status, message, null, request);
+    }
+
+    private ResponseEntity<ErrorResponse> buildErrorResponse(HttpStatus status, String message, String code, HttpServletRequest request) {
         ErrorResponse response = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(status.value())
                 .error(status.getReasonPhrase())
                 .message(message)
+                .code(code)
                 .path(request.getRequestURI())
                 .build();
         return new ResponseEntity<>(response, status);

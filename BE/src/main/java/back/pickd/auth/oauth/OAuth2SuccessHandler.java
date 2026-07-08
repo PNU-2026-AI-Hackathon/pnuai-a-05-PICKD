@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
@@ -28,6 +29,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private final AuthCookieManager authCookieManager;
     private final OAuth2AuthorizedClientService authorizedClientService;
     private final UserService userService;
+
+    @Value("${app.frontend.base-url:http://localhost:5173}")
+    private String frontendBaseUrl;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -67,7 +71,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 log.warn("OAuth2 authorized client 저장 실패 (캘린더/드라이브 연동 불가): {}", e.getMessage());
             }
 
-            response.sendRedirect("http://localhost:5173/onboarding");
+            // 재동의(returnTo 포함) 플로우면 원래 화면으로, 아니면 기본 온보딩으로
+            String returnTo = CustomAuthorizationRequestResolver.extractReturnTo(request.getParameter("state"));
+            response.sendRedirect(frontendBaseUrl + (returnTo != null ? returnTo : "/onboarding"));
         }
     }
 }
