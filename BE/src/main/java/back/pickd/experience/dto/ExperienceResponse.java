@@ -24,6 +24,8 @@ public class ExperienceResponse {
     private final List<String> keywords;
     private final List<FileInfo> files;
     private final List<LinkInfo> links;
+    private final boolean pin;
+    private final boolean important;
     private final OffsetDateTime createdAt;
     private final OffsetDateTime updatedAt;
 
@@ -43,6 +45,8 @@ public class ExperienceResponse {
         this.keywords = experience.getKeywords();
         this.files = experience.getFiles().stream().map(FileInfo::new).collect(Collectors.toList());
         this.links = experience.getLinks().stream().map(LinkInfo::new).collect(Collectors.toList());
+        this.pin = experience.isPin();
+        this.important = experience.isImportant();
         this.createdAt = experience.getCreatedAt();
         this.updatedAt = experience.getUpdatedAt();
     }

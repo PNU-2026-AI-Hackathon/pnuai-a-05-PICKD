@@ -115,6 +115,8 @@ class UserExperienceServiceTest {
         assertEquals("exp-1", response.getId());
         assertEquals("Pickd", response.getTitle());
         assertEquals("PROJECT", response.getExperienceType());
+        assertEquals(false, response.isPin());
+        assertEquals(false, response.isImportant());
     }
 
     @Test
