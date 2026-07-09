@@ -43,6 +43,7 @@ const EMPLOYMENT_TYPE_OPTIONS = [
 ] as const;
 
 const DEFAULT_CATEGORY = "FULL_TIME" as const;
+const MEMO_MAX_LENGTH = 500;
 
 type ReviewForm = {
   noticeId: number | null;
@@ -105,7 +106,8 @@ function buildNoticeMemo(notice: NoticeDetail) {
     notice.noticeUrl ? `원문: ${notice.noticeUrl}` : "",
   ]
     .filter(Boolean)
-    .join("\n");
+    .join("\n")
+    .slice(0, MEMO_MAX_LENGTH);
 }
 
 function toReviewForm(notice: NoticeDetail): ReviewForm {
@@ -575,6 +577,7 @@ function NoticeReviewFields({
       <textarea
         placeholder="AI가 추출한 지원자격/우대사항/전형 메모를 검수하세요"
         rows={5}
+        maxLength={MEMO_MAX_LENGTH}
         className="w-full resize-none rounded-xl border border-[#E2E8F0] px-4 py-3 text-[14px] outline-none"
         value={form.memo}
         onChange={(e) => update("memo", e.target.value)}
@@ -636,6 +639,7 @@ function ManualFields({ formData, updateField }: any) {
       <textarea
         placeholder="메모를 입력하세요 (전형 특징 등)"
         rows={3}
+        maxLength={MEMO_MAX_LENGTH}
         className="w-full resize-none rounded-xl border border-[#E2E8F0] px-4 py-3 text-[14px] outline-none"
         value={formData.memo || ""}
         onChange={(e) => updateField("memo", e.target.value)}

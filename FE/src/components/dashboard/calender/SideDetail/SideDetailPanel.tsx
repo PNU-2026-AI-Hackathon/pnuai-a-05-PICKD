@@ -29,6 +29,14 @@ const SideDetailPanel = ({ applications: data }: Props) => {
 
   const extraCount = sortedList.length - 3;
 
+  const todayProgress = todayTodos.length
+    ? Math.round(
+        (todayTodos.filter((todo) => todo.completed).length /
+          todayTodos.length) *
+          100,
+      )
+    : 0;
+
   return (
     <div className="w-[400px] h-full bg-white border-l border-gray-200 flex flex-col">
       <div className="p-6 border-b border-gray-100 flex justify-between items-center">
@@ -43,7 +51,7 @@ const SideDetailPanel = ({ applications: data }: Props) => {
           <p className="text-sm text-gray-500 mt-1">오늘의 진행률</p>
         </div>
 
-        <ProgressCircle percentage={13} />
+        <ProgressCircle percentage={todayProgress} />
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar">
