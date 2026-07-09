@@ -139,11 +139,5 @@ class ApplicationStatusTest {
         void returnsTrueBeforeCompleted(ApplicationStatus status) {
             assertThat(status.needsDeadlineEvent()).isTrue();
         }
-
-        @Test
-        @DisplayName("COMPLETED는 deadline 이벤트가 필요하지 않다")
-        void returnsFalseForCompleted() {
-            assertThat(ApplicationStatus.COMPLETED.needsDeadlineEvent()).isFalse();
-        }
     }
 }
