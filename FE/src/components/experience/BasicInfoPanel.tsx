@@ -131,6 +131,14 @@ const INFO_DEFAULTS: Record<InfoKey, string> = {
   hasPortfolio: "",
 };
 
+const ENROLLMENT_STATUS_LABEL: Record<string, string> = {
+  ENROLLED: "재학",
+  GRADUATED: "졸업",
+  LOA: "휴학",
+  EXPECTED: "졸업예정",
+  DROPOUT: "중퇴",
+};
+
 const LS_INFO_VISIBLE = "specs.info.visibleKeys.v5";
 const LS_INFO_VALUES = "specs.info.values.v3";
 
@@ -549,7 +557,11 @@ export default function BasicInfoPanel() {
               <h3 className="mb-3 text-[14px] font-[800] text-[#334155]">{group.title}</h3>
               <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
                 {group.fields.map((field) => {
-                  const value = values[field.key] || "";
+                  const rawValue = values[field.key] || "";
+                  const value =
+                    field.key === "enrollmentStatus"
+                      ? ENROLLMENT_STATUS_LABEL[rawValue] ?? rawValue
+                      : rawValue;
                   const masked = maskedKeys.has(field.key);
                   return (
                     <div key={field.key} className="group rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3">
