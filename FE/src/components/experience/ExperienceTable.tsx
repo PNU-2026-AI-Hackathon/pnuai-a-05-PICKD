@@ -9,6 +9,7 @@ import {
 import { createPortal } from "react-dom";
 import {
   Check,
+  CheckCircle2,
   ChevronDown,
   GripVertical,
   Layers,
@@ -789,6 +790,17 @@ function ManageStatus({
     return (
       <span className="inline-flex items-center gap-1 text-[13px] font-[700] text-[#64748B]">
         <Pencil size={17} strokeWidth={1.8} />
+      </span>
+    );
+  }
+
+  if (item.status === "완료" || item.status === "정리 완료") {
+    return (
+      <span
+        className="inline-flex items-center gap-1 text-[13px] font-[700] text-[#15803D]"
+        title="완료"
+      >
+        <CheckCircle2 size={17} strokeWidth={1.8} />
       </span>
     );
   }
