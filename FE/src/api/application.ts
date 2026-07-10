@@ -56,7 +56,7 @@ const JOB_CATEGORY_TO_BACKEND: Record<string, string> = {
 
 const toBackendJobCategory = (value?: string | null) => {
   if (!value) return undefined;
-  return JOB_CATEGORY_TO_BACKEND[value] ?? value;
+  return JOB_CATEGORY_TO_BACKEND[value.trim()];
 };
 
 const STATUS_TO_FRONTEND: Record<string, Application["status"]> = {
@@ -70,15 +70,21 @@ const STATUS_TO_FRONTEND: Record<string, Application["status"]> = {
   "작성 중": "작성중",
   작성중: "작성중",
   지원완료: "지원완료",
+  "지원 완료": "지원완료",
   서류전형: "서류전형",
+  "서류 전형": "서류전형",
+  "서류 제출": "서류전형",
+  서류제출: "서류전형",
   필기전형: "필기전형",
   면접전형: "면접전형",
   전형완료: "전형완료",
+  "전형 완료": "전형완료",
 
   "결과 대기": "지원완료",
   "필기 전형": "필기전형",
   "면접 전형": "면접전형",
   "최종 결과": "전형완료",
+  최종결과: "전형완료",
 };
 
 const normalizeStatus = (status?: string | null): Application["status"] => {
@@ -96,9 +102,6 @@ export function toApplicationRequest(data: ApplicationPayload) {
     position: data.position ?? "",
     industry: data.industry ?? "",
     category: toBackendJobCategory(
-      data.jobCategory ?? data.category ?? data.employmentType,
-    ),
-    jobCategory: toBackendJobCategory(
       data.jobCategory ?? data.category ?? data.employmentType,
     ),
     startedAt: data.startedAt ?? undefined,

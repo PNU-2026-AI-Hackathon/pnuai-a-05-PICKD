@@ -59,6 +59,13 @@ const columns: {
     borderClassName: "border-t-blue-600",
   },
   {
+    key: "서류전형",
+    title: "서류전형",
+    headerClassName: "bg-sky-50 text-sky-700",
+    dotClassName: "bg-sky-600",
+    borderClassName: "border-t-sky-600",
+  },
+  {
     key: "필기전형",
     title: "필기전형",
     headerClassName: "bg-violet-50 text-violet-700",

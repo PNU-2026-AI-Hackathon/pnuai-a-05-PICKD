@@ -289,19 +289,23 @@ class ApplicationServiceTest {
         }
 
         @Test
-        @DisplayName("noticeId가 null이면 notice 없이 Application을 생성한다")
-        void createsApplicationWithoutNotice() throws Exception {
+        @DisplayName("noticeId가 null이면 수기 Notice를 자동 생성해 Application과 연결한다")
+        void createsManualNoticeWhenNoticeIdIsNull() throws Exception {
             ApplicationRequest req = buildRequest(ApplicationStatus.WRITING);
 
             ArgumentCaptor<Application> captor =
                     ArgumentCaptor.forClass(Application.class);
 
+            when(noticeRepository.save(any(Notice.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
             when(applicationRepository.save(captor.capture()))
                     .thenAnswer(invocation -> invocation.getArgument(0));
 
             applicationService.addApplication(req, authentication);
 
-            assertThat(captor.getValue().getNotice()).isNull();
+            assertThat(captor.getValue().getNotice()).isNotNull();
+            assertThat(captor.getValue().getNotice().getCompanyName()).isEqualTo("카카오");
+            verify(noticeRepository).save(any(Notice.class));
         }
 
         @Test
