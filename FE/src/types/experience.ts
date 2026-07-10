@@ -1,4 +1,7 @@
-import type { ExperienceType, FieldType } from "../constants/experience/experiencePresets";
+import type {
+  ExperienceType,
+  FieldType,
+} from "../constants/experience/experiencePresets";
 
 export type { ExperienceType, FieldType };
 
@@ -11,8 +14,6 @@ export type ExperienceStatus =
   | "정보 부족"
   | "AI 질문 필요"
   | "병합 필요";
-
-export type ImportanceLevel = "높음" | "보통" | "낮음";
 
 export interface CustomTopField {
   key: string;
@@ -37,8 +38,7 @@ export interface ExperienceItem {
   linkedExperienceIds: ExperienceId[];
   fields: Record<string, string>;
   important?: boolean;
-  importance?: ImportanceLevel;
-  pinned?: boolean;
+  pin?: boolean;
   customTopFields?: CustomTopField[];
   hiddenFieldKeys?: string[];
   topFieldOrder?: string[];

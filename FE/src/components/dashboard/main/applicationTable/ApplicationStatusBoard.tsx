@@ -45,36 +45,36 @@ const columns: {
   borderClassName: string;
 }[] = [
   {
-    key: "WRITING",
-    title: "작성 중",
+    key: "작성중",
+    title: "작성중",
     headerClassName: "bg-slate-50 text-slate-700",
     dotClassName: "bg-slate-400",
     borderClassName: "border-t-slate-300",
   },
   {
-    key: "SUBMITTED",
-    title: "결과 대기",
+    key: "지원완료",
+    title: "지원완료",
     headerClassName: "bg-blue-50 text-blue-700",
     dotClassName: "bg-blue-600",
     borderClassName: "border-t-blue-600",
   },
   {
-    key: "WRITTEN_TEST",
-    title: "필기 전형",
+    key: "필기전형",
+    title: "필기전형",
     headerClassName: "bg-violet-50 text-violet-700",
     dotClassName: "bg-violet-600",
     borderClassName: "border-t-violet-600",
   },
   {
-    key: "INTERVIEW",
-    title: "면접 전형",
+    key: "면접전형",
+    title: "면접전형",
     headerClassName: "bg-amber-50 text-amber-700",
     dotClassName: "bg-amber-500",
     borderClassName: "border-t-amber-500",
   },
   {
-    key: "COMPLETED",
-    title: "최종 결과",
+    key: "전형완료",
+    title: "전형완료",
     headerClassName: "bg-emerald-50 text-emerald-700",
     dotClassName: "bg-emerald-600",
     borderClassName: "border-t-emerald-600",
@@ -198,7 +198,7 @@ export default function ApplicationStatusBoard({
     );
 
     applications.forEach((application) => {
-      const status = (application as FlexibleApplication).status ?? "WRITING";
+      const status = (application as FlexibleApplication).status ?? "작성중";
       if (status in grouped) {
         grouped[status as BoardViewStatus].push(application);
       }
@@ -214,7 +214,7 @@ export default function ApplicationStatusBoard({
   const handleDrop = (column: BoardViewStatus) => {
     if (draggingId === null) return;
 
-    if (column === "COMPLETED") {
+    if (column === "전형완료") {
       const draggedApplication =
         applications.find((application) => application.id === draggingId) ??
         null;
@@ -244,7 +244,7 @@ export default function ApplicationStatusBoard({
 
     onChangeStatus(
       pendingFinalMove.applicationId,
-      "COMPLETED",
+      "전형완료",
       selectedFinalResult,
     );
     closeFinalResultModal();
@@ -402,7 +402,7 @@ export default function ApplicationStatusBoard({
           >
             <div className="mb-5">
               <p className="text-sm font-semibold text-blue-600">
-                최종 결과 선택
+                전형완료 선택
               </p>
               <h2 className="mt-2 text-xl font-bold text-slate-900">
                 {pendingFinalMove.application
@@ -416,7 +416,7 @@ export default function ApplicationStatusBoard({
                 </p>
               )}
               <p className="mt-4 text-sm leading-6 text-slate-500">
-                이 공고를 최종 결과로 이동하려면 결과를 선택해주세요.
+                이 공고를 전형완료로 이동하려면 결과를 선택해주세요.
               </p>
             </div>
 

@@ -32,7 +32,7 @@ export default function ApplicationDetailModal({
   const [todoModalOpen, setTodoModalOpen] = useState(false);
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [draftStatus, setDraftStatus] =
-    useState<Application["status"]>("WRITING");
+    useState<Application["status"]>("작성중");
   const [draftFinalResult, setDraftFinalResult] =
     useState<Application["finalResult"]>(null);
   const [draftMemo, setDraftMemo] = useState("");
@@ -49,7 +49,7 @@ export default function ApplicationDetailModal({
   useEffect(() => {
     if (!foundApplication) return;
 
-    setDraftStatus(foundApplication.status ?? "WRITING");
+    setDraftStatus(foundApplication.status ?? "작성중");
     setDraftFinalResult(foundApplication.finalResult ?? null);
     setDraftMemo(foundApplication.memo ?? "");
   }, [
@@ -77,8 +77,8 @@ export default function ApplicationDetailModal({
   const handleSave = async () => {
     if (isSaving) return;
 
-    if (draftStatus === "COMPLETED" && !draftFinalResult) {
-      alert("최종 결과를 선택해주세요.");
+    if (draftStatus === "전형완료" && !draftFinalResult) {
+      alert("세부 결과를 선택해주세요.");
       return;
     }
 
@@ -87,7 +87,7 @@ export default function ApplicationDetailModal({
       await updateApplication(currentApplication.id, {
         ...foundApplication,
         status: draftStatus,
-        finalResult: draftStatus === "COMPLETED" ? draftFinalResult : null,
+        finalResult: draftStatus === "전형완료" ? draftFinalResult : null,
         memo: draftMemo,
       });
       await onChange?.();
@@ -172,7 +172,7 @@ export default function ApplicationDetailModal({
                       )
                     }
                   />
-                  {draftStatus === "COMPLETED" && (
+                  {draftStatus === "전형완료" && (
                     <InfoRow
                       label="세부 결과"
                       value={draftFinalResult || "미선택"}
@@ -206,7 +206,7 @@ export default function ApplicationDetailModal({
                           type="button"
                           onClick={() => {
                             setDraftStatus(step);
-                            if (step !== "COMPLETED") {
+                            if (step !== "전형완료") {
                               setDraftFinalResult(null);
                             }
                           }}
@@ -230,7 +230,7 @@ export default function ApplicationDetailModal({
                   })}
                 </div>
 
-                {draftStatus === "최종 결과" && (
+                {draftStatus === "전형완료" && (
                   <div className="mt-4 flex flex-wrap gap-2">
                     {APPLICATION_FINAL_RESULTS.map((result) => (
                       <button

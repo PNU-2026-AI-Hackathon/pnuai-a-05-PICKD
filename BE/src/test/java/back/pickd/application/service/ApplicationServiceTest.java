@@ -195,8 +195,8 @@ class ApplicationServiceTest {
         }
 
         @Test
-        @DisplayName("COMPLETED 상태이면 날짜가 있어도 캘린더 이벤트를 생성하지 않는다")
-        void doesNotCreateCalendarEventForCompletedStatus() throws Exception {
+        @DisplayName("COMPLETED 상태여도 날짜가 있으면 캘린더 이벤트를 생성한다")
+        void createsCalendarEventsForCompletedStatusWhenDatesExist() throws Exception {
             ApplicationRequest req = buildRequest(ApplicationStatus.COMPLETED);
             req.setApplyDate(LocalDateTime.now().plusDays(3));
             req.setInterviewDate(LocalDateTime.now().plusDays(7));
@@ -207,8 +207,34 @@ class ApplicationServiceTest {
 
             applicationService.addApplication(req, authentication);
 
+            verify(calendarAsyncService)
+                    .createEventAsync(any(), eq("apply"), eq(authentication), any());
+            verify(calendarAsyncService)
+                    .createEventAsync(any(), eq("interview"), eq(authentication), any());
+            verify(calendarAsyncService)
+                    .createEventAsync(any(), eq("deadline"), eq(authentication), any());
+        }
+
+        @Test
+        @DisplayName("수기 등록이면 지원마감 일정만 생성하고 apply/interview 일정은 생성하지 않는다")
+        void createsOnlyDeadlineEventForManualRegistration() throws Exception {
+            ApplicationRequest req = buildRequest(ApplicationStatus.WRITING);
+            req.setManualRegistration(true);
+            req.setApplyDate(LocalDateTime.now().plusDays(3));
+            req.setInterviewDate(LocalDateTime.now().plusDays(7));
+            req.setDeadlineDate(LocalDateTime.now().plusDays(14));
+
+            when(applicationRepository.save(any()))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+
+            applicationService.addApplication(req, authentication);
+
+            verify(calendarAsyncService)
+                    .createEventAsync(any(), eq("deadline"), eq(authentication), any());
             verify(calendarAsyncService, never())
-                    .createEventAsync(any(), any(), any(), any());
+                    .createEventAsync(any(), eq("apply"), any(), any());
+            verify(calendarAsyncService, never())
+                    .createEventAsync(any(), eq("interview"), any(), any());
         }
 
         @Test
@@ -387,8 +413,8 @@ class ApplicationServiceTest {
         }
 
         @Test
-        @DisplayName("상태가 COMPLETED로 바뀌어 캘린더 이벤트가 필요 없어지면 기존 이벤트를 삭제한다")
-        void deletesCalendarEventWhenStatusNoLongerNeedsIt() throws Exception {
+        @DisplayName("applyDate가 없어지면 기존 apply 캘린더 이벤트를 삭제한다")
+        void deletesCalendarEventWhenApplyDateRemoved() throws Exception {
             Application app = Application.builder()
                     .user(user)
                     .company("카카오")

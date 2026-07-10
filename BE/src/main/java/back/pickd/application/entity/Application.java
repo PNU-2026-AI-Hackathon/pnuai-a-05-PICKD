@@ -60,6 +60,10 @@ public class Application {
     @Builder.Default
     private boolean important = false;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean manualRegistration = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -94,7 +98,7 @@ public class Application {
 
     public void update(String company, String jobTitle, String position, String industry,
                        ApplicationStatus status, ApplicationFinalResult finalResult,
-                       boolean important, String memo,
+                       boolean important, boolean manualRegistration, String memo,
                        LocalDateTime applyDate, LocalDateTime interviewDate, LocalDateTime deadlineDate) {
         this.company = company;
         this.jobTitle = jobTitle;
@@ -105,6 +109,7 @@ public class Application {
                 ? finalResult
                 : null;
         this.important = important;
+        this.manualRegistration = manualRegistration;
         this.memo = memo;
         this.applyDate = applyDate;
         this.interviewDate = interviewDate;

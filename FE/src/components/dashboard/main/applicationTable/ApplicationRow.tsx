@@ -12,6 +12,7 @@ import { getStatusStyle, getStatusDisplay } from "../../../../utils/status";
 import { getRelativeTime } from "../../../../utils/document";
 import { useApplication } from "../../../../context/ApplicationContext";
 import { Icon } from "@iconify/react";
+import { getCurrentDeadlineInfo } from "../../../../utils/applicationDeadline";
 
 interface Props {
   row: any;
@@ -84,9 +85,10 @@ export default function ApplicationRow({
     toDateInputValue(row.deadlineDate),
   );
 
-  const status = row.status ?? "WRITING";
+  const status = row.status ?? "작성중";
   const finalResult = row.finalResult ?? null;
-  const currentDday = getDDay(row.deadlineDate);
+  const deadlineInfo = getCurrentDeadlineInfo(row);
+  const currentDday = getDDay(deadlineInfo.date);
 
   const cellStyle = (key: string) => ({
     width: widths[key] ?? 120,
@@ -199,8 +201,8 @@ export default function ApplicationRow({
                 className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold ${getStatusStyle(status)}`}
                 title="지원상태 관리"
               >
-                <span>{getStatusDisplay(status)}</span>
-                {status === "COMPLETED" && finalResult && (
+                <span>{status}</span>
+                {status === "전형완료" && finalResult && (
                   <span className="ml-1 rounded bg-white/70 px-1.5 py-0.5 text-[10px]">
                     {finalResult}
                   </span>
@@ -246,7 +248,12 @@ export default function ApplicationRow({
                 className="rounded px-1 py-1 hover:bg-[#F1F5F9] hover:text-[#2563EB]"
                 title="마감일 수정"
               >
-                {formatApplicationDate(row.deadlineDate)}
+                <span className="inline-flex flex-col leading-tight">
+                  <span>{formatApplicationDate(row.deadlineDate)}</span>
+                  {deadlineInfo.label !== "지원마감일" && (
+                    <span className="text-[10px] text-[#94A3B8]">대표: {deadlineInfo.label}</span>
+                  )}
+                </span>
               </button>
             )}
           </td>

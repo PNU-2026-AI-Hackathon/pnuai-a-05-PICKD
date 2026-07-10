@@ -22,6 +22,8 @@ public class ExperienceResponse {
     private final String documentContent;
     private final Map<String, Object> attributes;
     private final List<String> keywords;
+    private final boolean important;
+    private final boolean pin;
     private final List<FileInfo> files;
     private final List<LinkInfo> links;
     private final boolean pin;
@@ -43,6 +45,8 @@ public class ExperienceResponse {
         this.documentContent = experience.getDocumentContent();
         this.attributes = experience.getAttributes();
         this.keywords = experience.getKeywords();
+        this.important = experience.isImportant();
+        this.pin = experience.isPin();
         this.files = experience.getFiles().stream().map(FileInfo::new).collect(Collectors.toList());
         this.links = experience.getLinks().stream().map(LinkInfo::new).collect(Collectors.toList());
         this.pin = experience.isPin();

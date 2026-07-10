@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   AlertCircle,
@@ -83,12 +83,6 @@ export default function ExperienceExtractWizardModal({
     setError("");
     void loadPendingBatches(mode === "pending");
   }, [open, mode, focusItemId]);
-
-  const selectedCandidates = useMemo(
-    () =>
-      candidates.filter((candidate) => selectedTempIds.includes(candidate.id)),
-    [candidates, selectedTempIds],
-  );
 
   const hasDuplicates = duplicateBatchId && duplicateGroups.length > 0;
 
@@ -289,7 +283,6 @@ export default function ExperienceExtractWizardModal({
             <CandidateStep
               candidates={candidates}
               selectedIds={selectedTempIds}
-              selectedCandidates={selectedCandidates}
               loading={loading}
               onBack={() => setStep("upload")}
               onToggle={toggleTempId}
@@ -422,7 +415,7 @@ function PendingDuplicatePanel({
         </div>
       ) : batches.length === 0 ? (
         <p className="mt-3 rounded-[12px] bg-[#F8FAFC] px-3 py-2 text-[13px] font-[700] text-[#94A3B8]">
-          현재 미처리 중복 batch가 없습니다.
+          현재 미처리 중복 경험이 없습니다.
         </p>
       ) : (
         <div className="mt-3 flex flex-wrap gap-2">
@@ -462,70 +455,47 @@ function UploadStep({
   onSubmit: () => void;
 }) {
   return (
-    <section className="grid grid-cols-[1.1fr_0.9fr] gap-5">
-      <div className="rounded-[20px] border border-[#E2E8F0] bg-white p-6">
-        <p className="text-[17px] font-[900] text-[#0F172A]">
-          Step1. 자소서 파일 업로드
+    <div className="rounded-[20px] border border-[#E2E8F0] bg-white p-6">
+      <p className="text-[17px] font-[900] text-[#0F172A]">
+        Step1. 자소서 파일 업로드
+      </p>
+      <p className="mt-2 text-[14px] font-[600] leading-6 text-[#64748B]">
+        자소서 PDF/문서 파일을 올리면 AI가 경험 후보 목록을 추출합니다.
+      </p>
+
+      <label className="mt-6 flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-[18px] border-2 border-dashed border-[#BFDBFE] bg-[#EFF6FF]/45 px-6 text-center transition hover:bg-[#EFF6FF]">
+        <FileUp size={40} className="text-[#2563EB]" />
+        <p className="mt-4 text-[15px] text-[#0F172A]">
+          {file ? file.name : "자소서 파일을 선택해 주세요"}
         </p>
-        <p className="mt-2 text-[14px] font-[600] leading-6 text-[#64748B]">
-          자소서 PDF/문서 파일을 올리면 AI가 경험 후보 목록을 추출하고 임시
-          저장합니다. 기존 임시 데이터는 백엔드에서 초기화됩니다.
-        </p>
+        <input
+          type="file"
+          accept=".pdf,.doc,.docx,.hwp,.txt,application/pdf"
+          className="sr-only"
+          onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
+        />
+      </label>
 
-        <label className="mt-6 flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-[18px] border-2 border-dashed border-[#BFDBFE] bg-[#EFF6FF]/45 px-6 text-center transition hover:bg-[#EFF6FF]">
-          <FileUp size={40} className="text-[#2563EB]" />
-          <p className="mt-4 text-[15px] font-[900] text-[#0F172A]">
-            {file ? file.name : "자소서 파일을 선택해 주세요"}
-          </p>
-          <p className="mt-2 text-[12px] font-[700] text-[#64748B]">
-            multipart/form-data의 file 필드로 전송됩니다.
-          </p>
-          <input
-            type="file"
-            accept=".pdf,.doc,.docx,.hwp,.txt,application/pdf"
-            className="sr-only"
-            onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
-          />
-        </label>
-
-        <button
-          type="button"
-          disabled={loading}
-          onClick={onSubmit}
-          className="mt-5 inline-flex h-11 items-center gap-2 rounded-[12px] bg-[#2563EB] px-5 text-[14px] font-[900] text-white transition hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:bg-[#94A3B8]"
-        >
-          {loading ? (
-            <Loader2 size={17} className="animate-spin" />
-          ) : (
-            <Sparkles size={17} />
-          )}
-          AI 후보 추출하기
-        </button>
-      </div>
-
-      <GuideCard />
-    </section>
-  );
-}
-
-function GuideCard() {
-  return (
-    <aside className="rounded-[20px] border border-[#E2E8F0] bg-white p-5">
-      <p className="text-[15px] font-[900] text-[#0F172A]">연동 흐름</p>
-      <ol className="mt-4 space-y-3 text-[13px] font-[700] leading-6 text-[#475569]">
-        <li>1. Step1 결과의 id를 화면 카드에 표시하고 선택합니다.</li>
-        <li>2. 선택한 id 배열을 selectedTempIds로 Step2에 보냅니다.</li>
-        <li>3. 비중복 경험은 즉시 저장되고 saved로 표시됩니다.</li>
-        <li>4. 중복 경험은 grouped 카드에서 남길 항목을 선택합니다.</li>
-      </ol>
-    </aside>
+      <button
+        type="button"
+        disabled={loading}
+        onClick={onSubmit}
+        className="mt-5 inline-flex h-11 items-center gap-2 rounded-[12px] bg-[#2563EB] px-5 text-[14px] font-[900] text-white transition hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:bg-[#94A3B8]"
+      >
+        {loading ? (
+          <Loader2 size={17} className="animate-spin" />
+        ) : (
+          <Sparkles size={17} />
+        )}
+        AI 후보 추출하기
+      </button>
+    </div>
   );
 }
 
 function CandidateStep({
   candidates,
   selectedIds,
-  selectedCandidates,
   loading,
   onBack,
   onToggle,
@@ -534,7 +504,6 @@ function CandidateStep({
 }: {
   candidates: ExperienceTempResponse[];
   selectedIds: number[];
-  selectedCandidates: ExperienceTempResponse[];
   loading: boolean;
   onBack: () => void;
   onToggle: (id: number) => void;
@@ -547,9 +516,6 @@ function CandidateStep({
         <div>
           <p className="text-[17px] font-[900] text-[#0F172A]">
             Step1 결과. 경험 후보 선택
-          </p>
-          <p className="mt-2 text-[13px] font-[600] text-[#64748B]">
-            선택 순서가 Step2의 selectedTempIds 배열 순서로 전달됩니다.
           </p>
         </div>
         <div className="text-right text-[12px] font-[800] text-[#2563EB]">
@@ -593,16 +559,6 @@ function CandidateStep({
                     )}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-white px-2 py-1 text-[11px] font-[900] text-[#2563EB]">
-                        id: {candidate.id}
-                      </span>
-                      {checked && (
-                        <span className="rounded-full bg-[#DBEAFE] px-2 py-1 text-[11px] font-[900] text-[#1D4ED8]">
-                          {selectedIndex + 1}번째 선택
-                        </span>
-                      )}
-                    </div>
                     <p className="mt-3 text-[15px] font-[900] text-[#0F172A]">
                       {candidate.experienceName}
                     </p>
@@ -617,18 +573,6 @@ function CandidateStep({
           })}
         </div>
       )}
-
-      {selectedCandidates.length > 0 && (
-        <div className="mt-5 rounded-[14px] bg-[#F8FAFC] p-3">
-          <p className="mb-2 text-[12px] font-[900] text-[#64748B]">
-            selectedTempIds
-          </p>
-          <code className="break-all text-[13px] font-[800] text-[#0F172A]">
-            [{selectedIds.join(", ")}]
-          </code>
-        </div>
-      )}
-
       <div className="mt-5 flex justify-between">
         <button
           type="button"
@@ -682,16 +626,12 @@ function Step2ResultStep({
         <p className="text-[17px] font-[900] text-[#0F172A]">
           Step2 결과. 저장 / 중복 분류
         </p>
-        <p className="mt-2 text-[13px] font-[600] text-[#64748B]">
-          비중복 경험은 즉시 저장되었고, 중복 경험은 서버 draft로
-          저장되었습니다.
-        </p>
       </div>
 
       <section className="rounded-[18px] border border-[#D8E4F5] bg-white p-5">
         <div className="flex items-center justify-between">
           <p className="text-[15px] font-[900] text-[#0F172A]">
-            saved · 즉시 저장된 경험
+            비중복 경험은 바로 저장되었습니다.
           </p>
           <span className="rounded-full bg-[#EFF6FF] px-3 py-1 text-[12px] font-[900] text-[#2563EB]">
             {saved.length}개
@@ -714,7 +654,7 @@ function Step2ResultStep({
       <section className="rounded-[18px] border border-[#FED7AA] bg-white p-5">
         <div className="flex items-center justify-between">
           <p className="text-[15px] font-[900] text-[#0F172A]">
-            grouped · 중복 후보 그룹
+            중복 후보 그룹
           </p>
           <span className="rounded-full bg-[#FFF7ED] px-3 py-1 text-[12px] font-[900] text-[#EA580C]">
             {groups.length}개
@@ -727,14 +667,11 @@ function Step2ResultStep({
           </div>
         ) : (
           <div className="mt-4 space-y-3">
-            {groups.map((group, index) => (
+            {groups.map((group) => (
               <div
                 key={group.groupId}
                 className="rounded-[14px] border border-[#FED7AA] bg-[#FFF7ED] p-4"
               >
-                <p className="text-[13px] font-[900] text-[#9A3412]">
-                  그룹 {index + 1} · groupId: {group.groupId}
-                </p>
                 <p className="mt-1 text-[12px] font-[700] text-[#C2410C]">
                   선택 가능 항목 {group.items.length}개
                 </p>
@@ -798,8 +735,7 @@ function DuplicateStep({
           <span className="font-[900] text-[#EA580C]">{duplicateBatchId}</span>
         </p>
         <p className="mt-1 text-[13px] font-[600] text-[#64748B]">
-          각 그룹에서 최종적으로 남길 itemId를 선택하세요. 여러 개 선택하면 모두
-          유지됩니다.
+          각 그룹에서 최종적으로 남길 경험을 선택하세요. 여러 개 선택하면 모두 유지됩니다.
         </p>
       </div>
 
@@ -812,9 +748,6 @@ function DuplicateStep({
             <div>
               <p className="text-[15px] font-[900] text-[#0F172A]">
                 중복 그룹 {index + 1}
-              </p>
-              <p className="mt-1 text-[12px] font-[700] text-[#64748B]">
-                groupId: {group.groupId}
               </p>
             </div>
             <span className="rounded-full bg-[#F8FAFC] px-3 py-1 text-[12px] font-[900] text-[#64748B]">

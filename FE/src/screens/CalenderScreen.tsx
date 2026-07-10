@@ -6,6 +6,7 @@ import { useApplication } from "../context/ApplicationContext";
 
 const CalendarScreen = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const { applications, loadData } = useApplication();
 
   useEffect(() => {
@@ -15,7 +16,11 @@ const CalendarScreen = () => {
   return (
     <div className="relative flex h-screen w-full bg-gray-50 overflow-hidden">
       <div className="flex-1 overflow-auto">
-        <MainCalendar applications={applications} />
+        <MainCalendar
+          applications={applications}
+          selectedDate={selectedDate}
+          onSelectedDateChange={setSelectedDate}
+        />
       </div>
 
       {isSidebarOpen && (
@@ -35,7 +40,9 @@ const CalendarScreen = () => {
           className="absolute top-1/3 left-0 -translate-x-full -translate-y-1/2 flex items-center justify-center w-6 h-16 bg-white border border-r-0 border-gray-200 rounded-l-xl shadow-md hover:bg-gray-50 text-gray-500 transition-all group z-40"
         >
           <Icon
-            icon={isSidebarOpen ? "lucide:chevron-right" : "lucide:chevron-left"}
+            icon={
+              isSidebarOpen ? "lucide:chevron-right" : "lucide:chevron-left"
+            }
             className={`w-4 h-4 transition-transform ${
               isSidebarOpen
                 ? "group-hover:translate-x-0.5"
@@ -45,7 +52,10 @@ const CalendarScreen = () => {
         </button>
 
         <div className="flex-1 overflow-y-auto">
-          <SideDetailPanel applications={applications} />
+          <SideDetailPanel
+            applications={applications}
+            selectedDate={selectedDate}
+          />
         </div>
       </div>
     </div>

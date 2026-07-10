@@ -38,6 +38,8 @@ public final class ExperienceCreateDto {
         private String documentContent;
         private Map<String, Object> attributes = new HashMap<>();
         private List<String> keywords = new ArrayList<>();
+        private Boolean important;
+        private Boolean pin;
         private List<LinkRequest> links = new ArrayList<>();
         private boolean forceCreate;
     }

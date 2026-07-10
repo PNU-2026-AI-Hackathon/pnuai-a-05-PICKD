@@ -42,4 +42,5 @@ public class ApplicationRequest {
     private LocalDateTime interviewDate;
     private LocalDateTime deadlineDate;
     private boolean important;
+    private boolean manualRegistration;
 }
