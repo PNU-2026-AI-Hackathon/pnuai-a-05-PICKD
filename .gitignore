@@ -27,3 +27,6 @@ __pycache__/
 node_modules/
 dist/
 .next/
+
+# AI model evaluation logs
+**/logs/evaluation_history.jsonl

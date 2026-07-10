@@ -28,8 +28,11 @@ public class JwtTokenProvider {
 
     private SecretKey key;
 
-    @Value("${jwt.expiration-ms:86400000}") // Default 1 day
-    private long expirationMs;
+    @Value("${jwt.access-expiration-ms:86400000}")
+    private long accessExpirationMs;
+
+    @Value("${jwt.refresh-expiration-ms:1209600000}") // Default 14 days
+    private long refreshExpirationMs;
 
     @PostConstruct
     protected void init() {
@@ -40,16 +43,29 @@ public class JwtTokenProvider {
      * Generate JWT Token from Email and Authorities
      */
     public String createToken(String email, Collection<? extends GrantedAuthority> authoritiesList) {
+        return createAccessToken(email, authoritiesList);
+    }
+
+    public String createAccessToken(String email, Collection<? extends GrantedAuthority> authoritiesList) {
         String authorities = authoritiesList.stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
 
+        return createToken(email, authorities, "access", accessExpirationMs);
+    }
+
+    public String createRefreshToken(String email) {
+        return createToken(email, "", "refresh", refreshExpirationMs);
+    }
+
+    private String createToken(String email, String authorities, String tokenType, long expirationMs) {
         Date now = new Date();
-        Date validity = new Date(now.getTime() + this.expirationMs);
+        Date validity = new Date(now.getTime() + expirationMs);
 
         return Jwts.builder()
                 .setSubject(email)
                 .claim("auth", authorities)
+                .claim("type", tokenType)
                 .setIssuedAt(now)
                 .setExpiration(validity)
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -79,19 +95,34 @@ public class JwtTokenProvider {
      * Extract Authentication from JWT Token
      */
     public Authentication getAuthentication(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        Claims claims = parseClaims(token);
 
         Collection<? extends GrantedAuthority> authorities =
                 Arrays.stream(claims.get("auth").toString().split(","))
+                        .filter(authority -> !authority.isBlank())
                         .map(SimpleGrantedAuthority::new)
                         .collect(Collectors.toList());
 
         User principal = new User(claims.getSubject(), "", authorities);
         return new UsernamePasswordAuthenticationToken(principal, token, authorities);
+    }
+
+    public String getEmail(String token) {
+        return parseClaims(token).getSubject();
+    }
+
+    public boolean validateAccessToken(String token) {
+        if (!validateToken(token)) {
+            return false;
+        }
+        return "access".equals(parseClaims(token).get("type", String.class));
+    }
+
+    public boolean validateRefreshToken(String token) {
+        if (!validateToken(token)) {
+            return false;
+        }
+        return "refresh".equals(parseClaims(token).get("type", String.class));
     }
 
     /**
@@ -111,5 +142,21 @@ public class JwtTokenProvider {
             log.error("JWT token compact of handler are invalid.");
         }
         return false;
+    }
+
+    public long getAccessExpirationMs() {
+        return accessExpirationMs;
+    }
+
+    public long getRefreshExpirationMs() {
+        return refreshExpirationMs;
+    }
+
+    private Claims parseClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 }

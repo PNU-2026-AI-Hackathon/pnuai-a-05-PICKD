@@ -12,6 +12,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -87,10 +88,50 @@ class FileServiceTest {
         assertEquals(FileUploadType.TEMP_RESUME, responses.get(0).uploadType());
     }
 
+    @Test
+    void renameFileUpdatesOwnedFileName() {
+        User user = createUser();
+        UploadedFile uploadedFile = createUploadedFile(user);
+
+        when(userService.findByEmail("user@example.com")).thenReturn(user);
+        when(uploadedFileRepository.findByIdAndUser(1L, user)).thenReturn(Optional.of(uploadedFile));
+
+        UploadedFileResponse response = fileService.renameFile("user@example.com", 1L, "updated.pdf");
+
+        assertEquals("updated.pdf", uploadedFile.getFileName());
+        assertEquals("updated.pdf", response.fileName());
+    }
+
+    @Test
+    void deleteFileDeletesOwnedFileFromS3AndRepository() {
+        User user = createUser();
+        UploadedFile uploadedFile = createUploadedFile(user);
+
+        when(userService.findByEmail("user@example.com")).thenReturn(user);
+        when(uploadedFileRepository.findByIdAndUser(1L, user)).thenReturn(Optional.of(uploadedFile));
+
+        fileService.deleteFile("user@example.com", 1L);
+
+        verify(s3Service).deleteFile(uploadedFile.getFileUrl());
+        verify(uploadedFileRepository).delete(uploadedFile);
+    }
+
     private User createUser() {
         return User.builder()
                 .email("user@example.com")
                 .name("테스트")
+                .build();
+    }
+
+    private UploadedFile createUploadedFile(User user) {
+        return UploadedFile.builder()
+                .id(1L)
+                .user(user)
+                .fileName("resume.pdf")
+                .fileUrl("https://cdn.pickd.com/temp/resume/resume.pdf")
+                .uploadType(FileUploadType.TEMP_RESUME)
+                .fileSize(100L)
+                .contentType("application/pdf")
                 .build();
     }
 

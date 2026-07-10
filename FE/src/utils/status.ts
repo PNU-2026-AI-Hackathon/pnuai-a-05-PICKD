@@ -3,6 +3,19 @@ import {
   type ApplicationStatus,
 } from "../types/application";
 
+const STATUS_DISPLAY_MAP: Record<ApplicationStatus, string> = {
+  WRITING: "작성 중",
+  SUBMITTED: "결과 대기",
+  WRITTEN_TEST: "필기 전형",
+  INTERVIEW: "면접 전형",
+  COMPLETED: "최종 결과",
+};
+
+export function getStatusDisplay(status?: ApplicationStatus | string | null) {
+  if (!status) return "-";
+  return STATUS_DISPLAY_MAP[status as ApplicationStatus] || status;
+}
+
 export function isFinalStatus(status?: ApplicationStatus | string | null) {
   return status === "전형완료";
 }

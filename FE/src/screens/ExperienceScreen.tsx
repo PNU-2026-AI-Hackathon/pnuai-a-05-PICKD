@@ -311,7 +311,7 @@ export default function ExperienceScreen() {
         };
 
         setExperiences((prev) => [createdItem, ...prev]);
-        setSelectedItem(createdItem);
+        setSelectedItem(null);
         setIsCreatingExperience(false);
 
         showToast("경험이 저장되었습니다.");
@@ -327,7 +327,7 @@ export default function ExperienceScreen() {
         ),
       );
 
-      setSelectedItem(normalizedItem);
+      setSelectedItem(null);
       showToast("수정 내용이 저장되었습니다.");
       void reloadExperiences();
     } catch (error) {

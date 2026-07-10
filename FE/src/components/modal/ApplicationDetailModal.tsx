@@ -383,6 +383,7 @@ export default function ApplicationDetailModal({
                 value={draftMemo}
                 onChange={(event) => setDraftMemo(event.target.value)}
                 placeholder="메모를 입력하세요"
+                maxLength={500}
                 className=" min-h-[120px] w-full resize-none rounded-2xl border border-[#E2E8F0] bg-[#FCFDFE] px-5 py-4 mb-2 text-[15px] outline-none transition-colors placeholder:text-[#94A3B8] focus:border-[#2563EB]"
               />
             </Section>

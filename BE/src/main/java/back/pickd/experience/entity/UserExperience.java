@@ -79,6 +79,14 @@ public class UserExperience {
     @Builder.Default
     private List<ExperienceFile> files = new ArrayList<>();
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean pin = false;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean important = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 

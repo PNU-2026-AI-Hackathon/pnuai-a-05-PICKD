@@ -59,8 +59,35 @@ const toBackendJobCategory = (value?: string | null) => {
   return JOB_CATEGORY_TO_BACKEND[value] ?? value;
 };
 
+const STATUS_TO_FRONTEND: Record<string, Application["status"]> = {
+  WRITING: "작성중",
+  SUBMITTED: "지원완료",
+  DOCUMENT: "서류전형",
+  WRITTEN_TEST: "필기전형",
+  INTERVIEW: "면접전형",
+  COMPLETED: "전형완료",
+
+  "작성 중": "작성중",
+  작성중: "작성중",
+  지원완료: "지원완료",
+  서류전형: "서류전형",
+  필기전형: "필기전형",
+  면접전형: "면접전형",
+  전형완료: "전형완료",
+
+  "결과 대기": "지원완료",
+  "필기 전형": "필기전형",
+  "면접 전형": "면접전형",
+  "최종 결과": "전형완료",
+};
+
+const normalizeStatus = (status?: string | null): Application["status"] => {
+  if (!status) return "작성중";
+  return STATUS_TO_FRONTEND[status] ?? "작성중";
+};
+
 export function toApplicationRequest(data: ApplicationPayload) {
-  const status = data.status ?? "작성중";
+  const status = normalizeStatus(data.status as string | undefined);
 
   return {
     noticeId: data.noticeId ?? null,
@@ -83,15 +110,20 @@ export function toApplicationRequest(data: ApplicationPayload) {
     interviewDate: normalizeNullableDateTime(data.interviewDate),
     deadlineDate: normalizeNullableDateTime(data.deadlineDate),
     important: Boolean(data.important),
-    manualRegistration: Boolean(data.manualRegistration ?? !data.noticeId),
+    manualRegistration: Boolean(data.manualRegistration),
   };
 }
 
 export async function getApplications() {
-  return apiRequest<Application[]>("/api/application", {
+  const applications = await apiRequest<Application[]>("/api/application", {
     method: "GET",
     skipJsonContentType: true,
   });
+
+  return (applications ?? []).map((app) => ({
+    ...app,
+    status: normalizeStatus(app.status as string),
+  }));
 }
 
 export async function createApplication(data: ApplicationPayload) {

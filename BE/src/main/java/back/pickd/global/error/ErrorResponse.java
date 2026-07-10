@@ -23,6 +23,9 @@ public class ErrorResponse {
     @Schema(description = "오류 상세 메시지", example = "batch의 모든 중복 그룹에 대한 선택이 필요합니다.")
     private final String message;
 
+    @Schema(description = "기계 판독용 오류 코드 (선택)", example = "CALENDAR_CONSENT_REQUIRED")
+    private final String code;
+
     @Schema(description = "요청 경로", example = "/api/v2/experiences/extract/step3")
     private final String path;
 }

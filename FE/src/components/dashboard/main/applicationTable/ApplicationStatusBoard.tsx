@@ -6,6 +6,7 @@ import {
   type ApplicationFinalResult,
   type ApplicationStatus,
 } from "../../../../types/application";
+import { getStatusDisplay } from "../../../../utils/status";
 
 type BoardViewStatus = ApplicationStatus;
 
@@ -78,7 +79,7 @@ const columns: {
     dotClassName: "bg-emerald-600",
     borderClassName: "border-t-emerald-600",
   },
-];
+] as const;
 
 const cn = (...classNames: Array<string | false | null | undefined>) =>
   classNames.filter(Boolean).join(" ");

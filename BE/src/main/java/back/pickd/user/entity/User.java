@@ -69,6 +69,9 @@ public class User {
     @Column
     private LocalDateTime lastLoginDate;
 
+    @Column(length = 1024)
+    private String refreshToken;
+
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private UserEducation education;
 
@@ -144,6 +147,22 @@ public class User {
 
     public void updateIntro(String intro) {
         this.intro = intro;
+    }
+
+    public void updateProfile(String name, String nickname, String phone, String birthDate, String intro) {
+        this.name = name;
+        this.nickname = nickname;
+        this.phone = phone;
+        this.birthDate = birthDate;
+        this.intro = intro;
+    }
+
+    public void updateRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    public void clearRefreshToken() {
+        this.refreshToken = null;
     }
 
     public void verify(String name, String birthDate, String phone) {
