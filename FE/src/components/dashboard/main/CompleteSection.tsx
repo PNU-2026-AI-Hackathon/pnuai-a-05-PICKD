@@ -62,6 +62,19 @@ function getJobTitle(app: any) {
   );
 }
 
+
+function getFinalResult(app: any) {
+  return (
+    getText(
+      app.finalResult,
+      app.finalResultLabel,
+      app.resultDetail,
+      app.resultStatusDetail,
+      app.resultStatus,
+    ) ?? "세부 결과 미선택"
+  );
+}
+
 function getResultDate(app: any) {
   return formatDate(
     app.resultDate ??
@@ -87,7 +100,7 @@ export default function CompletedSection({
   const [viewMode, setViewMode] = useState<"file" | "grid">("file");
 
   const displayApps = applications.filter((app) => {
-    return (app.status ?? app.resultStatus) === "최종 결과";
+    return (app.status ?? app.resultStatus) === "전형완료";
   });
 
   return (
@@ -165,6 +178,10 @@ export default function CompletedSection({
                   >
                     {getFileTitle(app)}
                   </span>
+
+                  <span className="mt-2 rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-[#475569] ring-1 ring-[#D8E0EA]">
+                    {getFinalResult(app)}
+                  </span>
                 </div>
               ))}
             </div>
@@ -194,9 +211,12 @@ export default function CompletedSection({
                       {position} · {employmentType}
                     </p>
 
-                    <p className="mt-3 text-sm text-[#64748B]">
-                      결과 확인일 {resultDate}
-                    </p>
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-[#64748B]">
+                      <span>결과 확인일 {resultDate}</span>
+                      <span className="rounded-full bg-white px-2 py-0.5 text-[12px] font-semibold text-[#475569] ring-1 ring-[#D8E0EA]">
+                        {getFinalResult(app)}
+                      </span>
+                    </div>
                   </div>
                 );
               })}
