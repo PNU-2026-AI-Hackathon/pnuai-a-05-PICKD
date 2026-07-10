@@ -4,11 +4,12 @@ import {
 } from "../types/application";
 
 const STATUS_DISPLAY_MAP: Record<ApplicationStatus, string> = {
-  WRITING: "작성 중",
-  SUBMITTED: "결과 대기",
-  WRITTEN_TEST: "필기 전형",
-  INTERVIEW: "면접 전형",
-  COMPLETED: "최종 결과",
+  작성중: "작성 중",
+  지원완료: "지원 완료",
+  서류전형: "서류 전형",
+  필기전형: "필기 전형",
+  면접전형: "면접 전형",
+  전형완료: "전형 완료",
 };
 
 export function getStatusDisplay(status?: ApplicationStatus | string | null) {
