@@ -639,8 +639,8 @@ export default function ExperienceScreen() {
                     setColumnFilters({});
                     setSortState(null);
                   }}
-                  className={`relative flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border border-[#E2E8F0] bg-white transition-colors hover:bg-[#F8FAFC] ${activeFilterCount ? "text-[#2563EB]" : "text-[#64748B]"}`}
-                  title="컬럼 필터 초기화"
+                  className={`group relative flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border border-[#E2E8F0] bg-white transition-colors hover:bg-[#F8FAFC] ${activeFilterCount ? "text-[#2563EB]" : "text-[#64748B]"}`}
+                  title="필터 초기화"
                 >
                   <SlidersHorizontal size={17} />
                   {activeFilterCount > 0 && (
@@ -648,16 +648,22 @@ export default function ExperienceScreen() {
                       {activeFilterCount}
                     </span>
                   )}
+                  <span className="pointer-events-none absolute top-10 left-1/2 z-50 -translate-x-1/2 scale-0 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs font-[600] text-white transition-all group-hover:scale-100">
+                    필터 초기화
+                  </span>
                 </button>
 
                 <div ref={columnPanelRef} className="relative">
                   <button
                     type="button"
                     onClick={() => setColumnPanelOpen((prev) => !prev)}
-                    className="flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border border-[#E2E8F0] bg-white text-[#64748B] transition-colors hover:bg-[#F8FAFC]"
+                    className="group relative flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border border-[#E2E8F0] bg-white text-[#64748B] transition-colors hover:bg-[#F8FAFC]"
                     title="컬럼 표시"
                   >
                     <Columns3 size={17} />
+                    <span className="pointer-events-none absolute top-10 left-1/2 z-50 -translate-x-1/2 scale-0 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs font-[600] text-white transition-all group-hover:scale-100">
+                      컬럼 표시
+                    </span>
                   </button>
 
                   {columnPanelOpen && (
@@ -670,19 +676,37 @@ export default function ExperienceScreen() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center rounded-lg border border-[#D8E0EA] bg-[#F8FAFC] p-[2px]">
                   <button
+                    type="button"
                     onClick={() => setViewMode("list")}
-                    className={`flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border border-[#E2E8F0] bg-white transition-colors hover:bg-[#F8FAFC] ${viewMode === "list" ? "text-[#0F172A]" : "text-[#94A3B8]"}`}
+                    className={`group relative flex h-8 w-8 items-center justify-center rounded-md transition ${
+                      viewMode === "list"
+                        ? "bg-white text-[#334155] shadow-sm"
+                        : "text-[#64748B] hover:bg-white/70"
+                    }`}
+                    title="리스트 보기"
                   >
-                    <List size={18} />
+                    <List size={17} />
+                    <span className="pointer-events-none absolute top-10 left-1/2 z-50 -translate-x-1/2 scale-0 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs font-[600] text-white transition-all group-hover:scale-100">
+                      리스트 보기
+                    </span>
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => setViewMode("card")}
-                    className={`flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border border-[#E2E8F0] bg-white transition-colors hover:bg-[#F8FAFC] ${viewMode === "card" ? "text-[#0F172A]" : "text-[#94A3B8]"}`}
+                    className={`group relative flex h-8 w-8 items-center justify-center rounded-md transition ${
+                      viewMode === "card"
+                        ? "bg-white text-[#334155] shadow-sm"
+                        : "text-[#64748B] hover:bg-white/70"
+                    }`}
+                    title="카드 보기"
                   >
                     <Grid2X2 size={16} />
+                    <span className="pointer-events-none absolute top-10 left-1/2 z-50 -translate-x-1/2 scale-0 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs font-[600] text-white transition-all group-hover:scale-100">
+                      카드 보기
+                    </span>
                   </button>
                 </div>
               </div>

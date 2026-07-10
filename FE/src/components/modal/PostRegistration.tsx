@@ -57,6 +57,7 @@ type ReviewForm = {
   interviewDate: string;
   deadlineDate: string;
   memo: string;
+  manualRegistration?: boolean;
 };
 
 function getNoticePosition(notice: NoticeDetail) {
@@ -117,19 +118,20 @@ function toReviewForm(notice: NoticeDetail): ReviewForm {
     industry: notice.region1depth ?? "",
     category: (notice.category ??
       DEFAULT_CATEGORY) as ApplicationPayload["category"],
-    status: "작성 중",
+    status: "작성중",
     finalResult: null,
     applyDate: "",
     interviewDate: "",
     deadlineDate: toDateInputValue(notice.endedAt),
     memo: buildNoticeMemo(notice),
+    manualRegistration: false,
   };
 }
 
 function toApplicationPayload(
   data: Partial<ReviewForm> & Partial<Application>,
 ) {
-  const status = data.status ?? "작성 중";
+  const status = data.status ?? "작성중";
 
   return {
     noticeId: data.noticeId ?? undefined,
@@ -141,11 +143,14 @@ function toApplicationPayload(
       (data as any).category ??
       ((data as any).employmentType || DEFAULT_CATEGORY),
     status,
-    finalResult: status === "최종 결과" ? (data.finalResult ?? null) : null,
+    finalResult: status === "전형완료" ? (data.finalResult ?? null) : null,
     memo: data.memo ?? "",
     important: Boolean(data.important),
+    manualRegistration: Boolean((data as any).manualRegistration ?? !data.noticeId),
     applyDate: toBackendLocalDateTime(data.applyDate) ?? null,
-    interviewDate: toBackendLocalDateTime(data.interviewDate) ?? null,
+    interviewDate: Boolean((data as any).manualRegistration ?? !data.noticeId)
+      ? null
+      : toBackendLocalDateTime(data.interviewDate) ?? null,
     deadlineDate: toBackendLocalDateTime(data.deadlineDate) ?? null,
   } satisfies ApplicationPayload;
 }
@@ -306,8 +311,26 @@ export default function PostRegistration({
         return;
       }
 
+      if (!String((formData as any).company || "").trim()) {
+        alert("기업명을 입력해주세요.");
+        return;
+      }
+      if (!String((formData as any).jobTitle || "").trim()) {
+        alert("공고명을 입력해주세요.");
+        return;
+      }
+      if (!String((formData as any).position || "").trim()) {
+        alert("직무를 입력해주세요.");
+        return;
+      }
+      if (!String((formData as any).deadlineDate || "").trim()) {
+        alert("지원마감일을 입력해주세요.");
+        return;
+      }
+
       const data = toApplicationPayload({
         ...formData,
+        manualRegistration: !editData || Boolean(formData.manualRegistration),
         category: ((formData as any).employmentType ||
           (formData as any).employType ||
           DEFAULT_CATEGORY) as ApplicationPayload["category"],
@@ -569,6 +592,7 @@ function NoticeReviewFields({
         applyDate={form.applyDate}
         interviewDate={form.interviewDate}
         deadlineDate={form.deadlineDate}
+        showStageDates={true}
         onChange={(key, value) => update(key, value)}
       />
 
@@ -618,7 +642,7 @@ function ManualFields({ formData, updateField }: any) {
       </div>
 
       <SharedSelects
-        status={formData.status || "작성 중"}
+        status={formData.status || "작성중"}
         finalResult={formData.finalResult ?? null}
         category={(formData as any).employmentType || DEFAULT_CATEGORY}
         onStatusChange={(status) => updateField("status", status)}
@@ -630,6 +654,7 @@ function ManualFields({ formData, updateField }: any) {
         applyDate={String(formData.applyDate || "")}
         interviewDate={String(formData.interviewDate || "")}
         deadlineDate={String(formData.deadlineDate || "")}
+        showStageDates={!formData.manualRegistration && Boolean(formData.noticeId)}
         onChange={(key, value) => updateField(key, value)}
       />
 
@@ -675,7 +700,7 @@ function SharedSelects({
         ))}
       </select>
 
-      {status === "최종 결과" && (
+      {status === "전형완료" && (
         <select
           className="w-full rounded-xl border border-[#E2E8F0] bg-white px-4 py-3 text-[14px] text-[#0F172A] outline-none"
           value={finalResult ?? ""}
@@ -717,18 +742,21 @@ function DateFields({
   applyDate,
   interviewDate,
   deadlineDate,
+  showStageDates = true,
   onChange,
 }: {
   applyDate: string;
   interviewDate: string;
   deadlineDate: string;
+  showStageDates?: boolean;
   onChange: (
     key: "applyDate" | "interviewDate" | "deadlineDate",
     value: string,
   ) => void;
 }) {
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className={showStageDates ? "grid grid-cols-3 gap-3" : "grid grid-cols-1 gap-3"}>
+      {showStageDates && (
       <div className="flex flex-col gap-1">
         <label className="ml-1 text-[11px] font-bold text-[#94A3B8]">
           서류제출일
@@ -740,6 +768,8 @@ function DateFields({
           onChange={(e) => onChange("applyDate", e.target.value)}
         />
       </div>
+      )}
+      {showStageDates && (
       <div className="flex flex-col gap-1">
         <label className="ml-1 text-[11px] font-bold text-[#94A3B8]">
           면접일
@@ -751,6 +781,7 @@ function DateFields({
           onChange={(e) => onChange("interviewDate", e.target.value)}
         />
       </div>
+      )}
       <div className="flex flex-col gap-1">
         <label className="ml-1 text-[11px] font-bold text-[#94A3B8]">
           지원마감일

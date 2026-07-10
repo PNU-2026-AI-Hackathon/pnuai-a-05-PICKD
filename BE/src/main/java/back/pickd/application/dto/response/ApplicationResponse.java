@@ -22,7 +22,7 @@ public class ApplicationResponse {
     private String position;
     private String industry;
     private String employmentType;
-    private ApplicationStatus status;   // @JsonValue → "작성 중" 형태로 직렬화
+    private ApplicationStatus status;   // @JsonValue → "작성중" 형태로 직렬화
     private ApplicationFinalResult finalResult;
     private String memo;
     private LocalDateTime applyDate;
@@ -32,6 +32,7 @@ public class ApplicationResponse {
     private String interviewEventId;
     private String deadlineEventId;
     private boolean important;
+    private boolean manualRegistration;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<DocumentSummary> documents;
@@ -41,8 +42,8 @@ public class ApplicationResponse {
                 .id(app.getId())
                 .noticeId(app.getNotice() != null ? app.getNotice().getId() : null)
                 .todos(app.getTodos().stream().map(TodoResponse::from).toList())
-                .company(app.getCompany())
-                .jobTitle(app.getJobTitle())
+                .company(resolveCompany(app))
+                .jobTitle(resolveJobTitle(app))
                 .position(app.getPosition())
                 .industry(app.getIndustry())
                 .employmentType(resolveEmploymentType(app))
@@ -56,12 +57,27 @@ public class ApplicationResponse {
                 .interviewEventId(app.getInterviewEventId())
                 .deadlineEventId(app.getDeadlineEventId())
                 .important(app.isImportant())
+                .manualRegistration(app.isManualRegistration())
                 .createdAt(app.getCreatedAt())
                 .updatedAt(app.getUpdatedAt())
                 .documents(app.getDocuments().stream().map(DocumentSummary::from).toList())
                 .build();
     }
 
+
+    private static String resolveCompany(Application app) {
+        if (app.getCompany() != null && !app.getCompany().isBlank()) {
+            return app.getCompany();
+        }
+        return app.getNotice() != null ? app.getNotice().getCompanyName() : null;
+    }
+
+    private static String resolveJobTitle(Application app) {
+        if (app.getJobTitle() != null && !app.getJobTitle().isBlank()) {
+            return app.getJobTitle();
+        }
+        return app.getNotice() != null ? app.getNotice().getNoticeName() : null;
+    }
 
     private static String resolveEmploymentType(Application app) {
         if (app.getNotice() == null) {

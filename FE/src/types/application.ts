@@ -2,14 +2,15 @@ import type { Todo } from "./todo";
 import type { DocumentItem } from "./document";
 
 export const APPLICATION_STATUSES = [
-  "작성 중",
-  "결과 대기",
-  "필기 전형",
-  "면접 전형",
-  "최종 결과",
+  "작성중",
+  "지원완료",
+  "서류전형",
+  "필기전형",
+  "면접전형",
+  "전형완료",
 ] as const;
 
-export const APPLICATION_FINAL_RESULTS = ["합격", "불합격", "포기"] as const;
+export const APPLICATION_FINAL_RESULTS = ["최종합격", "불합격", "보류"] as const;
 
 export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
 export type ApplicationFinalResult =
@@ -45,6 +46,7 @@ export type Application = {
   submitted?: boolean;
   checklistInComplete?: boolean;
   important?: boolean;
+  manualRegistration?: boolean;
   documents?: DocumentItem[];
   memo?: string;
   todos?: Todo[];
@@ -54,7 +56,7 @@ export const COLUMN_OPTIONS = [
   { key: "position", label: "직무", default: true },
   { key: "employmentType", label: "고용형태", default: true },
   { key: "status", label: "현재 상태", default: true },
-  { key: "deadlineDate", label: "마감일", default: true },
+  { key: "deadlineDate", label: "지원마감일", default: true },
   { key: "dday", label: "D-day", default: true },
   { key: "checklistInComplete", label: "일정/할 일", default: true },
   { key: "industry", label: "산업", default: false },

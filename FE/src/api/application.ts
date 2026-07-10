@@ -29,6 +29,7 @@ export type ApplicationPayload = Omit<
   employmentType?: string | null;
   startedAt?: string | null;
   endedAt?: string | null;
+  manualRegistration?: boolean | null;
 };
 
 const normalizeNullableDateTime = (value: unknown) => {
@@ -59,7 +60,7 @@ const toBackendJobCategory = (value?: string | null) => {
 };
 
 export function toApplicationRequest(data: ApplicationPayload) {
-  const status = data.status ?? "작성 중";
+  const status = data.status ?? "작성중";
 
   return {
     noticeId: data.noticeId ?? null,
@@ -76,12 +77,13 @@ export function toApplicationRequest(data: ApplicationPayload) {
     startedAt: data.startedAt ?? undefined,
     endedAt: data.endedAt ?? undefined,
     status,
-    finalResult: status === "최종 결과" ? (data.finalResult ?? null) : null,
+    finalResult: status === "전형완료" ? (data.finalResult ?? null) : null,
     memo: data.memo ?? "",
     applyDate: normalizeNullableDateTime(data.applyDate),
     interviewDate: normalizeNullableDateTime(data.interviewDate),
     deadlineDate: normalizeNullableDateTime(data.deadlineDate),
     important: Boolean(data.important),
+    manualRegistration: Boolean(data.manualRegistration ?? !data.noticeId),
   };
 }
 
