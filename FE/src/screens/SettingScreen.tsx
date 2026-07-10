@@ -53,14 +53,8 @@ export default function SettingScreen() {
                     className="text-[20px] text-[#2563EB]"
                   />
                 </div>
-                <div>
-                  <h3 className="text-base font-semibold text-[#0F172A]">
-                    로그아웃
-                  </h3>
-                  <p className="mt-1 text-sm text-[#64748B]">
-                    서버에 저장된 refresh token을 비우고 access/refresh
-                    쿠키를 삭제해요.
-                  </p>
+                <div className="pt-2 text-base font-semibold text-[#0F172A]">
+                  로그아웃
                 </div>
               </div>
 

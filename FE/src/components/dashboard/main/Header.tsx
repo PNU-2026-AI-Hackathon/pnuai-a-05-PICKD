@@ -21,7 +21,7 @@ export default function Header({ user }: { user: any }) {
             type="button"
             onClick={() => navigate("/calendar")}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-slate-500 hover:ring-2 hover:ring-blue-200"
-            title="캘린더 바로가기"
+            data-tooltip="캘린더 바로가기" aria-label="캘린더 바로가기"
           >
             <CalendarDays size={25} />
           </button>

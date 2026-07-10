@@ -151,20 +151,20 @@ export default function MainScreen() {
 
       {user && isSidebarOpen && (
         <div
-          className="absolute inset-0 bg-transparent z-20"
+          className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[1px]"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       {user && (
         <div
-          className={`fixed top-0 right-0 h-screen w-[350px] bg-white shadow-xl z-30 flex flex-col transform transition-transform duration-300 ease-in-out ${
+          className={`fixed top-0 right-0 h-screen w-[350px] bg-white shadow-xl z-[60] flex flex-col transform transition-transform duration-300 ease-in-out ${
             isSidebarOpen ? "translate-x-0" : "translate-x-full"
           }`}
         >
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="absolute top-1/3 left-0 -translate-x-full -translate-y-1/2 flex items-center justify-center w-6 h-16 bg-white border border-r-0 border-gray-200 rounded-l-xl shadow-md hover:bg-gray-50 text-gray-500 transition-all group z-40"
+            className="absolute top-1/3 left-0 -translate-x-full -translate-y-1/2 flex items-center justify-center w-6 h-16 bg-white border border-r-0 border-gray-200 rounded-l-xl shadow-md hover:bg-gray-50 text-gray-500 transition-all group z-10"
           >
             <Icon
               icon={
@@ -191,7 +191,7 @@ export default function MainScreen() {
 
       {isModalOpen && (
         <div
-          className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/30 flex items-center justify-center z-[100]"
           onClick={() => {
             setIsModalOpen(false);
             setSelectedApplication(null);

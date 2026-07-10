@@ -93,7 +93,6 @@ export default function ActiveFilter({
             type="button"
             onClick={() => setIsSortOpen((prev) => !prev)}
             className="flex h-10 items-center gap-2 rounded-xl border border-[#D8E0EA] bg-white px-3 text-sm font-medium text-[#334155] hover:bg-[#F8FAFC]"
-            title="정렬"
           >
             <Icon icon="lucide:arrow-up-down" width={16} height={16} />
             <span>{getSortLabel(sort)}</span>
@@ -135,7 +134,7 @@ export default function ActiveFilter({
                 ? "bg-white text-[#334155] shadow-sm"
                 : "text-[#64748B] hover:bg-white/70"
             }`}
-            title="표 보기"
+            data-tooltip="표 보기" aria-label="표 보기"
           >
             <Icon icon="lucide:table-2" width={17} height={17} />
           </button>
@@ -148,7 +147,7 @@ export default function ActiveFilter({
                 ? "bg-white text-[#334155] shadow-sm"
                 : "text-[#64748B] hover:bg-white/70"
             }`}
-            title="칸반 보기"
+            data-tooltip="칸반 보기" aria-label="칸반 보기"
           >
             <Icon icon="lucide:columns-3" width={17} height={17} />
           </button>
@@ -169,7 +168,7 @@ export default function ActiveFilter({
           <button
             onClick={() => setIsColumnOpen(!isColumnOpen)}
             className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#F1F5F9] transition hover:bg-gray-50"
-            title="컬럼 설정"
+            data-tooltip="컬럼 설정" aria-label="컬럼 설정"
           >
             <Icon
               icon="material-symbols:view-column-outline"
