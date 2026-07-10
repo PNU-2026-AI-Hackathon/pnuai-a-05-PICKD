@@ -89,19 +89,10 @@ class ApplicationStatusTest {
     class NeedsApplyEvent {
 
         @ParameterizedTest
-        @EnumSource(
-                value = ApplicationStatus.class,
-                names = {"WRITING", "SUBMITTED", "DOCUMENT", "WRITTEN_TEST", "INTERVIEW"}
-        )
-        @DisplayName("전형완료 전 상태는 apply 이벤트가 필요하다")
-        void returnsTrueBeforeCompleted(ApplicationStatus status) {
+        @EnumSource(ApplicationStatus.class)
+        @DisplayName("상태와 무관하게 apply 이벤트는 날짜 존재 여부로 판단한다")
+        void returnsTrueForAllStatuses(ApplicationStatus status) {
             assertThat(status.needsApplyEvent()).isTrue();
-        }
-
-        @Test
-        @DisplayName("COMPLETED는 apply 이벤트가 필요하지 않다")
-        void returnsFalseForCompleted() {
-            assertThat(ApplicationStatus.COMPLETED.needsApplyEvent()).isFalse();
         }
     }
 
@@ -109,20 +100,11 @@ class ApplicationStatusTest {
     @DisplayName("needsInterviewEvent")
     class NeedsInterviewEvent {
 
-        @Test
-        @DisplayName("INTERVIEW만 interview 이벤트가 필요하다")
-        void returnsTrueOnlyForInterview() {
-            assertThat(ApplicationStatus.INTERVIEW.needsInterviewEvent()).isTrue();
-        }
-
         @ParameterizedTest
-        @EnumSource(
-                value = ApplicationStatus.class,
-                names = {"WRITING", "SUBMITTED", "DOCUMENT", "WRITTEN_TEST", "COMPLETED"}
-        )
-        @DisplayName("INTERVIEW 외 상태는 interview 이벤트가 필요하지 않다")
-        void returnsFalseForOtherStatuses(ApplicationStatus status) {
-            assertThat(status.needsInterviewEvent()).isFalse();
+        @EnumSource(ApplicationStatus.class)
+        @DisplayName("상태와 무관하게 interview 이벤트는 날짜 존재 여부로 판단한다")
+        void returnsTrueForAllStatuses(ApplicationStatus status) {
+            assertThat(status.needsInterviewEvent()).isTrue();
         }
     }
 
@@ -131,19 +113,10 @@ class ApplicationStatusTest {
     class NeedsDeadlineEvent {
 
         @ParameterizedTest
-        @EnumSource(
-                value = ApplicationStatus.class,
-                names = {"WRITING", "SUBMITTED", "DOCUMENT", "WRITTEN_TEST", "INTERVIEW"}
-        )
-        @DisplayName("전형완료 전 상태는 deadline 이벤트가 필요하다")
-        void returnsTrueBeforeCompleted(ApplicationStatus status) {
+        @EnumSource(ApplicationStatus.class)
+        @DisplayName("상태와 무관하게 deadline 이벤트는 날짜 존재 여부로 판단한다")
+        void returnsTrueForAllStatuses(ApplicationStatus status) {
             assertThat(status.needsDeadlineEvent()).isTrue();
-        }
-
-        @Test
-        @DisplayName("COMPLETED는 deadline 이벤트가 필요하지 않다")
-        void returnsFalseForCompleted() {
-            assertThat(ApplicationStatus.COMPLETED.needsDeadlineEvent()).isFalse();
         }
     }
 }

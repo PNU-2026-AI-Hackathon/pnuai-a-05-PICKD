@@ -49,7 +49,7 @@ public class ApplicationService {
         User user = userService.findByEmail(auth.getName());
         ApplicationStatus status = dto.getStatus();
         ApplicationFinalResult finalResult = normalizeFinalResult(status, dto.getFinalResult());
-        boolean manualRegistration = dto.getNoticeId() == null || dto.isManualRegistration();
+        boolean manualRegistration = dto.isManualRegistration();
 
         Notice notice;
         if (dto.getNoticeId() != null) {
