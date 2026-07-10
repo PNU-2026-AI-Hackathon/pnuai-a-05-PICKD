@@ -3,20 +3,26 @@ package back.pickd.application.enums;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+
+import java.util.Arrays;
 
 @Getter
-@RequiredArgsConstructor
 public enum ApplicationStatus {
-    WRITING("작성중"),
-    SUBMITTED("지원완료"),
-    DOCUMENT("서류전형"),
-    WRITTEN_TEST("필기전형"),
-    INTERVIEW("면접전형"),
-    COMPLETED("전형완료");
+    WRITING("작성중", "작성 중"),
+    SUBMITTED("지원완료", "지원 완료", "결과 대기"),
+    DOCUMENT("서류전형", "서류 전형", "서류 제출", "서류제출"),
+    WRITTEN_TEST("필기전형", "필기 전형"),
+    INTERVIEW("면접전형", "면접 전형"),
+    COMPLETED("전형완료", "최종 결과", "최종결과");
 
     @JsonValue
     private final String label;
+    private final String[] aliases;
+
+    ApplicationStatus(String label, String... aliases) {
+        this.label = label;
+        this.aliases = aliases;
+    }
 
     @JsonCreator
     public static ApplicationStatus from(String value)  {
@@ -25,8 +31,13 @@ public enum ApplicationStatus {
         }
 
         String trimmed = value.trim();
+        String normalized = trimmed.replaceAll("\\s+", "");
         for (ApplicationStatus status : values()) {
-            if (status.name().equals(trimmed) || status.label.equals(trimmed)) {
+            if (status.name().equalsIgnoreCase(trimmed)
+                    || status.label.equals(trimmed)
+                    || status.label.replaceAll("\\s+", "").equals(normalized)
+                    || Arrays.stream(status.aliases).anyMatch(alias ->
+                    alias.equals(trimmed) || alias.replaceAll("\\s+", "").equals(normalized))) {
                 return status;
             }
         }
@@ -35,11 +46,11 @@ public enum ApplicationStatus {
     }
 
     public boolean needsApplyEvent() {
-        return this != COMPLETED;
+        return true;
     }
 
     public boolean needsInterviewEvent() {
-        return this == INTERVIEW;
+        return true;
     }
 
     public boolean needsDeadlineEvent() {

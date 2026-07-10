@@ -18,7 +18,7 @@ export default function PostSchedule({
 }: PostScheduleProps) {
   const [formData, setFormData] = useState({
     title: application ? `${application.company} ${application.jobTitle}` : "",
-    category: "일반",
+    category: application ? "기타" : "기타",
     date: "",
     time: "09:00",
     memo: "",
@@ -26,7 +26,9 @@ export default function PostSchedule({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -63,7 +65,7 @@ export default function PostSchedule({
     try {
       await createEvent({
         summary:
-          formData.category === "일반"
+          formData.category === "기타"
             ? formData.title
             : `${formData.title} ${formData.category}`,
         category: formData.category,
@@ -128,10 +130,22 @@ export default function PostSchedule({
               onChange={handleChange}
               className="w-full border p-2 rounded-xl outline-none focus:border-blue-500 bg-white"
             >
-              <option value="일반">일반</option>
-              <option value="제출">제출</option>
-              <option value="면접">면접</option>
-              <option value="마감">마감</option>
+              {application ? (
+                <>
+                  <option value="제출마감">제출마감</option>
+                  <option value="서류발표">서류발표</option>
+                  <option value="필기">필기</option>
+                  <option value="면접">면접</option>
+                  <option value="최종발표">최종발표</option>
+                  <option value="기타">기타</option>
+                </>
+              ) : (
+                <>
+                  <option value="시험">시험</option>
+                  <option value="모임">모임</option>
+                  <option value="기타">기타</option>
+                </>
+              )}
             </select>
           </div>
 

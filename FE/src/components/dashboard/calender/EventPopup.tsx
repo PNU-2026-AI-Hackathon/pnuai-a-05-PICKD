@@ -1,6 +1,6 @@
 import { useEffect, useState, type RefObject } from "react";
 
-type EventType = "interview" | "deadline" | "apply" | "todo" | "default";
+type EventType = "deadline" | "apply" | "writtenTest" | "interview" | "announcement" | "application" | "personal" | "todo" | "default";
 
 type CalendarEvent = {
   date: Date;
@@ -50,6 +50,9 @@ const EventPopup = ({ popup, popupRef }: EventPopupProps) => {
     if (type === "apply") {
       return "bg-green-50 text-green-600 border-green-100";
     }
+    if (type === "writtenTest") {
+      return "bg-amber-50 text-amber-600 border-amber-100";
+    }
     if (type === "todo") {
       return "bg-blue-50 text-blue-600 border-blue-100";
     }
@@ -59,7 +62,8 @@ const EventPopup = ({ popup, popupRef }: EventPopupProps) => {
   const getLabel = (type: EventType) => {
     if (type === "interview") return "면접";
     if (type === "deadline") return "마감";
-    if (type === "apply") return "지원";
+    if (type === "apply") return "서류";
+    if (type === "writtenTest") return "필기";
     if (type === "todo") return "할 일";
     return "일정";
   };

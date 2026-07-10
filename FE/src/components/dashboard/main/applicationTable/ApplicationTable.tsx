@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type DragEvent } from "react";
 import ActiveFilter from "./ActiveFilter";
 import ApplicationRow from "./ApplicationRow";
 import { getDDay, parseLocalDateTime } from "../../../../utils/date";
+import { getCurrentDeadlineInfo } from "../../../../utils/applicationDeadline";
 import { useApplication } from "../../../../context/ApplicationContext";
 import { isActiveStatus } from "../../../../utils/status";
 import {
@@ -49,7 +50,7 @@ const ALL_TABLE_COLUMNS = [
   ["position", "직무"],
   ["employmentType", "고용형태"],
   ["status", "현재 상태"],
-  ["deadlineDate", "마감일"],
+  ["deadlineDate", "지원마감일"],
   ["dday", "D-day"],
   ["checklistInComplete", "일정/할 일"],
   ["industry", "산업"],
@@ -281,7 +282,7 @@ export default function ApplicationTable({
   ) => {
     applyApplicationPatch(applicationId, {
       status: nextStatus as Application["status"],
-      finalResult: nextStatus === "COMPLETED" ? (finalResult ?? null) : null,
+      finalResult: nextStatus === "전형완료" ? (finalResult ?? null) : null,
       recentUpdated: new Date().toISOString().slice(0, 10),
     } as Partial<Application>);
   };
@@ -349,7 +350,7 @@ export default function ApplicationTable({
       { key: "position", label: "직무" },
       { key: "employmentType", label: "고용형태" },
       { key: "status", label: "현재 상태" },
-      { key: "deadlineDate", label: "마감일" },
+      { key: "deadlineDate", label: "지원마감일" },
       { key: "dday", label: "D-day" },
       { key: "checklistInComplete", label: "일정/할 일" },
       { key: "industry", label: "산업" },
@@ -394,7 +395,7 @@ export default function ApplicationTable({
         case "deadlineDate":
           return row.deadlineDate || "-";
         case "dday":
-          return getDDay(row.deadlineDate);
+          return getDDay(getCurrentDeadlineInfo(row).date);
         case "checklistInComplete":
           return `일정 ${scheduleCount} / 할 일 ${todoCount}`;
         case "important":
@@ -474,14 +475,6 @@ export default function ApplicationTable({
     }
   };
 
-  const getUniqueValues = (key: string) => {
-    const values = mergedApplications
-      .map((row: any) => row[key])
-      .filter(Boolean);
-
-    return [...new Set(values)];
-  };
-
   const finalRecentThreshold = new Date();
   finalRecentThreshold.setMonth(finalRecentThreshold.getMonth() - 1);
   finalRecentThreshold.setHours(0, 0, 0, 0);
@@ -556,7 +549,7 @@ export default function ApplicationTable({
       const getDateValue = (row: Application) => {
         if (sort.key === "deadlineDate") {
           return (
-            parseLocalDateTime(row.deadlineDate)?.getTime() ??
+            parseLocalDateTime(getCurrentDeadlineInfo(row).date)?.getTime() ??
             Number.MAX_SAFE_INTEGER
           );
         }
@@ -579,10 +572,6 @@ export default function ApplicationTable({
       return sort.order === "asc" ? aValue - bValue : bValue - aValue;
     });
   }
-
-  const handleSort = (key: string, order: "asc" | "desc") => {
-    setSort({ key, order });
-  };
 
   const EMPTY_COUNT = Math.max(0, 5 - sortedRows.length);
 

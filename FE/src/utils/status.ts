@@ -17,7 +17,7 @@ export function getStatusDisplay(status?: ApplicationStatus | string | null) {
 }
 
 export function isFinalStatus(status?: ApplicationStatus | string | null) {
-  return status === "COMPLETED";
+  return status === "전형완료";
 }
 
 export function isActiveStatus(status?: ApplicationStatus | string | null) {
@@ -26,15 +26,17 @@ export function isActiveStatus(status?: ApplicationStatus | string | null) {
 
 export function getStatusStyle(status?: ApplicationStatus | string | null) {
   switch (status) {
-    case "WRITING":
+    case "작성중":
       return "bg-[#EAF3FF] text-[#2563EB]";
-    case "SUBMITTED":
+    case "지원완료":
       return "bg-[#ECFDF5] text-[#10B981]";
-    case "WRITTEN_TEST":
+    case "서류전형":
+      return "bg-[#EFF6FF] text-[#2563EB]";
+    case "필기전형":
       return "bg-purple-100 text-purple-600";
-    case "INTERVIEW":
+    case "면접전형":
       return "bg-yellow-100 text-yellow-600";
-    case "COMPLETED":
+    case "전형완료":
       return "bg-[#F1F5F9] text-[#64748B]";
     default:
       return "bg-[#E2E8F0] text-[#94A3B8]";

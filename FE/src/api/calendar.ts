@@ -69,6 +69,7 @@ const buildDescription = (data: CalendarEventPayload) => {
   const lines = [
     data.description,
     data.category ? `category:${data.category}` : "",
+    data.category ? `pickd:eventType=${data.category}` : "",
     data.applicationId ? `pickd:applicationId=${data.applicationId}` : "",
   ].filter(Boolean);
 

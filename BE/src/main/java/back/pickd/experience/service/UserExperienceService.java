@@ -55,6 +55,8 @@ public class UserExperienceService {
                         request.getAttributes()
                 ))
                 .keywords(request.getKeywords())
+                .important(Boolean.TRUE.equals(request.getImportant()))
+                .pin(Boolean.TRUE.equals(request.getPin()))
                 .build();
 
         experience.updateLinks(toLinks(request));
@@ -95,7 +97,9 @@ public class UserExperienceService {
                         request.getExperienceType(),
                         request.getAttributes()
                 ),
-                request.getKeywords()
+                request.getKeywords(),
+                Boolean.TRUE.equals(request.getImportant()),
+                Boolean.TRUE.equals(request.getPin())
         );
         experience.updateLinks(toLinks(request));
         return new ExperienceResponse(experience);

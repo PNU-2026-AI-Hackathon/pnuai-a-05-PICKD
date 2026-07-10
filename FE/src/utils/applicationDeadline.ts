@@ -57,6 +57,49 @@ export function getCurrentDeadlineInfo(
     };
   }
 
+  if (application.manualRegistration) {
+    return {
+      label: "지원마감일",
+      date:
+        application.deadlineDate ??
+        findPickdScheduleDate(application, ["지원마감", "마감"]) ??
+        null,
+    };
+  }
+
+  if (application.status === "서류전형") {
+    return {
+      label: "서류제출마감",
+      date:
+        application.applyDate ??
+        findPickdScheduleDate(application, ["서류", "제출"]) ??
+        application.deadlineDate ??
+        null,
+    };
+  }
+
+  if (application.status === "필기전형") {
+    return {
+      label: "필기일",
+      date:
+        findPickdScheduleDate(application, ["필기", "NCS", "코딩테스트"]) ??
+        application.applyDate ??
+        application.deadlineDate ??
+        null,
+    };
+  }
+
+  if (application.status === "면접전형") {
+    return {
+      label: "면접일",
+      date:
+        application.interviewDate ??
+        findPickdScheduleDate(application, ["면접"]) ??
+        application.deadlineDate ??
+        null,
+    };
+  }
+
   return {
     label: "지원마감일",
     date:

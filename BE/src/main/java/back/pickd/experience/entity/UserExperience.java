@@ -61,6 +61,14 @@ public class UserExperience {
     @Builder.Default
     private List<String> keywords = new ArrayList<>();
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean important = false;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean pin = false;
+
     @BatchSize(size = 30)
     @OneToMany(mappedBy = "userExperience", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -106,7 +114,9 @@ public class UserExperience {
             Status status,
             String documentContent,
             Map<String, Object> attributes,
-            List<String> keywords
+            List<String> keywords,
+            boolean important,
+            boolean pin
     ) {
         this.title = title;
         this.experienceType = experienceType;
@@ -115,6 +125,8 @@ public class UserExperience {
         this.documentContent = documentContent;
         this.attributes = attributes;
         this.keywords = keywords;
+        this.important = important;
+        this.pin = pin;
     }
 
     public void updateLinks(List<ExperienceLink> newLinks) {

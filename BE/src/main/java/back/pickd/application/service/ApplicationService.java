@@ -49,6 +49,7 @@ public class ApplicationService {
         User user = userService.findByEmail(auth.getName());
         ApplicationStatus status = dto.getStatus();
         ApplicationFinalResult finalResult = normalizeFinalResult(status, dto.getFinalResult());
+        boolean manualRegistration = dto.isManualRegistration();
 
         Notice notice;
         if (dto.getNoticeId() != null) {
@@ -83,9 +84,10 @@ public class ApplicationService {
                 .status(status)
                 .finalResult(finalResult)
                 .important(dto.isImportant())
+                .manualRegistration(manualRegistration)
                 .memo(dto.getMemo())
-                .applyDate(dto.getApplyDate())
-                .interviewDate(dto.getInterviewDate())
+                .applyDate(manualRegistration ? null : dto.getApplyDate())
+                .interviewDate(manualRegistration ? null : dto.getInterviewDate())
                 .deadlineDate(dto.getDeadlineDate())
                 .build();
 
@@ -119,31 +121,77 @@ public class ApplicationService {
 
         ApplicationStatus status = dto.getStatus();
         ApplicationFinalResult finalResult = normalizeFinalResult(status, dto.getFinalResult());
+        boolean manualRegistration = dto.isManualRegistration() || app.isManualRegistration();
 
         app.update(
                 dto.getCompany(), dto.getJobTitle(), dto.getPosition(), dto.getIndustry(),
-                status, finalResult, dto.isImportant(), dto.getMemo(),
-                dto.getApplyDate(), dto.getInterviewDate(), dto.getDeadlineDate()
+                status, finalResult, dto.isImportant(), manualRegistration, dto.getMemo(),
+                manualRegistration ? null : dto.getApplyDate(), manualRegistration ? null : dto.getInterviewDate(), dto.getDeadlineDate()
         );
+        syncNoticeSnapshot(app, dto);
 
         syncCalendarEvents(app, dto, auth);
         applicationRepository.save(app);
     }
 
-    /**
-     * MVP 결정사항 기준 캘린더 자동생성 우선순위:
-     * 1) 지원마감일(deadlineDate) 2) 서류제출일(applyDate) 3) 면접일(interviewDate).
-     * 직접등록 일정과 할 일은 각각 Calendar/Todo API에서 별도 생성한다.
-     */
+
+    private void syncNoticeSnapshot(Application app, ApplicationRequest dto) {
+        Notice notice = app.getNotice();
+        if (notice == null) {
+            return;
+        }
+
+        JobCategory category = dto.getCategory() != null
+                ? dto.getCategory()
+                : notice.getCategory();
+        String startedAt = dto.getStartedAt() != null
+                ? dto.getStartedAt()
+                : notice.getStartedAt();
+        String endedAt = dto.getEndedAt() != null
+                ? dto.getEndedAt()
+                : notice.getEndedAt();
+
+        notice.update(
+                dto.getCompany(),
+                dto.getJobTitle(),
+                category,
+                startedAt,
+                endedAt,
+                notice.getEmploymentType(),
+                notice.getHeadcount(),
+                notice.getRegion1depth(),
+                notice.getWorkplaceAddress(),
+                notice.getNoticeUrl()
+        );
+    }
+
     private void syncCalendarEvents(Application app, ApplicationRequest dto, Authentication auth) {
         syncDeadlineEvent(app, dto, auth);
+
+        if (app.isManualRegistration()) {
+            deleteAutoStageEventsForManualApplication(app, auth);
+            return;
+        }
+
         syncApplyEvent(app, dto, auth);
         syncInterviewEvent(app, dto, auth);
     }
 
+
+    private void deleteAutoStageEventsForManualApplication(Application app, Authentication auth) {
+        if (app.getApplyEventId() != null) {
+            calendarAsyncService.deleteEventAsync(auth, app.getApplyEventId());
+            app.clearApplyEventId();
+        }
+        if (app.getInterviewEventId() != null) {
+            calendarAsyncService.deleteEventAsync(auth, app.getInterviewEventId());
+            app.clearInterviewEventId();
+        }
+    }
+
     private void syncDeadlineEvent(Application app, ApplicationRequest dto, Authentication auth) {
         if (dto.getDeadlineDate() != null) {
-            Event event = buildEvent("지원마감", dto.getCompany(), dto.getJobTitle(), dto.getDeadlineDate());
+            Event event = buildEvent(app, "deadline", "지원마감", dto.getDeadlineDate());
             if (app.getDeadlineEventId() != null) {
                 calendarAsyncService.updateEventAsync(auth, app.getDeadlineEventId(), event);
             } else {
@@ -157,7 +205,7 @@ public class ApplicationService {
 
     private void syncApplyEvent(Application app, ApplicationRequest dto, Authentication auth) {
         if (dto.getApplyDate() != null) {
-            Event event = buildEvent("서류제출", dto.getCompany(), dto.getJobTitle(), dto.getApplyDate());
+            Event event = buildEvent(app, "apply", "서류제출", dto.getApplyDate());
             if (app.getApplyEventId() != null) {
                 calendarAsyncService.updateEventAsync(auth, app.getApplyEventId(), event);
             } else {
@@ -171,7 +219,7 @@ public class ApplicationService {
 
     private void syncInterviewEvent(Application app, ApplicationRequest dto, Authentication auth) {
         if (dto.getInterviewDate() != null) {
-            Event event = buildEvent("면접", dto.getCompany(), dto.getJobTitle(), dto.getInterviewDate());
+            Event event = buildEvent(app, "interview", "면접", dto.getInterviewDate());
             if (app.getInterviewEventId() != null) {
                 calendarAsyncService.updateEventAsync(auth, app.getInterviewEventId(), event);
             } else {
@@ -190,15 +238,20 @@ public class ApplicationService {
         return null;
     }
 
-    private Event buildEvent(String type, String company, String jobTitle, LocalDateTime dateTime) {
-        String safeCompany = company != null && !company.isBlank() ? company : "미입력";
-        String safeJobTitle = jobTitle != null && !jobTitle.isBlank() ? jobTitle : "공고";
+    private Event buildEvent(Application app, String eventType, String label, LocalDateTime dateTime) {
+        String safeCompany = app.getCompany() != null && !app.getCompany().isBlank() ? app.getCompany() : "미입력";
+        String safeJobTitle = app.getJobTitle() != null && !app.getJobTitle().isBlank() ? app.getJobTitle() : "공고";
         ZonedDateTime startDateTime = dateTime.atZone(SEOUL_ZONE);
         ZonedDateTime endDateTime = startDateTime.plusMinutes(30);
 
         Event event = new Event();
-        event.setSummary("[PICKD] " + safeCompany + " " + safeJobTitle + " " + type);
-        event.setDescription("category:application\npickd:eventType=" + type);
+        event.setSummary("[PICKD] " + safeCompany + " " + safeJobTitle + " " + label);
+        event.setDescription(String.join("\n",
+                "category:application",
+                "pickd:applicationId=" + app.getId(),
+                "pickd:eventType=" + eventType,
+                "pickd:eventLabel=" + label
+        ));
         event.setStart(new EventDateTime()
                 .setDateTime(new DateTime(startDateTime.toInstant().toEpochMilli()))
                 .setTimeZone(TIME_ZONE));
