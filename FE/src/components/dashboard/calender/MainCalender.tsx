@@ -11,6 +11,8 @@ import { useMainCalendar, isSameDay } from "../../../hooks/useMainCalendar";
 interface MainCalendarProps {
   applications: Application[];
   onCalendarRefetch?: (refetchFn: () => void) => void;
+  selectedDate?: Date;
+  onSelectedDateChange?: (date: Date) => void;
 }
 
 type ViewMode = "month" | "week";
@@ -35,7 +37,12 @@ function formatWeekLabel(date: Date): string {
   return `${year}년 ${startMonth}월 – ${endMonth}월`;
 }
 
-const MainCalendar = ({ applications = [], onCalendarRefetch }: MainCalendarProps) => {
+const MainCalendar = ({
+  applications = [],
+  onCalendarRefetch,
+  selectedDate,
+  onSelectedDateChange,
+}: MainCalendarProps) => {
   const {
     date,
     selectedCompanyId,
@@ -43,11 +50,12 @@ const MainCalendar = ({ applications = [], onCalendarRefetch }: MainCalendarProp
     popupRef,
     filteredEvents,
     getEventColor,
+    isUrgentDay,
     handleCompanyChange,
     handleDateChange,
     setPopup,
     loadEvents,
-  } = useMainCalendar(applications);
+  } = useMainCalendar(applications, { selectedDate, onSelectedDateChange });
 
   const [viewMode, setViewMode] = useState<ViewMode>("month");
 
@@ -112,9 +120,11 @@ const MainCalendar = ({ applications = [], onCalendarRefetch }: MainCalendarProp
               if (view !== "month") return null;
               const dayEvents = filteredEvents.filter((ev) => isSameDay(ev.date, date));
               const visibleEvents = dayEvents.slice(0, 2);
+              const urgent = isUrgentDay(date);
               const hiddenCount = dayEvents.length - 2;
               return (
-                <div className="flex flex-col gap-1 mt-1 w-full overflow-hidden px-1">
+                <div className="relative flex flex-col gap-1 mt-1 w-full overflow-hidden px-1">
+                  {urgent && <span className="absolute right-1 top-0 h-1.5 w-1.5 rounded-full bg-red-500" />}
                   {visibleEvents.map((ev, i) => (
                     <div key={i} className={`text-[10px] px-1.5 py-0.5 rounded truncate font-medium ${getEventColor(ev.type)}`}>
                       {ev.title}

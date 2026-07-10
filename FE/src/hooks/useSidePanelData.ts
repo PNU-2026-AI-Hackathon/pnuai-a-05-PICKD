@@ -7,39 +7,40 @@ import {
   deleteTodoApi,
 } from "../api/todo";
 import { getCalendarEvents } from "../api/calendar";
-import { getGoogleEventDate, parseLocalDateTime } from "../utils/date";
-
+import { parseLocalDateTime } from "../utils/date";
 import { useApplication } from "../context/ApplicationContext";
+import {
+  buildApplicationCalendarItems,
+  buildGoogleCalendarItems,
+  buildTodoCalendarItems,
+  getDaysUntil,
+  isSameLocalDay,
+  mergeCalendarItems,
+} from "../utils/calendarItems";
 
-function isSameDay(date1: Date, date2: Date) {
-  return (
-    date1.getFullYear() === date2.getFullYear() &&
-    date1.getMonth() === date2.getMonth() &&
-    date1.getDate() === date2.getDate()
-  );
-}
-function isTodoCalendarEvent(summary: string) {
-  const normalized = summary.replace(/\s/g, "");
-  return normalized.includes("[할일]") || normalized.includes("할일");
-}
+const startOfLocalDay = (date: Date) => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
 
-export const useSidePanelData = () => {
+export const useSidePanelData = (selectedDate?: Date) => {
   const [googleEvents, setGoogleEvents] = useState<any[]>([]);
   const [todos, setTodos] = useState<Todo[]>([]);
   const isAddingTodoRef = useRef(false);
   const [isAddingTodo, setIsAddingTodo] = useState(false);
   const { applications, loadData } = useApplication();
 
-  const today = useMemo(() => {
-    const date = new Date();
-    date.setHours(0, 0, 0, 0);
-    return date;
-  }, []);
+  const today = useMemo(
+    () => startOfLocalDay(selectedDate ?? new Date()),
+    [selectedDate],
+  );
+  const realToday = useMemo(() => startOfLocalDay(new Date()), []);
 
   const fetchTodos = useCallback(async () => {
     try {
       const todoData = await getTodos();
-      setTodos(todoData);
+      setTodos(todoData ?? []);
     } catch (error) {
       console.error("할 일 조회 실패:", error);
     }
@@ -64,103 +65,64 @@ export const useSidePanelData = () => {
   }, [fetchTodos, fetchCalendarEvents]);
 
   useEffect(() => {
-    const handleTodoUpdated = async () => {
+    const handleRefresh = async () => {
       await fetchTodos();
-    };
-
-    const handleGoogleCalendarUpdated = async () => {
       await fetchCalendarEvents();
     };
 
-    window.addEventListener("todoUpdated", handleTodoUpdated);
-    window.addEventListener(
-      "googleCalendarUpdated",
-      handleGoogleCalendarUpdated,
-    );
+    window.addEventListener("todoUpdated", handleRefresh);
+    window.addEventListener("googleCalendarUpdated", handleRefresh);
+    window.addEventListener("applicationUpdated", handleRefresh);
 
     return () => {
-      window.removeEventListener("todoUpdated", handleTodoUpdated);
-      window.removeEventListener(
-        "googleCalendarUpdated",
-        handleGoogleCalendarUpdated,
-      );
+      window.removeEventListener("todoUpdated", handleRefresh);
+      window.removeEventListener("googleCalendarUpdated", handleRefresh);
+      window.removeEventListener("applicationUpdated", handleRefresh);
     };
   }, [fetchTodos, fetchCalendarEvents]);
 
-  const combinedAnnouncements = useMemo(() => {
-    const applicationAnnouncements = applications.map((app) => ({
-      id: `db-${app.id}`,
-      title: app.jobTitle,
-      company: app.company,
-      step: app.status,
-      date: parseLocalDateTime(app.deadlineDate),
-    }));
-
-    const googleAnnouncements = googleEvents
-      .filter((e) => {
-        const summary = e.summary || "";
-        return !isTodoCalendarEvent(summary);
-      })
-      .map((e) => {
-        const summary = e.summary || "";
-        let step = "일반 일정";
-
-        if (summary.includes("면접")) {
-          step = "면접 전형";
-        } else if (summary.includes("마감")) {
-          step = "지원 마감";
-        } else if (summary.includes("제출")) {
-          step = "서류 제출";
-        }
-
-        const cleanTitle = summary.replace(/면접|마감|제출/g, "").trim();
-        const words = cleanTitle.split(" ");
-        const company = words[0] || "";
-        const jobTitle = words.slice(1).join(" ") || cleanTitle;
-
-        return {
-          id: `google-${e.id}`,
-          title: jobTitle,
-          company,
-          step,
-          date: getGoogleEventDate(e),
-        };
-      });
-
-    return [...applicationAnnouncements, ...googleAnnouncements];
-  }, [applications, googleEvents]);
+  const calendarItems = useMemo(() => {
+    return mergeCalendarItems(
+      buildApplicationCalendarItems(applications),
+      buildGoogleCalendarItems(googleEvents, applications),
+      buildTodoCalendarItems(todos, applications),
+    );
+  }, [applications, googleEvents, todos]);
 
   const todaySchedules = useMemo(() => {
-    return combinedAnnouncements
-      .filter((item) => {
-        if (!item.date) return false;
-        return isSameDay(item.date, today);
-      })
-      .sort((a, b) => a.date!.getTime() - b.date!.getTime());
-  }, [combinedAnnouncements, today]);
+    return calendarItems.filter(
+      (item) => item.type !== "todo" && isSameLocalDay(item.date, today),
+    );
+  }, [calendarItems, today]);
 
   const sortedList = useMemo(() => {
-    return combinedAnnouncements
-      .filter((item) => {
-        const isValidStep =
-          item.step?.includes("면접") || item.step?.includes("마감");
+    const twoWeeksLater = new Date(realToday);
+    twoWeeksLater.setDate(twoWeeksLater.getDate() + 14);
 
-        return isValidStep && item.date && item.date >= today;
-      })
-      .sort((a, b) => a.date!.getTime() - b.date!.getTime());
-  }, [combinedAnnouncements, today]);
+    return calendarItems.filter((item) => {
+      if (item.type !== "deadline") return false;
+      return item.date >= realToday && item.date <= twoWeeksLater;
+    });
+  }, [calendarItems, realToday]);
 
   const todayTodos = useMemo(() => {
     return todos.filter((todo) => {
       if (!todo.dueDateTime) return false;
+      if (todo.completed) {
+        const todoDate = parseLocalDateTime(todo.dueDateTime);
+        return todoDate ? isSameLocalDay(todoDate, today) : false;
+      }
 
-      const todoDate = getGoogleEventDate({ start: { dateTime: todo.dueDateTime } });
-
+      const todoDate = parseLocalDateTime(todo.dueDateTime);
       if (!todoDate) return false;
 
-      return isSameDay(todoDate, today);
+      const todoDay = startOfLocalDay(todoDate);
+      return (
+        isSameLocalDay(todoDay, today) ||
+        (today >= realToday && todoDay < today)
+      );
     });
-  }, [todos, today]);
+  }, [todos, today, realToday]);
 
   const handleAddTodo = async (newTodoData: {
     title: string;
@@ -168,9 +130,7 @@ export const useSidePanelData = () => {
     applicationId?: string | number;
     memo?: string;
   }) => {
-    if (isAddingTodoRef.current) {
-      return;
-    }
+    if (isAddingTodoRef.current) return;
 
     isAddingTodoRef.current = true;
     setIsAddingTodo(true);
@@ -275,14 +235,7 @@ export const useSidePanelData = () => {
   };
 
   const calculateDDay = (targetDate: Date) => {
-    const target = parseLocalDateTime(targetDate);
-    if (!target) return "-";
-    target.setHours(0, 0, 0, 0);
-
-    const diff = Math.ceil(
-      (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
-    );
-
+    const diff = getDaysUntil(targetDate, realToday);
     if (diff === 0) return "D-Day";
     if (diff > 0) return `D-${diff}`;
     return `D+${Math.abs(diff)}`;

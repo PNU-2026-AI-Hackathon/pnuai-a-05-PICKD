@@ -10,9 +10,10 @@ import { useSidePanelData } from "../../../../hooks/useSidePanelData";
 
 interface Props {
   applications: Application[];
+  selectedDate?: Date;
 }
 
-const SideDetailPanel = ({ applications: data }: Props) => {
+const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const {
@@ -24,11 +25,19 @@ const SideDetailPanel = ({ applications: data }: Props) => {
     toggleTodo,
     calculateDDay,
     isAddingTodo,
-  } = useSidePanelData();
+  } = useSidePanelData(selectedDate);
   const displayItems = isExpanded ? sortedList : sortedList.slice(0, 3);
 
   const extraCount = sortedList.length - 3;
 
+  const todayProgress = todayTodos.length
+    ? Math.round(
+        (todayTodos.filter((todo) => todo.completed).length /
+          todayTodos.length) *
+          100,
+      )
+    : 0;
+  
   return (
     <div className="w-[400px] h-full bg-white border-l border-gray-200 flex flex-col">
       <div className="p-6 border-b border-gray-100 flex justify-between items-center">
@@ -43,7 +52,7 @@ const SideDetailPanel = ({ applications: data }: Props) => {
           <p className="text-sm text-gray-500 mt-1">오늘의 진행률</p>
         </div>
 
-        <ProgressCircle percentage={13} />
+        <ProgressCircle percentage={todayProgress} />
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -63,7 +72,7 @@ const SideDetailPanel = ({ applications: data }: Props) => {
               <AnnouncementItem
                 key={item.id}
                 title={item.title}
-                company={item.company}
+                company={item.companyName}
                 step={item.step}
                 dday={calculateDDay(item.date!)}
               />
@@ -82,7 +91,7 @@ const SideDetailPanel = ({ applications: data }: Props) => {
 
         <section className="p-6 border-b border-gray-100">
           <SectionHeader
-            title="오늘의 일정"
+            title="선택한 날짜의 일정"
             count={todaySchedules.length}
             onConfirm={handleAddTodo}
             showAddButton={false}
@@ -96,7 +105,7 @@ const SideDetailPanel = ({ applications: data }: Props) => {
               ))
             ) : (
               <p className="text-sm text-gray-400 text-center py-4">
-                오늘 예정된 일정이 없습니다.
+                선택한 날짜에 일정이 없습니다.
               </p>
             )}
           </div>
@@ -104,7 +113,7 @@ const SideDetailPanel = ({ applications: data }: Props) => {
 
         <section className="p-6">
           <SectionHeader
-            title="오늘의 할 일"
+            title="선택한 날짜의 할 일"
             count={todayTodos.filter((todo) => !todo.completed).length}
             onConfirm={handleAddTodo}
             showAddButton={true}
@@ -119,7 +128,7 @@ const SideDetailPanel = ({ applications: data }: Props) => {
               ))
             ) : (
               <p className="text-sm text-gray-400 text-center py-4">
-                할 일이 없습니다. 새로운 할 일을 추가해보세요!
+                선택한 날짜에 할 일이 없습니다.
               </p>
             )}
           </div>
