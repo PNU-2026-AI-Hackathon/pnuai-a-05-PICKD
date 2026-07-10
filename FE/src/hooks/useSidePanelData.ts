@@ -31,7 +31,7 @@ export const useSidePanelData = (selectedDate?: Date) => {
   const [isAddingTodo, setIsAddingTodo] = useState(false);
   const { applications, loadData } = useApplication();
 
-  const today = useMemo(
+  const selectedDay = useMemo(
     () => startOfLocalDay(selectedDate ?? new Date()),
     [selectedDate],
   );
@@ -89,11 +89,11 @@ export const useSidePanelData = (selectedDate?: Date) => {
     );
   }, [applications, googleEvents, todos]);
 
-  const todaySchedules = useMemo(() => {
+  const selectedDaySchedules = useMemo(() => {
     return calendarItems.filter(
-      (item) => item.type !== "todo" && isSameLocalDay(item.date, today),
+      (item) => item.type !== "todo" && isSameLocalDay(item.date, selectedDay),
     );
-  }, [calendarItems, today]);
+  }, [calendarItems, selectedDay]);
 
   const sortedList = useMemo(() => {
     const twoWeeksLater = new Date(realToday);
@@ -105,12 +105,12 @@ export const useSidePanelData = (selectedDate?: Date) => {
     });
   }, [calendarItems, realToday]);
 
-  const todayTodos = useMemo(() => {
+  const selectedDayTodos = useMemo(() => {
     return todos.filter((todo) => {
       if (!todo.dueDateTime) return false;
       if (todo.completed) {
         const todoDate = parseLocalDateTime(todo.dueDateTime);
-        return todoDate ? isSameLocalDay(todoDate, today) : false;
+        return todoDate ? isSameLocalDay(todoDate, selectedDay) : false;
       }
 
       const todoDate = parseLocalDateTime(todo.dueDateTime);
@@ -118,11 +118,11 @@ export const useSidePanelData = (selectedDate?: Date) => {
 
       const todoDay = startOfLocalDay(todoDate);
       return (
-        isSameLocalDay(todoDay, today) ||
-        (today >= realToday && todoDay < today)
+        isSameLocalDay(todoDay, selectedDay) ||
+        (selectedDay >= realToday && todoDay < selectedDay)
       );
     });
-  }, [todos, today, realToday]);
+  }, [todos, selectedDay, realToday]);
 
   const handleAddTodo = async (newTodoData: {
     title: string;
@@ -242,10 +242,10 @@ export const useSidePanelData = (selectedDate?: Date) => {
   };
 
   return {
-    todayTodos,
-    today,
+    selectedDayTodos,
+    selectedDay,
     sortedList,
-    todaySchedules,
+    selectedDaySchedules,
     handleAddTodo,
     toggleTodo,
     deleteTodo,

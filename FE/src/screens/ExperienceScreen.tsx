@@ -155,7 +155,7 @@ export default function ExperienceScreen() {
 
       const matchesFilter =
         selectedFilter === "전체" ||
-        (selectedFilter === "고정됨" && Boolean(item.pinned)) ||
+        (selectedFilter === "고정됨" && Boolean(item.pin)) ||
         item.type === selectedFilter;
 
       return matchesSearch && matchesFilter;
@@ -260,8 +260,7 @@ export default function ExperienceScreen() {
       missing: [],
       linkedExperienceIds: [],
       important: false,
-      importance: "보통",
-      pinned: false,
+      pin: false,
       customTopFields: [],
       hiddenFieldKeys: [],
       topFieldOrder: undefined,
@@ -352,33 +351,56 @@ export default function ExperienceScreen() {
     });
   };
 
-  const toggleImportant = (id: ExperienceId) => {
+  const toggleImportant = async (id: ExperienceId) => {
+    const target = experiences.find((item) => item.id === id);
+    if (!target) return;
+
+    const updatedItem: ExperienceItem = {
+      ...target,
+      important: !target.important,
+      updatedAt: "방금 전",
+    };
+
     setExperiences((prev) =>
-      prev.map((item) => {
-        if (item.id !== id) return item;
-        const nextImportant = !(item.important || item.importance === "높음");
-        return {
-          ...item,
-          important: nextImportant,
-          importance: nextImportant ? "높음" : "보통",
-          updatedAt: "방금 전",
-        };
-      }),
+      prev.map((item) => (item.id === id ? updatedItem : item)),
     );
+    setSelectedItem((prev) => (prev?.id === id ? updatedItem : prev));
+
+    if (String(id).startsWith("local-")) return;
+
+    try {
+      await updateExperienceApi(id, updatedItem);
+      void reloadExperiences();
+    } catch (error) {
+      showToast(`중요 표시 저장에 실패했습니다. ${getErrorMessage(error)}`);
+      void reloadExperiences();
+    }
   };
 
-  const togglePin = (id: ExperienceId) => {
+  const togglePin = async (id: ExperienceId) => {
+    const target = experiences.find((item) => item.id === id);
+    if (!target) return;
+
+    const updatedItem: ExperienceItem = {
+      ...target,
+      pin: !target.pin,
+      updatedAt: "방금 전",
+    };
+
     setExperiences((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              pinned: !item.pinned,
-              updatedAt: "방금 전",
-            }
-          : item,
-      ),
+      prev.map((item) => (item.id === id ? updatedItem : item)),
     );
+    setSelectedItem((prev) => (prev?.id === id ? updatedItem : prev));
+
+    if (String(id).startsWith("local-")) return;
+
+    try {
+      await updateExperienceApi(id, updatedItem);
+      void reloadExperiences();
+    } catch (error) {
+      showToast(`고정 상태 저장에 실패했습니다. ${getErrorMessage(error)}`);
+      void reloadExperiences();
+    }
   };
 
   const setSelectFilter = (key: ExperienceColumnKey, values: string[]) => {
@@ -452,7 +474,7 @@ export default function ExperienceScreen() {
       "기관/소속",
       "기간",
       "주요 키워드",
-      "중요도",
+      "중요",
       "관리 상태",
       "최근 수정",
       "본문",
@@ -464,7 +486,7 @@ export default function ExperienceScreen() {
       getOrgText(item),
       getPeriodText(item),
       item.keywords.join(", "),
-      item.importance ?? (item.important ? "높음" : "보통"),
+      item.important ? "true" : "false",
       item.status,
       item.updatedAt ?? "",
       item.fields.__body ?? "",
@@ -1005,7 +1027,7 @@ function ExperienceCardGrid({
   return (
     <div className="mt-[18px] grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       {items.map((item) => {
-        const important = Boolean(item.important || item.importance === "높음");
+        const important = Boolean(item.important);
         return (
           <article
             key={item.id}
@@ -1052,9 +1074,7 @@ function ExperienceCardGrid({
                   className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-[#F8FAFC]"
                 >
                   <span
-                    className={
-                      item.pinned ? "text-[#2563EB]" : "text-[#94A3B8]"
-                    }
+                    className={item.pin ? "text-[#2563EB]" : "text-[#94A3B8]"}
                   >
                     ⌖
                   </span>

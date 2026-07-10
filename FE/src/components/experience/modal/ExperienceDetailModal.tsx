@@ -38,7 +38,7 @@ interface Props {
   onCopyToast?: () => void;
 }
 
-type FieldKind = "title" | "type" | "text" | "keywords" | "importance";
+type FieldKind = "title" | "type" | "text" | "keywords" | "important";
 
 interface FieldRowData {
   key: string;
@@ -145,9 +145,9 @@ export default function ExperienceDetailModal({
       kind: "keywords",
     },
     {
-      key: "__importance",
-      label: "중요도",
-      kind: "importance",
+      key: "__important",
+      label: "중요",
+      kind: "important",
     },
   ];
 
@@ -176,7 +176,7 @@ export default function ExperienceDetailModal({
     (row) => !hiddenKeys.has(row.key),
   );
 
-  const isImportant = Boolean(item.important || item.importance === "높음");
+  const isImportant = Boolean(item.important);
   const hiddenFieldCount = item.hiddenFieldKeys?.length ?? 0;
 
   const updateItem = (next: Partial<ExperienceItem>) => {
@@ -627,18 +627,18 @@ export default function ExperienceDetailModal({
             )}
 
             <button
-              onClick={() => updateItem({ pinned: !item.pinned })}
+              onClick={() => updateItem({ pin: !item.pin })}
               className={`flex h-9 w-9 items-center justify-center rounded-[8px] border bg-white transition-colors ${
-                item.pinned
+                item.pin
                   ? "border-[#E2E8F0] text-[#0F172A]"
                   : "border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC]"
               }`}
-              title={item.pinned ? "고정 해제" : "고정"}
+              title={item.pin ? "고정 해제" : "고정"}
             >
               <Pin
                 size={16}
-                fill={item.pinned ? "currentColor" : "none"}
-                strokeWidth={item.pinned ? 2.6 : 2}
+                fill={item.pin ? "currentColor" : "none"}
+                strokeWidth={item.pin ? 2.6 : 2}
               />
             </button>
 
@@ -754,7 +754,6 @@ export default function ExperienceDetailModal({
                     onToggleImportant={() =>
                       updateItem({
                         important: !isImportant,
-                        importance: !isImportant ? "높음" : "보통",
                       })
                     }
                     onOpenFieldMenu={() => {
@@ -1472,7 +1471,7 @@ function TopFieldRow({
           </div>
         )}
 
-        {field.kind === "importance" && (
+        {field.kind === "important" && (
           <button
             onClick={onToggleImportant}
             className="inline-flex items-center gap-2 text-[15px] font-[600] text-[#64748B]"

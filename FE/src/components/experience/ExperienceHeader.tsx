@@ -1,4 +1,4 @@
-import { Clipboard, Download, Sparkles } from "lucide-react";
+import { Download } from "lucide-react";
 
 interface Props {
   onOpenPaste?: () => void;

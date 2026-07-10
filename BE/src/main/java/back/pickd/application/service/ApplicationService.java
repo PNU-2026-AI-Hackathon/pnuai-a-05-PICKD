@@ -252,11 +252,6 @@ public class ApplicationService {
                 "pickd:eventType=" + eventType,
                 "pickd:eventLabel=" + label
         ));
-        event.setExtendedProperties(new Event.ExtendedProperties()
-                .setPrivate(java.util.Map.of(
-                        "pickdApplicationId", String.valueOf(app.getId()),
-                        "pickdEventType", eventType
-                )));
         event.setStart(new EventDateTime()
                 .setDateTime(new DateTime(startDateTime.toInstant().toEpochMilli()))
                 .setTimeZone(TIME_ZONE));

@@ -17,10 +17,10 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const {
-    todayTodos,
-    today,
+    selectedDayTodos,
+    selectedDay,
     sortedList,
-    todaySchedules,
+    selectedDaySchedules,
     handleAddTodo,
     toggleTodo,
     calculateDDay,
@@ -29,11 +29,25 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
   const displayItems = isExpanded ? sortedList : sortedList.slice(0, 3);
 
   const extraCount = sortedList.length - 3;
+  const hasSelectedDate = Boolean(selectedDate);
+  const selectedDayLabel = selectedDay.toLocaleDateString("ko-KR", {
+    month: "long",
+    day: "numeric",
+  });
+  const scheduleTitle = hasSelectedDate ? `${selectedDayLabel}의 일정` : "오늘의 일정";
+  const todoTitle = hasSelectedDate ? `${selectedDayLabel}의 할 일` : "오늘의 할 일";
+  const progressTitle = hasSelectedDate ? `${selectedDayLabel}의 진행률` : "오늘의 진행률";
+  const emptyScheduleMessage = hasSelectedDate
+    ? `${selectedDayLabel}에 일정이 없습니다.`
+    : "오늘 일정이 없습니다.";
+  const emptyTodoMessage = hasSelectedDate
+    ? `${selectedDayLabel}에 할 일이 없습니다.`
+    : "오늘 할 일이 없습니다.";
 
-  const todayProgress = todayTodos.length
+  const selectedDayProgress = selectedDayTodos.length
     ? Math.round(
-        (todayTodos.filter((todo) => todo.completed).length /
-          todayTodos.length) *
+        (selectedDayTodos.filter((todo) => todo.completed).length /
+          selectedDayTodos.length) *
           100,
       )
     : 0;
@@ -43,16 +57,16 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
       <div className="p-6 border-b border-gray-100 flex justify-between items-center">
         <div>
           <h2 className="text-xl font-bold text-gray-800">
-            {today.toLocaleDateString("ko-KR", {
+            {selectedDay.toLocaleDateString("ko-KR", {
               year: "numeric",
               month: "long",
               day: "numeric",
             })}
           </h2>
-          <p className="text-sm text-gray-500 mt-1">오늘의 진행률</p>
+          <p className="text-sm text-gray-500 mt-1">{progressTitle}</p>
         </div>
 
-        <ProgressCircle percentage={todayProgress} />
+        <ProgressCircle percentage={selectedDayProgress} />
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -91,21 +105,21 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
 
         <section className="p-6 border-b border-gray-100">
           <SectionHeader
-            title="선택한 날짜의 일정"
-            count={todaySchedules.length}
+            title={scheduleTitle}
+            count={selectedDaySchedules.length}
             onConfirm={handleAddTodo}
             showAddButton={false}
             applications={data}
           />
 
           <div className="mt-3 space-y-3">
-            {todaySchedules.length > 0 ? (
-              todaySchedules.map((schedule) => (
+            {selectedDaySchedules.length > 0 ? (
+              selectedDaySchedules.map((schedule) => (
                 <ScheduleItem key={schedule.id} schedule={schedule} />
               ))
             ) : (
               <p className="text-sm text-gray-400 text-center py-4">
-                선택한 날짜에 일정이 없습니다.
+                {emptyScheduleMessage}
               </p>
             )}
           </div>
@@ -113,8 +127,8 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
 
         <section className="p-6">
           <SectionHeader
-            title="선택한 날짜의 할 일"
-            count={todayTodos.filter((todo) => !todo.completed).length}
+            title={todoTitle}
+            count={selectedDayTodos.filter((todo) => !todo.completed).length}
             onConfirm={handleAddTodo}
             showAddButton={true}
             applications={data}
@@ -122,13 +136,13 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
           />
 
           <div className="mt-4 space-y-2">
-            {todayTodos.length > 0 ? (
-              todayTodos.map((todo) => (
+            {selectedDayTodos.length > 0 ? (
+              selectedDayTodos.map((todo) => (
                 <TodoItem key={todo.id} todo={todo} onToggle={toggleTodo} />
               ))
             ) : (
               <p className="text-sm text-gray-400 text-center py-4">
-                선택한 날짜에 할 일이 없습니다.
+                {emptyTodoMessage}
               </p>
             )}
           </div>

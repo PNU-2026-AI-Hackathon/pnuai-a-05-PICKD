@@ -50,6 +50,8 @@ export interface BackendExperienceResponse {
   documentContent?: string | null;
   attributes?: Record<string, unknown> | null;
   keywords?: string[] | null;
+  important?: boolean | null;
+  pin?: boolean | null;
   files?: BackendExperienceFile[] | null;
   links?: BackendExperienceLink[] | null;
   createdAt?: string | null;
@@ -73,6 +75,8 @@ export interface ExperienceSnapshot {
   documentContent?: string | null;
   attributes?: Record<string, unknown> | null;
   keywords?: string[] | null;
+  important?: boolean | null;
+  pin?: boolean | null;
 }
 
 export type DuplicateItemSource = "EXISTING" | "EXTRACTED";
@@ -239,7 +243,9 @@ export function fromBackendExperienceType(
   return TYPE_FROM_BACKEND[type] ?? "프로젝트";
 }
 
-export function toBackendExperienceGroup(type: ExperienceType): BackendExperienceGroup {
+export function toBackendExperienceGroup(
+  type: ExperienceType,
+): BackendExperienceGroup {
   return EXPERIENCE_PRESETS[type]?.group === "spec" ? "SPEC" : "NARRATIVE";
 }
 
@@ -287,7 +293,10 @@ function formatUpdatedAt(value?: string | null) {
   return `${year}.${month}.${day}`;
 }
 
-function makeCustomFields(type: ExperienceType, fields: Record<string, string>) {
+function makeCustomFields(
+  type: ExperienceType,
+  fields: Record<string, string>,
+) {
   const presetKeys = new Set(
     EXPERIENCE_PRESETS[type]?.topFields.map((field) => field.key) ?? [],
   );
@@ -315,7 +324,12 @@ export function fromBackendExperience(
     type,
     name: data.title || "제목 없는 경험",
     org: fields.org || fields.company || fields.host || fields.issuer || "",
-    period: fields.period || fields.testDate || fields.issuedAt || fields.awardedAt || "",
+    period:
+      fields.period ||
+      fields.testDate ||
+      fields.issuedAt ||
+      fields.awardedAt ||
+      "",
     role: fields.role || "",
     competencies: [],
     keywords: data.keywords ?? [],
@@ -323,9 +337,8 @@ export function fromBackendExperience(
     missing: [],
     linkedExperienceIds: [],
     fields,
-    important: meta?.important ?? false,
-    importance: meta?.importance ?? "보통",
-    pinned: meta?.pinned ?? false,
+    important: Boolean(data.important ?? meta?.important ?? false),
+    pin: Boolean(data.pin ?? meta?.pin ?? false),
     customTopFields: meta?.customTopFields ?? makeCustomFields(type, fields),
     hiddenFieldKeys: meta?.hiddenFieldKeys ?? [],
     topFieldOrder: meta?.topFieldOrder,
@@ -351,6 +364,8 @@ export function fromSnapshotExperience(
     documentContent: snapshot.documentContent,
     attributes: snapshot.attributes,
     keywords: snapshot.keywords,
+    important: snapshot.important,
+    pin: snapshot.pin,
     files: [],
     links: [],
   });
@@ -380,6 +395,8 @@ export function toExperienceRequest(item: Partial<ExperienceItem>) {
     documentContent: item.fields?.__body ?? "",
     attributes,
     keywords: item.keywords ?? [],
+    important: Boolean(item.important),
+    pin: Boolean(item.pin),
     links: [],
     forceCreate: true,
   };
@@ -390,7 +407,8 @@ export async function getExperiences(params?: {
   group?: BackendExperienceGroup;
 }) {
   const searchParams = new URLSearchParams();
-  if (params?.type) searchParams.set("type", toBackendExperienceType(params.type));
+  if (params?.type)
+    searchParams.set("type", toBackendExperienceType(params.type));
   if (params?.group) searchParams.set("group", params.group);
 
   const query = searchParams.toString();
@@ -421,11 +439,17 @@ export async function createExperience(data: Partial<ExperienceItem>) {
   return response.id;
 }
 
-export async function updateExperience(id: string | number, data: Partial<ExperienceItem>) {
-  const result = await apiRequest<BackendExperienceResponse>(`/api/experiences/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(toExperienceRequest(data)),
-  });
+export async function updateExperience(
+  id: string | number,
+  data: Partial<ExperienceItem>,
+) {
+  const result = await apiRequest<BackendExperienceResponse>(
+    `/api/experiences/${id}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(toExperienceRequest(data)),
+    },
+  );
 
   window.dispatchEvent(new Event("experienceUpdated"));
   return fromBackendExperience(result);
@@ -444,11 +468,14 @@ export async function extractExperienceStep1(file: File) {
   const formData = new FormData();
   formData.append("file", file);
 
-  return apiRequest<ExperienceTempResponse[]>("/api/experiences/extract/step1", {
-    method: "POST",
-    body: formData,
-    skipJsonContentType: true,
-  });
+  return apiRequest<ExperienceTempResponse[]>(
+    "/api/experiences/extract/step1",
+    {
+      method: "POST",
+      body: formData,
+      skipJsonContentType: true,
+    },
+  );
 }
 
 export async function extractExperienceStep2(selectedTempIds: number[]) {

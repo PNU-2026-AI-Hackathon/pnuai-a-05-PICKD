@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   AlertCircle,
@@ -83,12 +83,6 @@ export default function ExperienceExtractWizardModal({
     setError("");
     void loadPendingBatches(mode === "pending");
   }, [open, mode, focusItemId]);
-
-  const selectedCandidates = useMemo(
-    () =>
-      candidates.filter((candidate) => selectedTempIds.includes(candidate.id)),
-    [candidates, selectedTempIds],
-  );
 
   const hasDuplicates = duplicateBatchId && duplicateGroups.length > 0;
 
@@ -289,7 +283,6 @@ export default function ExperienceExtractWizardModal({
             <CandidateStep
               candidates={candidates}
               selectedIds={selectedTempIds}
-              selectedCandidates={selectedCandidates}
               loading={loading}
               onBack={() => setStep("upload")}
               onToggle={toggleTempId}
@@ -503,7 +496,6 @@ function UploadStep({
 function CandidateStep({
   candidates,
   selectedIds,
-  selectedCandidates,
   loading,
   onBack,
   onToggle,
@@ -512,7 +504,6 @@ function CandidateStep({
 }: {
   candidates: ExperienceTempResponse[];
   selectedIds: number[];
-  selectedCandidates: ExperienceTempResponse[];
   loading: boolean;
   onBack: () => void;
   onToggle: (id: number) => void;

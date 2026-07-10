@@ -54,7 +54,7 @@ interface Props {
 
 type LooseExperienceItem = ExperienceItem &
   Record<string, unknown> & {
-    pinned?: boolean;
+    pin?: boolean;
     fixed?: boolean;
     organization?: string;
     institution?: string;
@@ -294,9 +294,7 @@ export default function ExperienceTable({
             {items.map((item) => {
               const looseItem = item as LooseExperienceItem;
               const checked = selectedIds.includes(item.id);
-              const important = Boolean(
-                item.important || item.importance === "높음",
-              );
+              const important = Boolean(item.important);
 
               return (
                 <tr
@@ -717,7 +715,13 @@ function CellValue({
   }
 
   if (columnKey === "updated") return <span>{getUpdatedAt(looseItem)}</span>;
-  if (columnKey === "status") return <ManageStatus item={item} onOpenPendingDuplicates={onOpenPendingDuplicates} />;
+  if (columnKey === "status")
+    return (
+      <ManageStatus
+        item={item}
+        onOpenPendingDuplicates={onOpenPendingDuplicates}
+      />
+    );
 
   return null;
 }
@@ -729,7 +733,7 @@ function FixedPinButton({
   item: ExperienceItem;
   onTogglePin?: (id: ExperienceId) => void;
 }) {
-  const pinned = Boolean(item.pinned);
+  const pin = Boolean(item.pin);
 
   return (
     <button
@@ -739,12 +743,12 @@ function FixedPinButton({
         onTogglePin?.(item.id);
       }}
       className="mx-auto flex h-[52px] w-full items-center justify-center text-[#64748B] transition-opacity hover:text-[#2563EB] opacity-0 group-hover:opacity-100"
-      title={pinned ? "고정 해제" : "고정"}
+      title={pin ? "고정 해제" : "고정"}
     >
       <Pin
         size={17}
         strokeWidth={1.9}
-        className={pinned ? "fill-current text-[#2563EB]" : ""}
+        className={pin ? "fill-current text-[#2563EB]" : ""}
       />
     </button>
   );
@@ -845,7 +849,7 @@ export function getExperienceColumnValue(
     case "status":
       return item.status;
     case "manage":
-      return item.pinned ? "고정됨" : "고정";
+      return item.pin ? "고정됨" : "고정";
   }
 }
 

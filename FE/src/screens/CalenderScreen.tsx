@@ -6,7 +6,7 @@ import { useApplication } from "../context/ApplicationContext";
 
 const CalendarScreen = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const { applications, loadData } = useApplication();
 
   useEffect(() => {
