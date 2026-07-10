@@ -619,7 +619,6 @@ export default function ExperienceDetailModal({
                 onClick={() => onSave(item)}
                 disabled={!item.name.trim()}
                 className="inline-flex h-9 items-center gap-1.5 rounded-[8px] bg-[#2563EB] px-3 text-[13px] font-[800] text-white transition-colors hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:bg-[#94A3B8]"
-                title="현재 작성한 내용을 저장"
               >
                 <Check size={15} />
                 저장
@@ -633,7 +632,8 @@ export default function ExperienceDetailModal({
                   ? "border-[#E2E8F0] text-[#0F172A]"
                   : "border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC]"
               }`}
-              title={item.pin ? "고정 해제" : "고정"}
+              data-tooltip={item.pin ? "고정 해제" : "고정"}
+              aria-label={item.pin ? "고정 해제" : "고정"}
             >
               <Pin
                 size={16}
@@ -649,7 +649,7 @@ export default function ExperienceDetailModal({
                   ? "border-[#DBEAFE] bg-[#EFF6FF] text-[#2563EB]"
                   : "border-[#E2E8F0] bg-white text-[#64748B] hover:bg-[#F8FAFC]"
               }`}
-              title="AI로 더 구체화하기"
+              data-tooltip="AI로 더 구체화 하기" aria-label="AI로 더 구체화 하기"
             >
               <Sparkles size={16} />
             </button>
@@ -1369,7 +1369,6 @@ function TopFieldRow({
             active:cursor-grabbing
           "
           aria-label="필드 메뉴 및 순서 변경"
-          title="드래그해서 순서 변경"
         >
           <GripVertical size={17} strokeWidth={2.2} />
         </button>

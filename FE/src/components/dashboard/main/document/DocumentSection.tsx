@@ -87,7 +87,7 @@ export default function DocumentSection({
                 ? "bg-white text-[#334155] shadow-sm"
                 : "text-[#64748B] hover:bg-white/70"
             }`}
-            title="카드형"
+            data-tooltip="카드형" aria-label="카드형"
           >
             <Icon icon="mdi:view-grid-outline" width={16} />
           </button>
@@ -99,7 +99,7 @@ export default function DocumentSection({
                 ? "bg-white text-[#334155] shadow-sm"
                 : "text-[#64748B] hover:bg-white/70"
             }`}
-            title="리스트형"
+            data-tooltip="리스트형" aria-label="리스트형"
           >
             <Icon icon="mdi:table-large" width={16} />
           </button>

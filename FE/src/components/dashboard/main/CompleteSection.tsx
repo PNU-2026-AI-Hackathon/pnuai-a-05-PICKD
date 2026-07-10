@@ -133,7 +133,7 @@ export default function CompletedSection({
                   ? "bg-white text-[#334155] shadow-sm"
                   : "text-[#64748B] hover:bg-white/70"
               }`}
-              title="파일함형"
+              data-tooltip="파일함형" aria-label="파일함형"
             >
               <Icon icon="lucide:folder" className="h-4 w-4" />
             </button>
@@ -146,7 +146,7 @@ export default function CompletedSection({
                   ? "bg-white text-[#334155] shadow-sm"
                   : "text-[#64748B] hover:bg-white/70"
               }`}
-              title="카드형"
+              data-tooltip="카드형" aria-label="카드형"
             >
               <Icon icon="lucide:layout-grid" className="h-4 w-4" />
             </button>
@@ -174,7 +174,6 @@ export default function CompletedSection({
 
                   <span
                     className="mt-2 line-clamp-2 max-w-[128px] text-sm font-medium leading-5 text-[#64748B]"
-                    title={getFileTitle(app)}
                   >
                     {getFileTitle(app)}
                   </span>
@@ -199,11 +198,11 @@ export default function CompletedSection({
                     key={app.id}
                     className="min-h-[144px] rounded-xl border border-[#D8E0EA] bg-[#F8FAFC] p-4 text-left"
                   >
-                    <h3 className="truncate text-[15px] font-semibold text-[#0F172A]" title={companyName}>
+                    <h3 className="truncate text-[15px] font-semibold text-[#0F172A]">
                       {companyName}
                     </h3>
 
-                    <p className="mt-2 truncate text-sm text-[#64748B]" title={jobTitle}>
+                    <p className="mt-2 truncate text-sm text-[#64748B]">
                       {jobTitle}
                     </p>
 

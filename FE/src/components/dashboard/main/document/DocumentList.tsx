@@ -46,7 +46,7 @@ export default function DocumentList({ documents, onStatusChange }: Props) {
             className="grid grid-cols-[2.3fr_1fr_1.2fr_1fr_1fr] items-center border-b border-[#F1F5F9] px-6 py-2"
           >
             <div className="min-w-0">
-              <div className="truncate text-[15px] font-[500] text-[#0F172A]" title={getDocumentTitle(doc)}>
+              <div className="truncate text-[15px] font-[500] text-[#0F172A]">
                 {getDocumentTitle(doc)}
               </div>
               <div className="mt-0.5 text-[13px] text-[#94A3B8]">
