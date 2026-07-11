@@ -120,7 +120,7 @@ function FaqItem({
 }
 
 export default function HelpScreen() {
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
     <div className="min-h-full bg-[#F8FAFC] px-10 py-12">

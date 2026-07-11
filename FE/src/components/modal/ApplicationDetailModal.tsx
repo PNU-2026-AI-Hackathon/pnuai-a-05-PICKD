@@ -424,8 +424,8 @@ export default function ApplicationDetailModal({
 function Section({ title, right, children }: any) {
   return (
     <section>
-      <div className="flex items-center justify-between">
-        <h2 className="text-[17px] font-semibold text-[#334155] mb-2">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-[17px] font-semibold text-[#334155]">
           {title}
         </h2>
         {right}
