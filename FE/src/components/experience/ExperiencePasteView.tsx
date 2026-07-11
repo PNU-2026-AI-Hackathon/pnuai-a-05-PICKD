@@ -83,7 +83,7 @@ function PasteCard({
             type="button"
             onClick={() => onTogglePin(item.id)}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-[#2563EB] hover:bg-[#EFF6FF]"
-            title="고정 해제"
+            data-tooltip="고정 해제" aria-label="고정 해제"
           >
             <Pin size={16} className="fill-current" />
           </button>
@@ -91,7 +91,7 @@ function PasteCard({
             type="button"
             onClick={() => onOpenItem(item)}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-[#64748B] hover:bg-[#F8FAFC]"
-            title="상세 보기"
+            data-tooltip="상세보기" aria-label="상세보기"
           >
             <ExternalLink size={16} />
           </button>

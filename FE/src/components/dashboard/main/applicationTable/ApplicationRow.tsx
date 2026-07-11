@@ -136,7 +136,6 @@ export default function ApplicationRow({
           >
             <span
               className="block truncate px-3 text-black font-medium text-sm"
-              title={row.company}
             >
               {row.company || "-"}
             </span>
@@ -149,7 +148,6 @@ export default function ApplicationRow({
             key={key}
             className="px-3 border-b whitespace-nowrap text-sm border-r border-[#F1F5F9] overflow-hidden truncate"
             style={cellStyle(key)}
-            title={row.jobTitle}
           >
             <span className="font-medium text-[#0F172A]">
               {row.jobTitle || "-"}
@@ -168,7 +166,6 @@ export default function ApplicationRow({
               className={`inline-flex items-center justify-center px-2 py-[2px] text-xs font-semibold rounded ${getPositionColor(
                 row.position || "-",
               )}`}
-              title={row.position}
             >
               {row.position || "-"}
             </span>
@@ -181,7 +178,6 @@ export default function ApplicationRow({
             key={key}
             className="px-3 border-b whitespace-nowrap text-sm text-[#64748B] border-r border-[#F1F5F9] overflow-hidden truncate"
             style={cellStyle(key)}
-            title={getEmploymentType(row)}
           >
             {getEmploymentType(row)}
           </td>
@@ -199,7 +195,6 @@ export default function ApplicationRow({
                 type="button"
                 onClick={openStatusModal}
                 className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold ${getStatusStyle(status)}`}
-                title="지원상태 관리"
               >
                 <span>{status}</span>
                 {status === "전형완료" && finalResult && (
@@ -246,7 +241,7 @@ export default function ApplicationRow({
                   setIsEditingDeadline(true);
                 }}
                 className="rounded px-1 py-1 hover:bg-[#F1F5F9] hover:text-[#2563EB]"
-                title="마감일 수정"
+                data-tooltip="마감일 수정" aria-label="마감일 수정"
               >
                 <span className="inline-flex flex-col leading-tight">
                   <span>{formatApplicationDate(row.deadlineDate)}</span>
@@ -291,7 +286,6 @@ export default function ApplicationRow({
             <button
               type="button"
               className="flex h-full w-full items-center justify-center gap-3 text-[13px] text-[#475569]"
-              title="지원상태 관리"
             >
               {scheduleCount > 0 && (
                 <span className="flex items-center gap-1">
@@ -326,7 +320,6 @@ export default function ApplicationRow({
             key={key}
             className="px-3 border-b whitespace-nowrap text-sm font-semibold border-r border-[#F1F5F9] overflow-hidden truncate"
             style={cellStyle(key)}
-            title={row.industry}
           >
             {row.industry || "-"}
           </td>
@@ -416,7 +409,6 @@ export default function ApplicationRow({
             await onChange?.();
           }}
           className="flex h-[48px] w-full items-center justify-center"
-          title="관심 공고"
         >
           <Star
             size={18}

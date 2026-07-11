@@ -629,12 +629,6 @@ export default function ExperienceScreen() {
 
         {activeTab === "db" && (
           <>
-            {loadingExperiences && (
-              <div className="mt-[18px] rounded-[12px] border border-[#BFDBFE] bg-[#EFF6FF] px-4 py-3 text-[13px] font-[800] text-[#2563EB]">
-                백엔드 경험 목록을 불러오는 중입니다...
-              </div>
-            )}
-
             <div className="mt-[26px] flex items-center justify-between">
               <button
                 onClick={() => setEntryOpen(true)}
@@ -657,12 +651,13 @@ export default function ExperienceScreen() {
 
                 <button
                   type="button"
+                  data-tooltip="필터 초기화"
+                  aria-label="필터 초기화"
                   onClick={() => {
                     setColumnFilters({});
                     setSortState(null);
                   }}
                   className={`group relative flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border border-[#E2E8F0] bg-white transition-colors hover:bg-[#F8FAFC] ${activeFilterCount ? "text-[#2563EB]" : "text-[#64748B]"}`}
-                  title="필터 초기화"
                 >
                   <SlidersHorizontal size={17} />
                   {activeFilterCount > 0 && (
@@ -670,9 +665,6 @@ export default function ExperienceScreen() {
                       {activeFilterCount}
                     </span>
                   )}
-                  <span className="pointer-events-none absolute top-10 left-1/2 z-50 -translate-x-1/2 scale-0 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs font-[600] text-white transition-all group-hover:scale-100">
-                    필터 초기화
-                  </span>
                 </button>
 
                 <div ref={columnPanelRef} className="relative">
@@ -680,12 +672,9 @@ export default function ExperienceScreen() {
                     type="button"
                     onClick={() => setColumnPanelOpen((prev) => !prev)}
                     className="group relative flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border border-[#E2E8F0] bg-white text-[#64748B] transition-colors hover:bg-[#F8FAFC]"
-                    title="컬럼 표시"
+                    data-tooltip="컬럼 표시" aria-label="컬럼 표시"
                   >
                     <Columns3 size={17} />
-                    <span className="pointer-events-none absolute top-10 left-1/2 z-50 -translate-x-1/2 scale-0 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs font-[600] text-white transition-all group-hover:scale-100">
-                      컬럼 표시
-                    </span>
                   </button>
 
                   {columnPanelOpen && (
@@ -707,12 +696,9 @@ export default function ExperienceScreen() {
                         ? "bg-white text-[#334155] shadow-sm"
                         : "text-[#64748B] hover:bg-white/70"
                     }`}
-                    title="리스트 보기"
+                    data-tooltip="리스트 보기" aria-label="리스트 보기"
                   >
                     <List size={17} />
-                    <span className="pointer-events-none absolute top-10 left-1/2 z-50 -translate-x-1/2 scale-0 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs font-[600] text-white transition-all group-hover:scale-100">
-                      리스트 보기
-                    </span>
                   </button>
 
                   <button
@@ -723,12 +709,9 @@ export default function ExperienceScreen() {
                         ? "bg-white text-[#334155] shadow-sm"
                         : "text-[#64748B] hover:bg-white/70"
                     }`}
-                    title="카드 보기"
+                    data-tooltip="카드 보기" aria-label="카드 보기"
                   >
                     <Grid2X2 size={16} />
-                    <span className="pointer-events-none absolute top-10 left-1/2 z-50 -translate-x-1/2 scale-0 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs font-[600] text-white transition-all group-hover:scale-100">
-                      카드 보기
-                    </span>
                   </button>
                 </div>
               </div>
@@ -801,7 +784,6 @@ export default function ExperienceScreen() {
                   type="button"
                   onClick={() => setSelectedIds([])}
                   className="flex h-8 w-8 items-center justify-center rounded-lg text-[#94A3B8] transition-colors hover:bg-[#EFF6FF] hover:text-[#64748B]"
-                  title="선택 해제"
                 >
                   <X size={18} />
                 </button>

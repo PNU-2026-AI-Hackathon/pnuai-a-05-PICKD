@@ -11,6 +11,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,6 +47,7 @@ public class Application {
     private String jobTitle;
     private String position;
     private String industry;
+    @Column(length = 500)
     private String memo;
 
     private LocalDateTime applyDate;
@@ -70,6 +72,8 @@ public class Application {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
+
     @Builder.Default
     @JsonManagedReference
     @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -85,13 +89,14 @@ public class Application {
 
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = this.createdAt;
+        LocalDateTime now = LocalDateTime.now(SEOUL_ZONE);
+        this.createdAt = now;
+        this.updatedAt = now;
     }
 
     @PreUpdate
     protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now(SEOUL_ZONE);
     }
 
     // ── 도메인 메서드 ──────────────────────────────────────────────────────────

@@ -211,8 +211,8 @@ export default function ExperienceTable({
   };
 
   return (
-    <div className="mt-[18px] overflow-hidden rounded-[16px] border border-[#E2E8F0] bg-white">
-      <div className="overflow-x-auto">
+    <div className="mt-[18px] h-[600px] overflow-hidden rounded-[16px] border border-[#E2E8F0] bg-white">
+      <div className="h-full overflow-auto">
         <table
           className="table-fixed border-separate border-spacing-0"
           style={{ width: tableWidth, minWidth: "100%" }}
@@ -744,7 +744,6 @@ function FixedPinButton({
         onTogglePin?.(item.id);
       }}
       className="mx-auto flex h-[52px] w-full items-center justify-center text-[#64748B] transition-opacity hover:text-[#2563EB] opacity-0 group-hover:opacity-100"
-      title={pin ? "고정 해제" : "고정"}
     >
       <Pin
         size={17}
@@ -770,11 +769,11 @@ function ManageStatus({
           event.stopPropagation();
           onOpenPendingDuplicates?.(item);
         }}
-        className="inline-flex items-center gap-1 rounded-[8px] px-2 py-1 text-[12px] font-[800] text-[#EA580C] transition hover:bg-[#FFF7ED]"
-        title="비슷한 항목이 있어요"
+        className="className=inline-flex items-center gap-1 text-[13px] font-[700] text-[#64748B]"
+        data-tooltip="병합 필요"
+        aria-label="병합 필요"
       >
         <Layers size={15} strokeWidth={1.9} />
-        비슷한 항목
       </button>
     );
   }
@@ -783,7 +782,8 @@ function ManageStatus({
     return (
       <span
         className="inline-flex items-center gap-1 text-[13px] font-[700] text-[#64748B]"
-        title="미답변 AI 질문이 있어요"
+        data-tooltip="AI 질문 필요"
+        aria-label="AI 질문 필요"
       >
         <Sparkles size={17} strokeWidth={1.8} />
       </span>
@@ -802,9 +802,10 @@ function ManageStatus({
     return (
       <span
         className="inline-flex items-center gap-1 text-[13px] font-[700] text-[#15803D]"
-        title="완료"
+        data-tooltip="완료"
+        aria-label="완료"
       >
-        <CheckCircle2 size={17} strokeWidth={1.8} />
+        -
       </span>
     );
   }

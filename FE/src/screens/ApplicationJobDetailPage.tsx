@@ -722,10 +722,12 @@ function HighlightableLine({
     >
       {/* Highlight toggle button — visible on hover or when highlighted */}
       <button
+        type="button"
         onClick={() => onToggle(lineKey)}
-        title={highlighted ? "강조 해제" : "중요 표시"}
+        data-tooltip={highlighted ? "강조 해제" : "중요 표시"}
+        aria-label={highlighted ? "강조 해제" : "중요 표시"}
         className={cn(
-          "shrink-0 mt-0.5 w-4 h-4 flex items-center justify-center rounded transition-all",
+          "relative shrink-0 mt-0.5 w-4 h-4 flex items-center justify-center rounded transition-all",
           highlighted
             ? "opacity-100 text-[var(--warning)]"
             : "opacity-0 group-hover/line:opacity-100 text-muted-foreground hover:text-[var(--warning)]",

@@ -38,3 +38,52 @@ body {
 * {
   user-select: none;
 }
+
+/* 공통 커스텀 툴팁 */
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  z-index: 9999;
+
+  transform: translateX(-50%);
+  white-space: nowrap;
+
+  padding: 4px 8px;
+  border-radius: 4px;
+
+  background: #1f2937;
+  color: #ffffff;
+
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  transition:
+    opacity 150ms ease,
+    visibility 150ms ease;
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+[data-tooltip-position="right"]::after {
+  top: 50%;
+  left: calc(100% + 8px);
+  right: auto;
+  bottom: auto;
+  transform: translateY(-50%);
+}
