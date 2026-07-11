@@ -47,6 +47,7 @@ public class Application {
     private String jobTitle;
     private String position;
     private String industry;
+    @Column(length = 500)
     private String memo;
 
     private LocalDateTime applyDate;
