@@ -91,6 +91,7 @@ export default function ApplicationDetailModal({
         memo: draftMemo,
       });
       await onChange?.();
+      onClose();
     } catch (error) {
       console.error("지원상태 저장 실패:", error);
       alert("지원상태 저장에 실패했습니다.");
