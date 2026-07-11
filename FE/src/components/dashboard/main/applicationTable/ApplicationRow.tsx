@@ -8,7 +8,7 @@ import {
   toBackendLocalDateTime,
   toDateInputValue,
 } from "../../../../utils/date";
-import { getStatusStyle, getStatusDisplay } from "../../../../utils/status";
+import { getStatusStyle } from "../../../../utils/status";
 import { getRelativeTime } from "../../../../utils/document";
 import { useApplication } from "../../../../context/ApplicationContext";
 import { Icon } from "@iconify/react";

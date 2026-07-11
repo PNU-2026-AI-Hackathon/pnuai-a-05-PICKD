@@ -62,7 +62,7 @@ export default function ExperienceScreen() {
   );
   const [pendingFocusItemId, setPendingFocusItemId] =
     useState<ExperienceId | null>(null);
-  const [loadingExperiences, setLoadingExperiences] = useState(false);
+  const [, setLoadingExperiences] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState("전체");
   const [searchText, setSearchText] = useState("");
   const [activeTab, setActiveTab] = useState<ActiveTab>("db");
