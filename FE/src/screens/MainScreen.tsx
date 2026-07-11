@@ -144,7 +144,13 @@ export default function MainScreen() {
 
             <DocumentSection documents={documents} />
 
-            <CompletedSection applications={applications} />
+            <CompletedSection
+              applications={applications}
+              onOpenApplication={(application) => {
+                setFocusedApplication(application);
+                setIsDetailModalOpen(true);
+              }}
+            />
           </>
         )}
       </div>

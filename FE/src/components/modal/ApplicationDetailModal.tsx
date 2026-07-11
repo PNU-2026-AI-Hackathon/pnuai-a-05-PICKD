@@ -91,6 +91,7 @@ export default function ApplicationDetailModal({
         memo: draftMemo,
       });
       await onChange?.();
+      onClose();
     } catch (error) {
       console.error("지원상태 저장 실패:", error);
       alert("지원상태 저장에 실패했습니다.");
@@ -423,8 +424,8 @@ export default function ApplicationDetailModal({
 function Section({ title, right, children }: any) {
   return (
     <section>
-      <div className="flex items-center justify-between">
-        <h2 className="text-[17px] font-semibold text-[#334155] mb-2">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-[17px] font-semibold text-[#334155]">
           {title}
         </h2>
         {right}

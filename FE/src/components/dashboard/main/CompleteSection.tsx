@@ -3,6 +3,7 @@ import { Icon } from "@iconify/react";
 
 interface CompletedSectionProps {
   applications?: any[];
+  onOpenApplication?: (application: any) => void;
 }
 
 function getText(...values: unknown[]) {
@@ -95,6 +96,7 @@ function getFileTitle(app: any) {
 
 export default function CompletedSection({
   applications = [],
+  onOpenApplication,
 }: CompletedSectionProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"file" | "grid">("file");
@@ -162,27 +164,39 @@ export default function CompletedSection({
             </div>
           ) : viewMode === "file" ? (
             <div className="grid min-h-[150px] grid-cols-[repeat(auto-fill,minmax(132px,1fr))] gap-6 px-2 pt-4">
-              {displayApps.map((app) => (
-                <div
-                  key={app.id}
-                  className="group flex w-[132px] flex-col items-center text-center"
-                >
-                  <Icon
-                    icon="lucide:folder"
-                    className="h-[72px] w-[72px] text-[#94A3B8] transition group-hover:text-[#64748B]"
-                  />
+              {displayApps.map((app) => {
+                const finalResult = getFinalResult(app);
+                const isUnselected = finalResult === "세부 결과 미선택";
 
-                  <span
-                    className="mt-2 line-clamp-2 max-w-[128px] text-sm font-medium leading-5 text-[#64748B]"
+                return (
+                  <button
+                    type="button"
+                    key={app.id}
+                    onClick={() => onOpenApplication?.(app)}
+                    className="group flex w-[132px] flex-col items-center text-center"
+                    data-tooltip={isUnselected ? "클릭해서 결과 선택" : undefined}
                   >
-                    {getFileTitle(app)}
-                  </span>
+                    <Icon
+                      icon="lucide:folder"
+                      className="h-[72px] w-[72px] text-[#94A3B8] transition group-hover:text-[#64748B]"
+                    />
 
-                  <span className="mt-2 rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-[#475569] ring-1 ring-[#D8E0EA]">
-                    {getFinalResult(app)}
-                  </span>
-                </div>
-              ))}
+                    <span className="mt-2 line-clamp-2 max-w-[128px] text-sm font-medium leading-5 text-[#64748B]">
+                      {getFileTitle(app)}
+                    </span>
+
+                    <span
+                      className={`mt-2 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${
+                        isUnselected
+                          ? "bg-[#FFF7ED] text-[#EA580C] ring-[#FED7AA]"
+                          : "bg-white text-[#475569] ring-[#D8E0EA]"
+                      }`}
+                    >
+                      {finalResult}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           ) : (
             <div className="grid min-h-[150px] grid-cols-[repeat(auto-fill,minmax(270px,1fr))] gap-4">
@@ -192,11 +206,16 @@ export default function CompletedSection({
                 const position = getPosition(app);
                 const jobTitle = getJobTitle(app);
                 const resultDate = getResultDate(app);
+                const finalResult = getFinalResult(app);
+                const isUnselected = finalResult === "세부 결과 미선택";
 
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={app.id}
-                    className="min-h-[144px] rounded-xl border border-[#D8E0EA] bg-[#F8FAFC] p-4 text-left"
+                    onClick={() => onOpenApplication?.(app)}
+                    className="min-h-[144px] rounded-xl border border-[#D8E0EA] bg-[#F8FAFC] p-4 text-left transition hover:border-[#94A3B8] hover:bg-white"
+                    data-tooltip={isUnselected ? "클릭해서 결과 선택" : undefined}
                   >
                     <h3 className="truncate text-[15px] font-semibold text-[#0F172A]">
                       {companyName}
@@ -212,11 +231,17 @@ export default function CompletedSection({
 
                     <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-[#64748B]">
                       <span>결과 확인일 {resultDate}</span>
-                      <span className="rounded-full bg-white px-2 py-0.5 text-[12px] font-semibold text-[#475569] ring-1 ring-[#D8E0EA]">
-                        {getFinalResult(app)}
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[12px] font-semibold ring-1 ${
+                          isUnselected
+                            ? "bg-[#FFF7ED] text-[#EA580C] ring-[#FED7AA]"
+                            : "bg-white text-[#475569] ring-[#D8E0EA]"
+                        }`}
+                      >
+                        {finalResult}
                       </span>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
