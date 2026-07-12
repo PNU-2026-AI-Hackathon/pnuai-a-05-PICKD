@@ -1,5 +1,4 @@
 name: Deploy FE to Vercel
-
 on:
   push:
     branches:
@@ -7,7 +6,6 @@ on:
     paths:
       - "FE/**"
   workflow_dispatch:
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -17,7 +15,6 @@ jobs:
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,10 +30,24 @@ jobs:
       - name: Pull Vercel environment info
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
+      - name: Inject build env
+        run: |
+          sed -i '/^VITE_API_BASE_URL=/d' .vercel/.env.production.local
+          echo 'VITE_API_BASE_URL="https://pickd.ai.kr"' >> .vercel/.env.production.local
+          echo "== pulled env keys =="
+          cut -d= -f1 .vercel/.env.production.local
+
       - name: Build project
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VITE_API_BASE_URL: https://pickd.ai.kr
+
+      - name: Verify env baked into bundle
+        run: |
+          if grep -rq "pickd.ai.kr" .vercel/output/static/assets/; then
+            echo "✅ VITE_API_BASE_URL baked into bundle"
+          else
+            echo "❌ VITE_API_BASE_URL missing from bundle"
+            exit 1
+          fi
 
       - name: Deploy to Vercel
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
