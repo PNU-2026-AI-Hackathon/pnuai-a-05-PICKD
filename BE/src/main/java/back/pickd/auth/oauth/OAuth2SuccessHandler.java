@@ -2,8 +2,6 @@ package back.pickd.auth.oauth;
 
 import back.pickd.auth.cookie.AuthCookieManager;
 import back.pickd.auth.jwt.JwtTokenProvider;
-import back.pickd.user.entity.User;
-import back.pickd.user.entity.enums.OnboardingStep;
 import back.pickd.user.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -45,7 +43,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             Map<String, Object> attributes = oAuth2User.getAttributes();
             String email = (String) attributes.get("email");
 
-            User user = userService.saveOrUpdate(
+            userService.saveOrUpdate(
                     email,
                     (String) attributes.get("name"),
                     (String) attributes.get("picture")
@@ -74,13 +72,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             }
 
             String returnTo = CustomAuthorizationRequestResolver.extractReturnTo(request.getParameter("state"));
-            String redirectPath;
-            if (user.getOnboardingStep() == OnboardingStep.COMPLETED) {
-                redirectPath = (returnTo != null) ? returnTo : "/main";
-            } else {
-                redirectPath = "/onboarding";
-            }
-            response.sendRedirect(frontendBaseUrl + redirectPath);
+            response.sendRedirect(frontendBaseUrl + (returnTo != null ? returnTo : "/"));
         }
     }
 }
