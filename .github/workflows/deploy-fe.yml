@@ -3,7 +3,7 @@ name: Deploy FE to Vercel
 on:
   push:
     branches:
-      - dev
+      - main
     paths:
       - "FE/**"
   workflow_dispatch:
