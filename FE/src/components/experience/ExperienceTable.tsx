@@ -805,7 +805,7 @@ function ManageStatus({
         data-tooltip="완료"
         aria-label="완료"
       >
-        -
+        <CheckCircle2 size={17} strokeWidth={1.8} />
       </span>
     );
   }

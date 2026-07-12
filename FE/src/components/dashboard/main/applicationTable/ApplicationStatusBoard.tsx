@@ -6,8 +6,6 @@ import {
   type ApplicationFinalResult,
   type ApplicationStatus,
 } from "../../../../types/application";
-import { getStatusDisplay } from "../../../../utils/status";
-
 type BoardViewStatus = ApplicationStatus;
 
 type ApplicationId = Application["id"];
