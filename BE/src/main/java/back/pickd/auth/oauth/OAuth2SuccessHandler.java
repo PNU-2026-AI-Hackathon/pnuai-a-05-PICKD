@@ -2,6 +2,8 @@ package back.pickd.auth.oauth;
 
 import back.pickd.auth.cookie.AuthCookieManager;
 import back.pickd.auth.jwt.JwtTokenProvider;
+import back.pickd.user.entity.User;
+import back.pickd.user.entity.enums.OnboardingStep;
 import back.pickd.user.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -43,7 +45,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             Map<String, Object> attributes = oAuth2User.getAttributes();
             String email = (String) attributes.get("email");
 
-            userService.saveOrUpdate(
+            User user = userService.saveOrUpdate(
                     email,
                     (String) attributes.get("name"),
                     (String) attributes.get("picture")
@@ -71,9 +73,14 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 log.warn("OAuth2 authorized client 저장 실패 (캘린더/드라이브 연동 불가): {}", e.getMessage());
             }
 
-            // 재동의(returnTo 포함) 플로우면 원래 화면으로, 아니면 기본 온보딩으로
             String returnTo = CustomAuthorizationRequestResolver.extractReturnTo(request.getParameter("state"));
-            response.sendRedirect(frontendBaseUrl + (returnTo != null ? returnTo : "/onboarding"));
+            String redirectPath;
+            if (user.getOnboardingStep() == OnboardingStep.COMPLETED) {
+                redirectPath = (returnTo != null) ? returnTo : "/main";
+            } else {
+                redirectPath = "/onboarding";
+            }
+            response.sendRedirect(frontendBaseUrl + redirectPath);
         }
     }
 }
