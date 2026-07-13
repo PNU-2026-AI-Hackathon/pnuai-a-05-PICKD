@@ -14,17 +14,17 @@ export default function Sidebar() {
   const location = useLocation();
   const isSettingsActive = location.pathname === "/settings";
   const isHelpActive = location.pathname === "/help";
+  const isCalendarActive = location.pathname === "/calendar";
 
   const menuItems = [
-    { name: "지원 대시보드", path: "/main", Icon: DashboardIcon, size: 21 },
+    { name: "지원 대시보드", path: "/main", Icon: DashboardIcon, size: 18 },
     {
       name: "개인경험 정리",
       path: "/experience",
       Icon: PortfolioIcon,
-      size: 24,
+      size: 20,
     },
-    { name: "AI 자소서", path: "/ai", Icon: DocumentIcon, size: 22 },
-    { name: "캘린더", path: "/calendar", Icon: CalendarIcon, size: 21 },
+    { name: "AI 자소서", path: "/ai", Icon: DocumentIcon, size: 19 },
   ];
 
   return (
@@ -33,14 +33,14 @@ export default function Sidebar() {
         <PickdLogoIcon size={32} />
       </div>
 
-      <div className="flex-1 flex flex-col gap-3">
+      <div className="flex-1 flex flex-col gap-2">
         {menuItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`group relative flex items-center justify-center w-12 h-12 rounded-xl transition-all ${
+              className={`group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all ${
                 isActive
                   ? "bg-blue-50 text-blue-600"
                   : "text-gray-400 hover:bg-gray-50 hover:text-gray-600"
@@ -58,20 +58,37 @@ export default function Sidebar() {
         })}
       </div>
 
-      <div className="flex flex-col gap-4 mb-2">
+      <div className="flex flex-col gap-2 mb-2">
+        <button
+          data-tooltip="캘린더"
+          data-tooltip-position="right"
+          aria-label="캘린더"
+          onClick={() => navigate("/calendar")}
+          className={`group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all active:scale-95 ${
+            isCalendarActive
+              ? "bg-blue-100 text-blue-600"
+              : "text-gray-400 hover:bg-gray-50 hover:text-gray-600"
+          }`}
+        >
+          <CalendarIcon
+            size={18}
+            color={isCalendarActive ? "#2563EB" : "#94A3B8"}
+          />
+        </button>
+
         <button
           data-tooltip="설정"
           data-tooltip-position="right"
           aria-label="설정"
           onClick={() => navigate("/settings")}
-          className={`group relative flex items-center justify-center w-12 h-12 rounded-xl transition-all active:scale-95 ${
+          className={`group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all active:scale-95 ${
             isSettingsActive
               ? "bg-blue-100 text-blue-600"
               : "text-gray-400 hover:bg-gray-50 hover:text-gray-600"
           }`}
         >
           <SettingsIcon
-            size={23}
+            size={20}
             color={isSettingsActive ? "#2563EB" : "#94A3B8"}
           />
         </button>
@@ -81,13 +98,13 @@ export default function Sidebar() {
           data-tooltip-position="right"
           aria-label="도움말"
           onClick={() => navigate("/help")}
-          className={`group relative flex items-center justify-center w-12 h-12 rounded-xl transition-all active:scale-95 ${
+          className={`group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all active:scale-95 ${
             isHelpActive
               ? "bg-blue-100 text-blue-600"
               : "text-gray-400 hover:bg-gray-50 hover:text-gray-600"
           }`}
         >
-          <HelpIcon size={23} color={isHelpActive ? "#2563EB" : "#94A3B8"} />
+          <HelpIcon size={20} color={isHelpActive ? "#2563EB" : "#94A3B8"} />
         </button>
       </div>
     </nav>
