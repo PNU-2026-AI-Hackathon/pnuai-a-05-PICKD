@@ -67,6 +67,7 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
 
   const monthTodos = useMemo(() => {
     return todos.filter((todo) => {
+      if (todo.completed) return false;
       if (!todo.dueDateTime) return false;
       const date = parseLocalDateTime(todo.dueDateTime);
       return date ? isSameMonth(date, allViewMonth) : false;
@@ -287,7 +288,7 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
             <section className="px-6 pt-2 pb-6">
               <SectionHeader
                 title="전체 할 일"
-                count={monthTodos.filter((todo) => !todo.completed).length}
+                count={monthTodos.length}
                 onConfirm={handleAddTodo}
                 showAddButton={true}
                 applications={data}
