@@ -94,10 +94,6 @@ export function ApplicationProvider({ children }: any) {
   };
 
   const toggleTodo = async (todoId: number) => {
-    const targetTodo = applications
-      .flatMap((app) => app.todos || [])
-      .find((todo) => todo.id === todoId);
-
     await toggleTodoApi(todoId);
 
     setApplications((prev) =>
@@ -108,17 +104,6 @@ export function ApplicationProvider({ children }: any) {
         ),
       })),
     );
-
-    if (targetTodo && !targetTodo.completed) {
-      setTimeout(async () => {
-        try {
-          await deleteTodoApi(todoId);
-          await loadData();
-        } catch (error) {
-          console.error("완료된 할 일 자동 삭제 실패:", error);
-        }
-      }, 10000);
-    }
   };
 
   const removeTodo = async (todoId: number) => {
