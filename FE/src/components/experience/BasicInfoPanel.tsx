@@ -9,7 +9,6 @@ import {
   GraduationCap,
   Mail,
   Pencil,
-  RotateCcw,
   User,
 } from "lucide-react";
 import { getUserProfile, updateUserProfile } from "../../api/user";
@@ -237,9 +236,6 @@ export default function BasicInfoPanel() {
   useEffect(() => lsSet(LS_INFO_VALUES, values), [values]);
   useEffect(() => lsSet(LS_INFO_VISIBLE, visibleKeys), [visibleKeys]);
 
-  const filledCount = INFO_FIELDS.filter((field) => values[field.key]?.trim()).length;
-  const progress = Math.round((filledCount / INFO_FIELDS.length) * 100);
-
   const visibleGroups = useMemo(
     () =>
       FIELD_GROUPS.map((group) => ({
@@ -311,57 +307,7 @@ export default function BasicInfoPanel() {
   };
 
   return (
-    <div className="rounded-2xl border border-[#E2E8F0] bg-white p-6">
-      <div className="mb-5 flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-[18px] font-[800] text-[#0F172A]">기본정보</h2>
-          <p className="mt-1 text-[13px] font-[500] text-[#64748B]">
-            프로필에서 불러온 기본정보입니다.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-24 overflow-hidden rounded-full bg-[#E2E8F0]">
-              <div className="h-full rounded-full bg-[#2563EB]" style={{ width: `${progress}%` }} />
-            </div>
-            <span className="text-[12px] font-[700] text-[#64748B]">
-              {filledCount}/{INFO_FIELDS.length}
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={async () => {
-              if (editMode) {
-                await handleSave();
-              } else {
-                setSnapshot(values);
-              }
-              setEditMode((prev) => !prev);
-            }}
-            className="inline-flex h-9 items-center gap-2 rounded-[8px] border border-[#E2E8F0] bg-white px-3 text-[13px] font-[700] text-[#334155] hover:bg-[#F8FAFC]"
-          >
-            <Pencil size={15} />
-            {editMode ? "저장" : "전체 편집"}
-          </button>
-
-          {editMode && (
-            <button
-              type="button"
-              onClick={() => {
-                if (snapshot) setValues(snapshot);
-                setEditMode(false);
-              }}
-              className="inline-flex h-9 items-center gap-2 rounded-[8px] border border-[#E2E8F0] bg-white px-3 text-[13px] font-[700] text-[#64748B] hover:bg-[#F8FAFC]"
-            >
-              <RotateCcw size={15} />
-              취소
-            </button>
-          )}
-        </div>
-      </div>
-
+    <div className={editMode ? "pb-20" : undefined}>
       {editMode ? (
         <div className="grid grid-cols-2 gap-3">
           {INFO_FIELDS.map((field) => {
@@ -647,6 +593,36 @@ export default function BasicInfoPanel() {
               </section>
             );
           })}
+        </div>
+      )}
+
+      {editMode && (
+        <div className="fixed inset-x-0 bottom-0 left-[60px] z-30 flex items-center justify-between border-t border-[#E2E8F0] bg-[#F8FAFC] px-[150px] py-4">
+          <p className="text-[13px] text-[#64748B]">변경한 내용은 저장을 눌러야 반영돼요</p>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (snapshot) setValues(snapshot);
+                setEditMode(false);
+              }}
+              className="inline-flex h-9 items-center rounded-[8px] border border-[#E2E8F0] bg-white px-4 text-[13px] font-[700] text-[#64748B] hover:bg-[#F8FAFC]"
+            >
+              취소
+            </button>
+
+            <button
+              type="button"
+              onClick={async () => {
+                await handleSave();
+                setEditMode(false);
+              }}
+              className="inline-flex h-9 items-center rounded-[8px] bg-[#2563EB] px-4 text-[13px] font-[700] text-white hover:bg-[#1D4ED8]"
+            >
+              저장
+            </button>
+          </div>
         </div>
       )}
     </div>
