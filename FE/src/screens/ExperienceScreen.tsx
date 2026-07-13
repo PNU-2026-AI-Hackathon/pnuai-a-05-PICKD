@@ -3,8 +3,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
   Columns3,
-  FileText,
-  Folder,
   Grid2X2,
   List,
   Plus,
@@ -587,8 +585,8 @@ export default function ExperienceScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] px-[150px] pt-[70px]">
-      <div className="mx-auto max-w-[1780px]">
+    <div className="min-h-screen bg-[#F8FAFC] px-10 pt-[70px]">
+      <div className="max-w-[1780px]">
         <ExperienceHeader
           onOpenPaste={() => {
             setActiveTab("db");
@@ -603,26 +601,14 @@ export default function ExperienceScreen() {
           onExportExcel={exportExcel}
         />
 
-        <div className="mt-[22px] flex w-fit items-center gap-2 rounded-2xl border border-[#E2E8F0] bg-white p-1 shadow-sm">
-          <TabButton
-            active={activeTab === "db"}
-            onClick={() => setActiveTab("db")}
-            icon={<List size={16} />}
-          >
+        <div className="mt-[22px] flex w-fit items-center gap-1 rounded-lg bg-[#F1F5F9] p-1">
+          <TabButton active={activeTab === "db"} onClick={() => setActiveTab("db")}>
             경험·스펙 DB
           </TabButton>
-          <TabButton
-            active={activeTab === "basic-info"}
-            onClick={() => setActiveTab("basic-info")}
-            icon={<FileText size={16} />}
-          >
+          <TabButton active={activeTab === "basic-info"} onClick={() => setActiveTab("basic-info")}>
             기본정보
           </TabButton>
-          <TabButton
-            active={activeTab === "files"}
-            onClick={() => setActiveTab("files")}
-            icon={<Folder size={16} />}
-          >
+          <TabButton active={activeTab === "files"} onClick={() => setActiveTab("files")}>
             파일함
           </TabButton>
         </div>
@@ -901,25 +887,22 @@ export default function ExperienceScreen() {
 function TabButton({
   active,
   onClick,
-  icon,
   children,
 }: {
   active: boolean;
   onClick: () => void;
-  icon: ReactNode;
   children: ReactNode;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex h-9 items-center gap-2 rounded-xl px-4 text-[14px] font-[800] transition ${
+      className={`inline-flex h-9 items-center rounded-lg px-4 text-[14px] font-[500] transition ${
         active
-          ? "bg-[#EFF6FF] text-[#2563EB]"
-          : "text-[#64748B] hover:bg-[#F8FAFC]"
+          ? "bg-white text-[#0F172A] shadow-sm"
+          : "text-[#64748B] hover:bg-white/60"
       }`}
     >
-      {icon}
       {children}
     </button>
   );

@@ -219,7 +219,7 @@ export default function ExperienceTable({
         >
           <thead className="sticky top-0 z-20 bg-[#F8FAFC]">
             <tr className="h-[40px] border-b border-[#E2E8F0]">
-              <th className="w-[48px] min-w-[48px] max-w-[48px] border-b border-r border-[#E2E8F0]">
+              <th className="w-[48px] min-w-[48px] max-w-[48px] border-b border-[#E2E8F0]">
                 <label
                   className="flex h-full w-full cursor-pointer items-center justify-center p-2"
                   onClick={(event) => event.stopPropagation()}
@@ -246,7 +246,7 @@ export default function ExperienceTable({
                 </label>
               </th>
 
-              <th className="w-[48px] min-w-[48px] max-w-[48px] border-b border-r border-[#E2E8F0] text-center text-[13px] font-[700] text-[#64748B]">
+              <th className="w-[48px] min-w-[48px] max-w-[48px] border-b border-[#E2E8F0] text-center text-[13px] font-[700] text-[#64748B]">
                 중요
               </th>
 
@@ -285,7 +285,7 @@ export default function ExperienceTable({
               ))}
 
               <th
-                className="sticky right-0 z-30 w-[48px] min-w-[48px] max-w-[48px] border-b border-l border-[#E2E8F0] bg-[#F8FAFC]"
+                className="sticky right-0 z-30 w-[48px] min-w-[48px] max-w-[48px] border-b border-[#E2E8F0] bg-[#F8FAFC]"
                 style={{ width: PIN_COLUMN_WIDTH }}
               />
             </tr>
@@ -303,7 +303,7 @@ export default function ExperienceTable({
                   onClick={() => onRowClick(item)}
                   className="group h-[52px] cursor-pointer border-b border-[#F1F5F9] transition-colors last:border-b-0 hover:bg-[#F8FAFC]"
                 >
-                  <td className="w-[48px] min-w-[48px] max-w-[48px] border-b border-r border-[#F1F5F9] text-sm">
+                  <td className="w-[48px] min-w-[48px] max-w-[48px] border-b border-[#F1F5F9] text-sm">
                     <label
                       className="flex cursor-pointer items-center justify-center p-2 -m-1.5"
                       onClick={(event) => event.stopPropagation()}
@@ -330,7 +330,7 @@ export default function ExperienceTable({
                     </label>
                   </td>
 
-                  <td className="w-[48px] min-w-[48px] max-w-[48px] border-b border-r border-[#F1F5F9] text-center">
+                  <td className="w-[48px] min-w-[48px] max-w-[48px] border-b border-[#F1F5F9] text-center">
                     <button
                       type="button"
                       onClick={(event) => {
@@ -353,7 +353,7 @@ export default function ExperienceTable({
                   {orderedColumns.map((column) => (
                     <td
                       key={column.key}
-                      className="border-b border-r border-[#F1F5F9] px-3 text-[14px] font-[500] text-[#475569]"
+                      className="border-b border-[#F1F5F9] px-3 text-[14px] font-[500] text-[#475569]"
                       style={{
                         width: widths[column.key],
                         minWidth: widths[column.key],
@@ -370,7 +370,7 @@ export default function ExperienceTable({
                   ))}
 
                   <td
-                    className="sticky right-0 z-20 w-[48px] min-w-[48px] max-w-[48px] border-b border-l border-[#F1F5F9] bg-white text-center group-hover:bg-[#F8FAFC]"
+                    className="sticky right-0 z-20 w-[48px] min-w-[48px] max-w-[48px] border-b border-[#F1F5F9] bg-white text-center group-hover:bg-[#F8FAFC]"
                     style={{ width: PIN_COLUMN_WIDTH }}
                   >
                     <FixedPinButton item={item} onTogglePin={onTogglePin} />
@@ -430,7 +430,7 @@ function TableHead({
       onDragStart={() => onDragStart(columnKey)}
       onDragOver={onDragOver}
       onDrop={() => onDrop(columnKey)}
-      className="relative border-b border-r border-[#E2E8F0] bg-[#F8FAFC] px-3 text-left text-[14px] font-[600] text-[#64748B] select-none"
+      className="relative border-b border-[#E2E8F0] bg-[#F8FAFC] px-3 text-left text-[14px] font-[500] text-[#64748B] select-none"
       style={{ width, minWidth: width, maxWidth: width }}
     >
       <div className="flex cursor-grab items-center gap-1 pr-2 active:cursor-grabbing">
@@ -684,7 +684,7 @@ function CellValue({
   if (columnKey === "name") {
     return (
       <div className="flex min-w-0 items-center gap-2">
-        <span className="truncate text-[16px] font-[700] tracking-[-0.01em] text-[#020617]">
+        <span className="truncate text-[14px] font-[500] tracking-[-0.01em] text-[#020617]">
           {item.name || "새 경험"}
         </span>
       </div>

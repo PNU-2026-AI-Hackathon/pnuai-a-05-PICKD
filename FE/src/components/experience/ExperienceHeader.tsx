@@ -21,7 +21,7 @@ export default function ExperienceHeader({
     <div className="flex items-start justify-between gap-10">
       <div>
         <h1 className="text-[40px] font-[700] tracking-[-0.02em] text-[#0F172A]">
-          경험정리
+          경험·스펙 DB
         </h1>
         <p className="mt-2 text-[16px] text-[#64748B]">
           경험과 스펙을 한 곳에서 정리하고, 자소서·면접에 바로 꺼내 쓰세요.
