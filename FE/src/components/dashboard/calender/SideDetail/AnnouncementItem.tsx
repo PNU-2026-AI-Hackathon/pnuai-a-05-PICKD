@@ -32,18 +32,18 @@ const AnnouncementItem = ({
         </div>
 
         <div>
-          <h4 className="font-semibold text-[#334155] text-[13px] mb-1">{title}</h4>
+          <h4 className="font-semibold text-[#334155] text-[14px] mb-1">{title}</h4>
 
           <div className="flex items-center gap-2">
             <span className="text-[12px] text-gray-400">{company}</span>
             <span
-              className={`px-2 py-0.5 text-[10px] rounded-md font-medium ${
+              className={`px-2 py-0.5 text-[10px] rounded-lg font-medium ${
                 step.includes("면접")
                   ? "bg-[#C082F6]/10 text-[#C082F6]"
                   : step.includes("제출")
                     ? "bg-[#79AF86]/10 text-[#79AF86]"
                     : step.includes("마감")
-                      ? "bg-[#E77975]/10 text-[#E77975]"
+                      ? "bg-red-100 text-red-600"
                       : "bg-[#CBD5E1]/10 text-[#64748B]"
               }`}
             >
@@ -56,8 +56,8 @@ const AnnouncementItem = ({
       <div
         className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
           dday === "D-Day" || dday === "D-1"
-            ? "bg-red-50 text-red-600"
-            : "bg-orange-50 text-orange-600"
+            ? "bg-red-500 text-white"
+            : "bg-blue-500 text-white"
         }`}
       >
         {dday}

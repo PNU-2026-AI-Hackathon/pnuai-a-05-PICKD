@@ -176,7 +176,7 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
 
             <h3 className="font-bold text-gray-800 text-sm">다가오는 공고</h3>
 
-            <span className="flex items-center justify-center w-5 h-5 bg-[#F1F5F9] text-[#94A3B8] text-[10px] font-bold rounded-full">
+            <span className="flex items-center justify-center w-5 h-5 bg-[#F1F5F9] text-gray-500 text-[11px] font-base rounded-full">
               {sortedList.length}
             </span>
           </button>

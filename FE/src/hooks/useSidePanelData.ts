@@ -199,22 +199,6 @@ export const useSidePanelData = (selectedDate?: Date) => {
       );
 
       window.dispatchEvent(new Event("todoUpdated"));
-
-      if (!targetTodo.completed) {
-        setTimeout(async () => {
-          try {
-            await deleteTodoApi(id);
-            await fetchTodos();
-            await fetchCalendarEvents();
-            await loadData();
-
-            window.dispatchEvent(new Event("todoUpdated"));
-            window.dispatchEvent(new Event("googleCalendarUpdated"));
-          } catch (error) {
-            console.error("10초 뒤 자동 삭제 실패:", error);
-          }
-        }, 10000);
-      }
     } catch (error) {
       console.error("할 일 상태 변경 실패:", error);
     }

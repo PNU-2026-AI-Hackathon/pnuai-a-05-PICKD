@@ -61,7 +61,7 @@ const TodoItem = ({ todo, onToggle }: TodoProps) => {
       <div className="flex-1">
         <div className="flex justify-between items-center">
           <p
-            className={`font-semibold text-[14px] leading-tight ${
+            className={`font-medium text-[14px] leading-tight ${
               todo.completed ? "text-gray-400 line-through" : "text-gray-900"
             }`}
           >
@@ -75,9 +75,9 @@ const TodoItem = ({ todo, onToggle }: TodoProps) => {
           )}
         </div>
 
-        <div className="flex items-center gap-2 mt-2">
+        <div className="flex items-center gap-2 mt-1">
           <span
-            className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+            className={`text-[10px] px-1 py-0.5 rounded-xl font-semibold ${
               priority === "긴급"
                 ? "bg-red-100 text-red-600"
                 : "bg-blue-50 text-blue-500"
