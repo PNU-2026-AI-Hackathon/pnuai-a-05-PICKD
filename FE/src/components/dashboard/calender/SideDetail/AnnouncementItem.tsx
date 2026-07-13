@@ -14,7 +14,7 @@ const AnnouncementItem = ({
 }: AnnouncementItemProps) => {
   return (
     <div className="flex items-start justify-between group cursor-pointer">
-      <div className="flex gap-3">
+      <div className="flex gap-3 px-2">
         <div className="mt-1">
           <svg
             className="w-4 h-4 text-gray-300"

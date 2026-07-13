@@ -246,6 +246,8 @@ export const useSidePanelData = (selectedDate?: Date) => {
     selectedDay,
     sortedList,
     selectedDaySchedules,
+    calendarItems,
+    todos,
     handleAddTodo,
     toggleTodo,
     deleteTodo,
