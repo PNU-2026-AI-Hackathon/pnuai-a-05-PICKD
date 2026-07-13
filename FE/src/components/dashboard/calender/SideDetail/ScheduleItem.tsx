@@ -8,13 +8,13 @@ interface ScheduleItemProps {
 
 const ScheduleItem = ({ schedule }: ScheduleItemProps) => {
   return (
-    <div className="p-4 bg-gray-50 rounded-xl flex justify-between items-center group hover:bg-blue-50 transition-colors">
+    <div className="px-2 py-3 bg-gray-50 rounded-xl flex justify-between items-center group hover:bg-blue-50 transition-colors">
       <div>
-        <p className="font-medium text-gray-800 text-[16px]">
+        <p className="font-medium text-gray-800 text-[14px]">
           {schedule.title}
 
           {schedule.company && (
-            <span className="text-gray-400 ml-2 text-[14px] font-normal">
+            <span className="text-gray-400 ml-2 text-[12px] font-normal">
               {schedule.company}
             </span>
           )}

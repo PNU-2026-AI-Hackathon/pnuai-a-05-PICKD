@@ -71,9 +71,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 log.warn("OAuth2 authorized client 저장 실패 (캘린더/드라이브 연동 불가): {}", e.getMessage());
             }
 
-            // 재동의(returnTo 포함) 플로우면 원래 화면으로, 아니면 기본 온보딩으로
             String returnTo = CustomAuthorizationRequestResolver.extractReturnTo(request.getParameter("state"));
-            response.sendRedirect(frontendBaseUrl + (returnTo != null ? returnTo : "/onboarding"));
+            response.sendRedirect(frontendBaseUrl + (returnTo != null ? returnTo : "/"));
         }
     }
 }

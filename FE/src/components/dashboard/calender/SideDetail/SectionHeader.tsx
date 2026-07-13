@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Plus } from "lucide-react";
 import PostTodo from "../../../modal/PostTodo";
 import { useApplication } from "../../../../context/ApplicationContext";
@@ -16,6 +16,7 @@ interface SectionHeaderProps {
   }) => void | Promise<void>;
   applications?: Application[];
   isSubmitting?: boolean;
+  extra?: ReactNode;
 }
 
 const SectionHeader = ({
@@ -25,6 +26,7 @@ const SectionHeader = ({
   showAddButton = true,
   applications: propApplications,
   isSubmitting = false,
+  extra,
 }: SectionHeaderProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
@@ -64,37 +66,41 @@ const SectionHeader = ({
     <>
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
-          <h3 className="font-bold text-gray-800 text-base">{title}</h3>
+          <h3 className="font-bold text-gray-800 text-sm">{title}</h3>
 
           {count !== undefined && (
-            <span className="flex items-center justify-center w-5 h-5 bg-[#F1F5F9] text-[#94A3B8] text-[11px] font-bold rounded-full">
+            <span className="flex items-center justify-center w-5 h-5 bg-[#F1F5F9] text-gray-500 text-[11px] font-base rounded-full">
               {count}
             </span>
           )}
         </div>
 
-        {showAddButton && (
-          <button
-            onClick={() => {
-              if (submitting) return;
-              setIsModalOpen(true);
-            }}
-            className={`p-1 rounded-md transition-colors group ${
-              submitting ? "cursor-not-allowed opacity-50" : "hover:bg-gray-100"
-            }`}
-            title="새 할 일 추가"
-            disabled={submitting}
-          >
-            <Plus
-              size={20}
-              className={`${
-                submitting
-                  ? "text-gray-300"
-                  : "text-gray-400 group-hover:text-blue-500"
+        <div className="flex items-center gap-2">
+          {extra}
+
+          {showAddButton && (
+            <button
+              onClick={() => {
+                if (submitting) return;
+                setIsModalOpen(true);
+              }}
+              className={`p-1 rounded-md transition-colors group ${
+                submitting ? "cursor-not-allowed opacity-50" : "hover:bg-gray-100"
               }`}
-            />
-          </button>
-        )}
+              title="새 할 일 추가"
+              disabled={submitting}
+            >
+              <Plus
+                size={20}
+                className={`${
+                  submitting
+                    ? "text-gray-300"
+                    : "text-gray-400 group-hover:text-blue-500"
+                }`}
+              />
+            </button>
+          )}
+        </div>
       </div>
 
       {isModalOpen && (
