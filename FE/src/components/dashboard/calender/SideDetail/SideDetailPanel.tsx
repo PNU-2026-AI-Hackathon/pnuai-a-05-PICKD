@@ -37,7 +37,7 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
   });
   const scheduleTitle = "오늘의 일정";
   const todoTitle = "오늘의 할 일";
-  const progressTitle = hasSelectedDate ? `${selectedDayLabel}의 진행률` : "오늘의 진행률";
+  const progressTitle = "오늘의 진행률";
   const emptyScheduleMessage = hasSelectedDate
     ? `${selectedDayLabel}에 일정이 없습니다.`
     : "오늘 일정이 없습니다.";
@@ -55,7 +55,7 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
   
   return (
     <div className="w-[480px] h-full bg-gray-50 border-l border-gray-200 flex flex-col">
-      <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+      <div className="p-6 flex justify-between items-center">
         <div>
           <h2 className="text-xl font-bold text-gray-800">
             {selectedDay.toLocaleDateString("ko-KR", {
@@ -69,6 +69,8 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
 
         <ProgressCircle percentage={selectedDayProgress} />
       </div>
+
+      <div className="mx-6 border-b border-gray-300" />
 
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         <section className={`px-6 pt-6 ${isAnnouncementOpen ? "pb-6" : "pb-2"}`}>
