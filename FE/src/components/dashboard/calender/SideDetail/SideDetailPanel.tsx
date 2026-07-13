@@ -15,6 +15,7 @@ interface Props {
 
 const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isAnnouncementOpen, setIsAnnouncementOpen] = useState(true);
 
   const {
     selectedDayTodos,
@@ -70,40 +71,55 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <section className="p-6">
-          <div className="flex items-center gap-1 mb-4">
-            <ChevronDown size={18} className="text-gray-400" />
+        <section className={`px-6 pt-6 ${isAnnouncementOpen ? "pb-6" : "pb-2"}`}>
+          <button
+            type="button"
+            onClick={() => setIsAnnouncementOpen((prev) => !prev)}
+            className={`flex items-center gap-1 w-full text-left ${
+              isAnnouncementOpen ? "mb-4" : ""
+            }`}
+          >
+            <ChevronDown
+              size={18}
+              className={`text-gray-400 transition-transform ${
+                isAnnouncementOpen ? "" : "-rotate-90"
+              }`}
+            />
 
             <h3 className="font-bold text-gray-800 text-sm">다가오는 공고</h3>
 
             <span className="flex items-center justify-center w-5 h-5 bg-[#F1F5F9] text-[#94A3B8] text-[10px] font-bold rounded-full">
               {sortedList.length}
             </span>
-          </div>
+          </button>
 
-          <div className="space-y-6">
-            {displayItems.map((item) => (
-              <AnnouncementItem
-                key={item.id}
-                title={item.title}
-                company={item.companyName}
-                step={item.step}
-                dday={calculateDDay(item.date!)}
-              />
-            ))}
-          </div>
+          {isAnnouncementOpen && (
+            <>
+              <div className="space-y-6">
+                {displayItems.map((item) => (
+                  <AnnouncementItem
+                    key={item.id}
+                    title={item.title}
+                    company={item.companyName}
+                    step={item.step}
+                    dday={calculateDDay(item.date!)}
+                  />
+                ))}
+              </div>
 
-          {sortedList.length > 3 && (
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="w-full text-center text-sm text-gray-400 mt-4 hover:text-blue-500 hover:underline transition-colors"
-            >
-              {isExpanded ? "접기" : `더보기 +${extraCount}`}
-            </button>
+              {sortedList.length > 3 && (
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="w-full text-center text-sm text-gray-400 mt-4 hover:text-blue-500 hover:underline transition-colors"
+                >
+                  {isExpanded ? "접기" : `더보기 +${extraCount}`}
+                </button>
+              )}
+            </>
           )}
         </section>
 
-        <section className="px-6 pt-6 pb-4">
+        <section className="px-6 pt-6 pb-2">
           <SectionHeader
             title={scheduleTitle}
             count={selectedDaySchedules.length}
@@ -125,7 +141,7 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
           </div>
         </section>
 
-        <section className="px-6 pt-4 pb-6">
+        <section className="px-6 pt-2 pb-6">
           <SectionHeader
             title={todoTitle}
             count={selectedDayTodos.filter((todo) => !todo.completed).length}

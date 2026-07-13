@@ -129,7 +129,6 @@
   font-size: 0.8125rem;
   color: #9ca3af;
   text-decoration: none;
-  border-right: 1px solid #f3f4f6;
 }
 
 .main-calendar-container .react-calendar__month-view__weekdays__weekday:first-child abbr {
