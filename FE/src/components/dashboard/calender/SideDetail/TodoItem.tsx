@@ -1,3 +1,4 @@
+import { Icon } from "@iconify/react";
 import type { Todo } from "../../../../types/todo";
 import { parseLocalDateTime } from "../../../../utils/date";
 
@@ -30,26 +31,45 @@ const TodoItem = ({ todo, onToggle }: TodoProps) => {
     : false;
 
   return (
-    <div className="flex items-start gap-3 p-4 hover:bg-blue-50 rounded-xl transition-colors group">
-      <input
-        type="checkbox"
-        checked={todo.completed}
-        onChange={() => onToggle?.(todo.id)}
-        className="mt-1.5 w-5 h-5 rounded-full border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-      />
+    <div
+      className={`flex items-start gap-3 py-3 px-2 rounded-xl transition-colors group ${
+        isOverdue ? "bg-orange-50/40" : ""
+      }`}
+    >
+      <label className="mt-0.5 flex cursor-pointer items-center justify-center">
+        <input
+          type="checkbox"
+          checked={todo.completed}
+          onChange={() => onToggle?.(todo.id)}
+          className="hidden"
+        />
+        <div className="flex h-6 w-6 items-center justify-center rounded-md border border-blue-500">
+          {todo.completed && (
+            <svg
+              className="h-4 w-4 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              viewBox="0 0 24 24"
+            >
+              <path d="M5 13l4 4L19 7" />
+            </svg>
+          )}
+        </div>
+      </label>
 
       <div className="flex-1">
         <div className="flex justify-between items-center">
           <p
-            className={`font-medium text-[15px] leading-tight ${
-              todo.completed ? "text-gray-400 line-through" : "text-gray-800"
+            className={`font-semibold text-[14px] leading-tight ${
+              todo.completed ? "text-gray-400 line-through" : "text-gray-900"
             }`}
           >
             {todo.title}
           </p>
 
           {isOverdue && (
-            <span className="text-xs text-orange-400 bg-orange-50 px-1.5 py-0.5 rounded">
+            <span className="text-[11px] font-medium text-orange-500 bg-orange-100 border border-orange-500 px-2 py-0.5 rounded-full">
               이월
             </span>
           )}
@@ -57,7 +77,7 @@ const TodoItem = ({ todo, onToggle }: TodoProps) => {
 
         <div className="flex items-center gap-2 mt-2">
           <span
-            className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
+            className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
               priority === "긴급"
                 ? "bg-red-100 text-red-600"
                 : "bg-blue-50 text-blue-500"
@@ -67,19 +87,19 @@ const TodoItem = ({ todo, onToggle }: TodoProps) => {
           </span>
 
           {companyName && (
-            <span className="text-[13px] text-gray-500 font-medium">
+            <span className="text-[12px] text-gray-500 font-medium">
               {companyName}
             </span>
           )}
 
-          <span className="text-[13px] text-gray-400 flex items-center gap-1">
-            <span className="text-[10px] opacity-70">🕒</span>
+          <span className="text-[12px] text-gray-400 flex items-center gap-1">
+            <Icon icon="lucide:clock" className="w-3 h-3 opacity-70" />
             {time}
           </span>
         </div>
 
         {todo.memo && (
-          <p className="mt-1 text-[12px] text-gray-400 italic">{todo.memo}</p>
+          <p className="mt-1 text-[11px] text-gray-400 italic">{todo.memo}</p>
         )}
       </div>
     </div>

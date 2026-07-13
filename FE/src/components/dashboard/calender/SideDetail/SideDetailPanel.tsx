@@ -34,8 +34,8 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
     month: "long",
     day: "numeric",
   });
-  const scheduleTitle = hasSelectedDate ? `${selectedDayLabel}의 일정` : "오늘의 일정";
-  const todoTitle = hasSelectedDate ? `${selectedDayLabel}의 할 일` : "오늘의 할 일";
+  const scheduleTitle = "오늘의 일정";
+  const todoTitle = "오늘의 할 일";
   const progressTitle = hasSelectedDate ? `${selectedDayLabel}의 진행률` : "오늘의 진행률";
   const emptyScheduleMessage = hasSelectedDate
     ? `${selectedDayLabel}에 일정이 없습니다.`
@@ -53,7 +53,7 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
     : 0;
   
   return (
-    <div className="w-[400px] h-full bg-white border-l border-gray-200 flex flex-col">
+    <div className="w-[480px] h-full bg-gray-50 border-l border-gray-200 flex flex-col">
       <div className="p-6 border-b border-gray-100 flex justify-between items-center">
         <div>
           <h2 className="text-xl font-bold text-gray-800">
@@ -70,18 +70,18 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <section className="p-6 border-b border-gray-100">
+        <section className="p-6">
           <div className="flex items-center gap-1 mb-4">
             <ChevronDown size={18} className="text-gray-400" />
 
-            <h3 className="font-bold text-gray-800 text-base">다가오는 공고</h3>
+            <h3 className="font-bold text-gray-800 text-sm">다가오는 공고</h3>
 
-            <span className="flex items-center justify-center w-5 h-5 bg-[#F1F5F9] text-[#94A3B8] text-[11px] font-bold rounded-full">
+            <span className="flex items-center justify-center w-5 h-5 bg-[#F1F5F9] text-[#94A3B8] text-[10px] font-bold rounded-full">
               {sortedList.length}
             </span>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-6">
             {displayItems.map((item) => (
               <AnnouncementItem
                 key={item.id}
@@ -103,7 +103,7 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
           )}
         </section>
 
-        <section className="p-6 border-b border-gray-100">
+        <section className="px-6 pt-6 pb-4">
           <SectionHeader
             title={scheduleTitle}
             count={selectedDaySchedules.length}
@@ -125,7 +125,7 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
           </div>
         </section>
 
-        <section className="p-6">
+        <section className="px-6 pt-4 pb-6">
           <SectionHeader
             title={todoTitle}
             count={selectedDayTodos.filter((todo) => !todo.completed).length}
