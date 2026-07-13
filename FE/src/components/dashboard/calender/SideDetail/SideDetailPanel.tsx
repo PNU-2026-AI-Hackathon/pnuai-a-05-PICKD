@@ -261,7 +261,7 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
                 title="전체 일정"
                 count={monthSchedules.length}
                 onConfirm={handleAddTodo}
-                showAddButton={true}
+                showAddButton={false}
                 applications={data}
                 isSubmitting={isAddingTodo}
                 extra={monthNav}
@@ -292,6 +292,7 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
                 showAddButton={true}
                 applications={data}
                 isSubmitting={isAddingTodo}
+                extra={monthNav}
               />
 
               <div className="mt-4 space-y-2">
