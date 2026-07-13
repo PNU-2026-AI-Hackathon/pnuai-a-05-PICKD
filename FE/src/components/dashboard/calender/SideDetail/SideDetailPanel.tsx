@@ -54,7 +54,7 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
     : 0;
   
   return (
-    <div className="w-[480px] h-full bg-gray-50 border-l border-gray-200 flex flex-col">
+    <div className="w-[480px] h-full bg-[#F8FAFC] border-l border-gray-200 flex flex-col">
       <div className="p-6 flex justify-between items-center">
         <div>
           <h2 className="text-xl font-bold text-gray-800">

@@ -12,7 +12,7 @@ const CalendarScreen = () => {
   }, [loadData]);
 
   return (
-    <div className="flex h-screen w-full bg-gray-50 overflow-hidden">
+    <div className="flex h-screen w-full bg-[#F8FAFC] overflow-hidden">
       <div className="flex-1 overflow-auto">
         <MainCalendar
           applications={applications}
@@ -21,7 +21,7 @@ const CalendarScreen = () => {
         />
       </div>
 
-      <div className="w-[480px] shrink-0 h-full border-l border-gray-200 bg-gray-50 flex flex-col overflow-y-auto">
+      <div className="w-[480px] shrink-0 h-full border-l border-gray-200 bg-[#F8FAFC] flex flex-col overflow-y-auto">
         <SideDetailPanel
           applications={applications}
           selectedDate={selectedDate}
