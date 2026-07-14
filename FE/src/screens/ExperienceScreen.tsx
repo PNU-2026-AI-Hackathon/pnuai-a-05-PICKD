@@ -4,10 +4,13 @@ import {
   Check,
   Columns3,
   Grid2X2,
+  Layers,
   List,
+  Pencil,
   Plus,
   Search,
   SlidersHorizontal,
+  Sparkles,
   Star,
   Clipboard,
   X,
@@ -27,6 +30,7 @@ import BasicInfoPanel from "../components/experience/BasicInfoPanel";
 import FilesPanel from "../components/experience/FilesPanel";
 import ExperiencePasteView from "../components/experience/ExperiencePasteView";
 import { useClickOutside } from "../hooks/useClickOutside";
+import { useApplication } from "../context/ApplicationContext";
 import {
   EXPERIENCE_PRESETS,
   EXPERIENCE_TYPES,
@@ -43,13 +47,13 @@ import {
   updateExperience as updateExperienceApi,
 } from "../api/experience";
 
-const FILTERS = ["전체", "고정됨", ...EXPERIENCE_TYPES];
 const LS_VISIBLE_COLUMNS = "pickd.experience.visibleColumns.v3";
 
 type ActiveTab = "db" | "basic-info" | "files";
 type ViewMode = "list" | "card" | "paste";
 
 export default function ExperienceScreen() {
+  const { applications } = useApplication();
   const [experiences, setExperiences] = useState<ExperienceItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<ExperienceItem | null>(null);
   const [isCreatingExperience, setIsCreatingExperience] = useState(false);
@@ -136,6 +140,27 @@ export default function ExperienceScreen() {
       // ignore
     }
   }, [visibleColumns]);
+
+  const filterTabs = useMemo(() => {
+    const ownedTypes = new Set(experiences.map((item) => item.type));
+    const orderedTypes = EXPERIENCE_TYPES.filter((type) =>
+      ownedTypes.has(type),
+    );
+    const knownTypes = new Set<string>(EXPERIENCE_TYPES);
+    const extraTypes = Array.from(ownedTypes)
+      .filter((type) => !knownTypes.has(type))
+      .sort((a, b) => a.localeCompare(b, "ko"));
+    return ["전체", ...orderedTypes, ...extraTypes];
+  }, [experiences]);
+
+  const getFilterCount = (filter: string) => {
+    if (filter === "전체") return experiences.length;
+    return experiences.filter((item) => item.type === filter).length;
+  };
+
+  useEffect(() => {
+    if (!filterTabs.includes(selectedFilter)) setSelectedFilter("전체");
+  }, [filterTabs, selectedFilter]);
 
   const baseFilteredExperiences = useMemo(() => {
     return experiences.filter((item) => {
@@ -401,6 +426,110 @@ export default function ExperienceScreen() {
     }
   };
 
+  const openExperienceFromMenu = (item: ExperienceItem) => {
+    setIsCreatingExperience(false);
+    setSelectedItem(item);
+  };
+
+  const duplicateExperience = async (item: ExperienceItem) => {
+    const duplicatedItem: ExperienceItem = {
+      ...item,
+      id: `local-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      name: `${item.name || "새 경험"} 복사본`,
+      competencies: [...item.competencies],
+      keywords: [...item.keywords],
+      missing: [...item.missing],
+      linkedExperienceIds: [...item.linkedExperienceIds],
+      fields: { ...item.fields },
+      pin: false,
+      updatedAt: "방금 전",
+    };
+
+    try {
+      const createdId = await createExperienceApi(duplicatedItem);
+      setExperiences((previous) => [
+        { ...duplicatedItem, id: createdId },
+        ...previous,
+      ]);
+      showToast("경험을 복제했어요");
+      void reloadExperiences();
+    } catch (error) {
+      showToast(`경험 복제에 실패했습니다. ${getErrorMessage(error)}`);
+    }
+  };
+
+  const linkExperienceToApplication = async (
+    item: ExperienceItem,
+    applicationId: string | number,
+  ) => {
+    const application = applications.find(
+      (candidate) => String(candidate.id) === String(applicationId),
+    );
+    if (!application) return;
+
+    const linkedIds = String(item.fields.linkedApplicationIds ?? "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    if (linkedIds.includes(String(application.id))) {
+      showToast("이미 연결된 공고예요");
+      return;
+    }
+
+    const updatedItem: ExperienceItem = {
+      ...item,
+      fields: {
+        ...item.fields,
+        linkedApplicationIds: [...linkedIds, String(application.id)].join(","),
+      },
+      updatedAt: "방금 전",
+    };
+
+    setExperiences((previous) =>
+      previous.map((candidate) =>
+        candidate.id === item.id ? updatedItem : candidate,
+      ),
+    );
+
+    try {
+      await updateExperienceApi(item.id, updatedItem);
+      showToast(`${application.company} 공고에 연결했어요`);
+      void reloadExperiences();
+    } catch (error) {
+      showToast(`공고 연결에 실패했습니다. ${getErrorMessage(error)}`);
+      void reloadExperiences();
+    }
+  };
+
+  const changeExperienceTypeFromMenu = async (
+    item: ExperienceItem,
+    type: ExperienceType,
+  ) => {
+    if (item.type === type) return;
+
+    const updatedItem: ExperienceItem = {
+      ...item,
+      type,
+      updatedAt: "방금 전",
+    };
+
+    setExperiences((previous) =>
+      previous.map((candidate) =>
+        candidate.id === item.id ? updatedItem : candidate,
+      ),
+    );
+
+    try {
+      await updateExperienceApi(item.id, updatedItem);
+      showToast(`유형을 '${type}'(으)로 바꿨어요`);
+      void reloadExperiences();
+    } catch (error) {
+      showToast(`유형 변경에 실패했습니다. ${getErrorMessage(error)}`);
+      void reloadExperiences();
+    }
+  };
+
   const setSelectFilter = (key: ExperienceColumnKey, values: string[]) => {
     setColumnFilters((prev) => {
       const next = { ...prev };
@@ -442,8 +571,9 @@ export default function ExperienceScreen() {
       ),
     );
     try {
-      localStorage.removeItem("pickd.experience.colWidths.v3");
-      localStorage.removeItem("pickd.experience.columnOrder.v3");
+      localStorage.removeItem("pickd.experience.colWidths.v5");
+      localStorage.removeItem("pickd.experience.columnOrder.v5");
+      localStorage.removeItem("pickd.experience.rowOrder.v1");
       localStorage.removeItem(LS_VISIBLE_COLUMNS);
     } catch {
       // ignore
@@ -585,8 +715,8 @@ export default function ExperienceScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] px-10 pt-[70px]">
-      <div className="max-w-[1780px]">
+    <div className="min-h-screen bg-[#FBFCFE] px-10 pb-10 pt-8">
+      <div className="mx-auto max-w-[1400px] space-y-3">
         <ExperienceHeader
           onOpenPaste={() => {
             setActiveTab("db");
@@ -601,37 +731,46 @@ export default function ExperienceScreen() {
           onExportExcel={exportExcel}
         />
 
-        <div className="mt-[22px] flex w-fit items-center gap-1 rounded-lg bg-[#F1F5F9] p-1">
-          <TabButton active={activeTab === "db"} onClick={() => setActiveTab("db")}>
+        <div className="mt-3 flex h-9 w-fit items-center gap-1 rounded-lg bg-[#EFF2F6] p-1">
+          <TabButton
+            active={activeTab === "db"}
+            onClick={() => setActiveTab("db")}
+          >
             경험·스펙 DB
           </TabButton>
-          <TabButton active={activeTab === "basic-info"} onClick={() => setActiveTab("basic-info")}>
+          <TabButton
+            active={activeTab === "basic-info"}
+            onClick={() => setActiveTab("basic-info")}
+          >
             기본정보
           </TabButton>
-          <TabButton active={activeTab === "files"} onClick={() => setActiveTab("files")}>
+          <TabButton
+            active={activeTab === "files"}
+            onClick={() => setActiveTab("files")}
+          >
             파일함
           </TabButton>
         </div>
 
         {activeTab === "db" && (
           <>
-            <div className="mt-[26px] flex items-center justify-between">
+            <div className="mt-4 flex items-center gap-2">
               <button
                 onClick={() => setEntryOpen(true)}
-                className="inline-flex h-[38px] items-center gap-2 rounded-[10px] bg-[#3B78D8] px-4 text-[15px] font-[700] text-white shadow-sm transition-colors hover:bg-[#2563EB]"
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#2563EB] px-3.5 text-[13px] font-[600] text-white transition-colors hover:bg-[#1D4ED8]"
               >
-                <Plus size={18} strokeWidth={2.3} />
+                <Plus size={14} strokeWidth={2.2} />
                 경험 추가
               </button>
 
-              <div className="flex items-center gap-3">
-                <div className="flex h-[34px] w-[210px] items-center gap-2 rounded-[10px] border border-[#E2E8F0] bg-white px-3">
-                  <Search size={16} className="text-[#64748B]" />
+              <div className="ml-auto flex items-center gap-1.5">
+                <div className="flex h-7 w-40 items-center gap-1.5 rounded-md border border-[#E3E8EF] bg-white px-2">
+                  <Search size={13} className="text-[#79859A]" />
                   <input
                     value={searchText}
                     onChange={(event) => setSearchText(event.target.value)}
-                    placeholder="항목명 / 기관 / 키워드 검색"
-                    className="w-full bg-transparent text-[15px] font-[500] text-[#0F172A] outline-none placeholder:text-[#64748B]"
+                    placeholder="항목명 검색"
+                    className="w-full bg-transparent text-[13px] text-[#28303D] outline-none placeholder:text-[#A4AEBE]"
                   />
                 </div>
 
@@ -643,11 +782,11 @@ export default function ExperienceScreen() {
                     setColumnFilters({});
                     setSortState(null);
                   }}
-                  className={`group relative flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border border-[#E2E8F0] bg-white transition-colors hover:bg-[#F8FAFC] ${activeFilterCount ? "text-[#2563EB]" : "text-[#64748B]"}`}
+                  className={`group relative flex h-7 w-7 items-center justify-center rounded-md border border-[#E3E8EF] bg-white transition-colors hover:bg-[#EFF2F6] ${activeFilterCount ? "text-[#2563EB]" : "text-[#79859A]"}`}
                 >
-                  <SlidersHorizontal size={17} />
+                  <SlidersHorizontal size={16} strokeWidth={2} />
                   {activeFilterCount > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#2563EB] px-1 text-[10px] font-[800] text-white">
+                    <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#2563EB] px-1 text-[10px] font-[800] text-white">
                       {activeFilterCount}
                     </span>
                   )}
@@ -657,10 +796,11 @@ export default function ExperienceScreen() {
                   <button
                     type="button"
                     onClick={() => setColumnPanelOpen((prev) => !prev)}
-                    className="group relative flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border border-[#E2E8F0] bg-white text-[#64748B] transition-colors hover:bg-[#F8FAFC]"
-                    data-tooltip="컬럼 표시" aria-label="컬럼 표시"
+                    className="group relative flex h-7 w-7 items-center justify-center rounded-md border border-[#E3E8EF] bg-white text-[#79859A] transition-colors hover:bg-[#EFF2F6] hover:text-[#28303D]"
+                    data-tooltip="컬럼 표시"
+                    aria-label="컬럼 표시"
                   >
-                    <Columns3 size={17} />
+                    <Columns3 size={15} strokeWidth={2} />
                   </button>
 
                   {columnPanelOpen && (
@@ -673,76 +813,88 @@ export default function ExperienceScreen() {
                   )}
                 </div>
 
-                <div className="flex items-center rounded-lg border border-[#D8E0EA] bg-[#F8FAFC] p-[2px]">
+                <div className="flex items-center rounded-md border border-[#E3E8EF] bg-[#F6F8FB] p-[2px]">
                   <button
                     type="button"
                     onClick={() => setViewMode("list")}
-                    className={`group relative flex h-8 w-8 items-center justify-center rounded-md transition ${
+                    className={`group relative flex h-7 w-7 items-center justify-center rounded-md transition ${
                       viewMode === "list"
                         ? "bg-white text-[#334155] shadow-sm"
                         : "text-[#64748B] hover:bg-white/70"
                     }`}
-                    data-tooltip="리스트 보기" aria-label="리스트 보기"
+                    data-tooltip="리스트 보기"
+                    aria-label="리스트 보기"
                   >
-                    <List size={17} />
+                    <List size={15} strokeWidth={2} />
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setViewMode("card")}
-                    className={`group relative flex h-8 w-8 items-center justify-center rounded-md transition ${
+                    className={`group relative flex h-7 w-7 items-center justify-center rounded-md transition ${
                       viewMode === "card"
                         ? "bg-white text-[#334155] shadow-sm"
                         : "text-[#64748B] hover:bg-white/70"
                     }`}
-                    data-tooltip="카드 보기" aria-label="카드 보기"
+                    data-tooltip="카드 보기"
+                    aria-label="카드 보기"
                   >
-                    <Grid2X2 size={16} />
+                    <Grid2X2 size={15} strokeWidth={2} />
                   </button>
                 </div>
               </div>
             </div>
 
-            <div className="mt-[14px] flex flex-wrap items-center gap-2">
-              {FILTERS.map((filter) => {
-                const active =
-                  selectedFilter === filter && viewMode !== "paste";
-                return (
-                  <button
-                    key={filter}
-                    onClick={() => {
-                      setSelectedFilter(filter);
-                      if (viewMode === "paste") setViewMode("list");
-                    }}
-                    className={`h-[32px] rounded-[10px] px-3 text-[14px] font-[500] transition-colors ${
-                      active
-                        ? "bg-[#EFF6FF] text-[#2563EB]"
-                        : "text-[#64748B] hover:bg-white"
-                    }`}
-                  >
-                    {filter}
-                  </button>
-                );
-              })}
+            <div className="mt-3 flex min-w-0 items-end border-b border-[#E3E8EF]">
+              <div className="flex min-w-0 flex-1 items-end overflow-x-auto">
+                {filterTabs.map((filter) => {
+                  const active =
+                    selectedFilter === filter && viewMode !== "paste";
+                  return (
+                    <button
+                      key={filter}
+                      onClick={() => {
+                        setSelectedFilter(filter);
+                        if (viewMode === "paste") setViewMode("list");
+                      }}
+                      className={`flex shrink-0 items-center gap-1 border-b-2 px-3 py-2 text-[12px] font-[500] whitespace-nowrap transition-colors ${
+                        active
+                          ? "border-[#2563EB] font-[700] text-[#2563EB]"
+                          : "border-transparent text-[#64748B] hover:text-[#28303D]"
+                      }`}
+                    >
+                      <span>{filter}</span>
+                      <span
+                        className={`tabular-nums text-[11px] font-[700] ${
+                          active ? "text-[#60A5FA]" : "text-[#CBD5E1]"
+                        }`}
+                      >
+                        {getFilterCount(filter)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
 
               <button
                 type="button"
                 onClick={() =>
                   setViewMode((prev) => (prev === "paste" ? "list" : "paste"))
                 }
-                className={`ml-auto inline-flex h-[32px] items-center gap-2 rounded-[10px] border px-2 text-[13px] font-[800] transition-colors ${
+                className={`mb-1 ml-3 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border transition-colors ${
                   viewMode === "paste"
                     ? "border-[#BFDBFE] bg-[#EFF6FF] text-[#2563EB]"
                     : "border-[#E2E8F0] bg-white text-[#64748B] hover:bg-[#F8FAFC]"
                 }`}
+                aria-label="복붙 보기"
               >
-                <Clipboard size={17} />
+                <Clipboard size={15} strokeWidth={2} />
               </button>
             </div>
 
             {selectedIds.length > 0 && viewMode !== "paste" && (
-              <div className="mt-4 flex items-center justify-between rounded-[16px] border border-[#D8E4F5] bg-[#F8FBFF] px-5 py-2">
-                <div className="flex items-center gap-4 text-[15px] font-[700]">
+              <div className="mt-3 flex items-center justify-between rounded-lg border border-[#D8E4F5] bg-[#F8FBFF] px-4 py-2">
+                <div className="flex items-center gap-3 text-[13px] font-[600]">
                   <span className="text-[#2563EB]">
                     {selectedIds.length}개 선택됨
                   </span>
@@ -806,6 +958,25 @@ export default function ExperienceScreen() {
                 onSetTextFilter={setTextFilter}
                 sortState={sortState}
                 onToggleSort={toggleSort}
+                onClearSort={() => setSortState(null)}
+                applications={applications.map((application) => ({
+                  id: application.id,
+                  company: application.company,
+                  title: application.jobTitle,
+                }))}
+                typeOptions={EXPERIENCE_TYPES}
+                onEditItem={openExperienceFromMenu}
+                onDuplicateItem={(item) => void duplicateExperience(item)}
+                onLinkApplication={(item, applicationId) =>
+                  void linkExperienceToApplication(item, applicationId)
+                }
+                onChangeType={(item, type) =>
+                  void changeExperienceTypeFromMenu(
+                    item,
+                    type as ExperienceType,
+                  )
+                }
+                onDeleteItem={(item) => void deleteSingleExperience(item.id)}
               />
             ) : (
               <ExperienceCardGrid
@@ -875,7 +1046,7 @@ export default function ExperienceScreen() {
         )}
 
         {toastText && (
-          <div className="fixed bottom-8 left-1/2 z-[90] -translate-x-1/2 rounded-full bg-[#0F172A] px-5 py-3 text-[14px] font-[800] text-white shadow-[0_14px_30px_rgba(15,23,42,0.22)]">
+          <div className="fixed bottom-6 left-1/2 z-[10001] -translate-x-1/2 rounded-lg bg-[#161C26] px-4 py-2.5 text-[13px] font-[500] text-white shadow-[0_14px_30px_-8px_rgba(15,23,42,0.48)]">
             {toastText}
           </div>
         )}
@@ -897,7 +1068,7 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex h-9 items-center rounded-lg px-4 text-[14px] font-[500] transition ${
+      className={`inline-flex h-7 items-center rounded-md px-3 text-[13px] font-[500] transition ${
         active
           ? "bg-white text-[#0F172A] shadow-sm"
           : "text-[#64748B] hover:bg-white/60"
@@ -920,7 +1091,7 @@ function ColumnPanel({
   onClose: () => void;
 }) {
   return (
-    <div className="absolute right-0 top-10 z-40 w-[230px] rounded-[12px] border border-[#E2E8F0] bg-white p-2 shadow-[0_14px_34px_rgba(15,23,42,0.16)]">
+    <div className="absolute right-0 top-8 z-40 w-[220px] rounded-lg border border-[#E3E8EF] bg-white p-2 shadow-[0_12px_28px_-6px_rgba(22,28,38,0.18)]">
       <div className="mb-1 flex items-center justify-between px-2 py-1">
         <p className="text-[13px] font-[800] text-[#0F172A]">컬럼 표시</p>
         <button
@@ -990,24 +1161,27 @@ function ExperienceCardGrid({
   }
 
   return (
-    <div className="mt-[18px] grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
       {items.map((item) => {
         const important = Boolean(item.important);
         return (
           <article
             key={item.id}
             onClick={() => onOpen(item)}
-            className="cursor-pointer rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+            className="cursor-pointer rounded-xl border border-[#E3E8EF] bg-white px-4 py-3 transition-colors hover:bg-[#F6F8FB]"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[13px] font-[800] text-[#2563EB]">
-                  {item.type}
-                </p>
-                <h3 className="mt-1 truncate text-[18px] font-[800] text-[#0F172A]">
+                <div className="flex items-center gap-1.5">
+                  <span className="rounded-md border border-[#D9E8F8] bg-[#F3F8FD] px-1.5 py-0.5 text-[11px] font-[600] text-[#2F6799]">
+                    {item.type}
+                  </span>
+                  <ExperienceManageIndicator item={item} />
+                </div>
+                <h3 className="mt-1 truncate text-[14px] font-[600] text-[#28303D]">
                   {item.name}
                 </h3>
-                <p className="mt-2 truncate text-[13px] font-[600] text-[#64748B]">
+                <p className="mt-1 truncate text-[11px] text-[#79859A]">
                   {getOrgText(item)} · {getPeriodText(item) || "기간 미입력"}
                 </p>
               </div>
@@ -1019,10 +1193,10 @@ function ExperienceCardGrid({
                     event.stopPropagation();
                     onToggleImportant(item.id);
                   }}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-[#F8FAFC]"
+                  className="flex h-6 w-6 items-center justify-center rounded hover:bg-[#EFF2F6]"
                 >
                   <Star
-                    size={17}
+                    size={14}
                     className={
                       important
                         ? "fill-[#F58A1F] text-[#F58A1F]"
@@ -1036,7 +1210,7 @@ function ExperienceCardGrid({
                     event.stopPropagation();
                     onTogglePin(item.id);
                   }}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-[#F8FAFC]"
+                  className="flex h-6 w-6 items-center justify-center rounded hover:bg-[#EFF2F6]"
                 >
                   <span
                     className={item.pin ? "text-[#2563EB]" : "text-[#94A3B8]"}
@@ -1070,6 +1244,46 @@ function ExperienceCardGrid({
   );
 }
 
+function ExperienceManageIndicator({ item }: { item: ExperienceItem }) {
+  if (item.hasMergeCandidate || item.status === "병합 필요") {
+    return (
+      <span
+        className="group relative inline-flex h-5 w-5 items-center justify-center rounded text-[#C5860E]"
+        data-tooltip="비슷한 항목이 있어요"
+        aria-label="비슷한 항목이 있어요"
+      >
+        <Layers className="h-3.5 w-3.5" />
+      </span>
+    );
+  }
+
+  if (item.hasUnansweredAiQuestion || item.status === "AI 질문 필요") {
+    return (
+      <span
+        className="group relative inline-flex h-5 w-5 items-center justify-center text-[#2563EB]"
+        data-tooltip="미답변 AI 질문이 있어요"
+        aria-label="미답변 AI 질문이 있어요"
+      >
+        <Sparkles className="h-3.5 w-3.5" />
+      </span>
+    );
+  }
+
+  if (item.status === "작성중") {
+    return (
+      <span
+        className="group relative inline-flex h-5 w-5 items-center justify-center text-[#A4AEBE]"
+        data-tooltip="아직 정리 중"
+        aria-label="아직 정리 중"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+      </span>
+    );
+  }
+
+  return <span className="text-[11px] text-[#CDD5E0]">—</span>;
+}
+
 function DeleteConfirmModal({
   title,
   description,
@@ -1087,13 +1301,13 @@ function DeleteConfirmModal({
       onClick={onCancel}
     >
       <div
-        className="w-full max-w-[600px] rounded-[20px] bg-white px-9 pb-9 pt-8 shadow-[0_24px_60px_rgba(15,23,42,0.22)]"
+        className="w-full max-w-[380px] rounded-xl border border-[#E3E8EF] bg-white p-5 shadow-[0_24px_60px_-16px_rgba(15,23,42,0.34)]"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="text-[20px] font-[800] text-[#0F172A]">{title}</h3>
-            <p className="mt-4 text-[16px] font-[500] text-[#64748B]">
+            <h3 className="text-[16px] font-[600] text-[#161C26]">{title}</h3>
+            <p className="mt-2 text-[13px] leading-5 text-[#79859A]">
               {description}
             </p>
           </div>
@@ -1101,17 +1315,17 @@ function DeleteConfirmModal({
           <button
             type="button"
             onClick={onCancel}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-[#64748B] transition-colors hover:bg-[#F8FAFC]"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-[#79859A] transition-colors hover:bg-[#EFF2F6]"
           >
-            <X size={22} />
+            <X size={16} />
           </button>
         </div>
 
-        <div className="mt-12 flex justify-end gap-3">
+        <div className="mt-5 flex justify-end gap-2">
           <button
             type="button"
             onClick={onCancel}
-            className="h-[48px] rounded-[12px] border border-[#E2E8F0] bg-white px-6 text-[15px] font-[700] text-[#334155] transition-colors hover:bg-[#F8FAFC]"
+            className="h-8 rounded-md border border-[#E3E8EF] bg-white px-3 text-[12px] font-[500] text-[#3E4859] transition-colors hover:bg-[#F6F8FB]"
           >
             취소
           </button>
@@ -1119,7 +1333,7 @@ function DeleteConfirmModal({
           <button
             type="button"
             onClick={onConfirm}
-            className="h-[48px] rounded-[12px] bg-[#E25B52] px-6 text-[15px] font-[700] text-white transition-colors hover:bg-[#DC4B41]"
+            className="h-8 rounded-md bg-[#D24545] px-3 text-[12px] font-[600] text-white transition-colors hover:bg-[#B93838]"
           >
             삭제
           </button>

@@ -1,17 +1,35 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Icon } from "@iconify/react";
-import { formatDate, getDDay, getGoogleEventDate } from "../../utils/date";
+import {
+  Building2,
+  ChevronRight,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
+import {
+  extractDateString,
+  formatApplicationDate,
+  formatDate,
+  getDDay,
+  getGoogleEventDate,
+} from "../../utils/date";
 import PostTodo from "./PostTodo";
 import PostSchedule from "./PostSchedule";
 import { useApplication } from "../../context/ApplicationContext";
 import { useClickOutside } from "../../hooks/useClickOutside";
-import { getSchedulesForApplication } from "../../utils/calendarEvent";
+import {
+  getScheduleApplicationId,
+  getSchedulesForApplication,
+} from "../../utils/calendarEvent";
 import {
   APPLICATION_FINAL_RESULTS,
   APPLICATION_STATUSES,
-  type Application,
+  type ApplicationFinalResult,
+  type ApplicationStatus,
 } from "../../types/application";
-import { getStatusStyle } from "../../utils/status";
+import { updateTodoApi } from "../../api/todo";
+import { deleteEvent, updateEvent } from "../../api/calendar";
+import { getFinalResultTone } from "../../utils/status";
 
 interface Props {
   open: boolean;
@@ -20,6 +38,97 @@ interface Props {
   calendarEvents?: any[];
   onChange?: () => void | Promise<void>;
 }
+
+type ItemStatus = "예정" | "진행 중" | "완료" | "지연";
+
+const ITEM_STATUS_STYLES: Record<ItemStatus, string> = {
+  예정: "bg-[#F1F5F9] text-[#64748B]",
+  "진행 중": "bg-[#EFF6FF] text-[#2563EB]",
+  완료: "bg-[#ECFDF5] text-[#059669]",
+  지연: "bg-[#FEF2F2] text-[#DC2626]",
+};
+
+const ITEM_STATUS_OPTIONS: ItemStatus[] = [
+  "예정",
+  "진행 중",
+  "완료",
+  "지연",
+];
+
+const isItemStatus = (value: unknown): value is ItemStatus => {
+  return (
+    value === "예정" ||
+    value === "진행 중" ||
+    value === "완료" ||
+    value === "지연"
+  );
+};
+
+const normalizeItemStatus = (value: unknown): ItemStatus => {
+  return isItemStatus(value) ? value : "예정";
+};
+
+const STATUS_META_PATTERN = /^pickd:status=(예정|진행 중|완료|지연)$/im;
+
+const readStatusMetadata = (value?: string | null): ItemStatus | null => {
+  const match = String(value ?? "").match(STATUS_META_PATTERN);
+  return (match?.[1] as ItemStatus | undefined) ?? null;
+};
+
+const withStatusMetadata = (value: string | undefined, status: ItemStatus) => {
+  const lines = String(value ?? "")
+    .split("\n")
+    .filter((line) => !STATUS_META_PATTERN.test(line.trim()))
+    .filter(Boolean);
+
+  lines.push(`pickd:status=${status}`);
+  return lines.join("\n");
+};
+
+const stripCalendarSystemMetadata = (value?: string) =>
+  String(value ?? "")
+    .split("\n")
+    .filter((line) => {
+      const normalized = line.trim();
+      return (
+        normalized &&
+        !STATUS_META_PATTERN.test(normalized) &&
+        !/^category:/i.test(normalized) &&
+        !/^pickd:eventType=/i.test(normalized) &&
+        !/^pickd:applicationId=/i.test(normalized)
+      );
+    })
+    .join("\n");
+
+const getTodoStatus = (todo: any): ItemStatus => {
+  if (todo.completed) return "완료";
+
+  const storedStatus = readStatusMetadata(todo.memo);
+  if (storedStatus && storedStatus !== "완료") return storedStatus;
+
+  if (todo.dueDateTime) {
+    const due = new Date(todo.dueDateTime);
+    if (!Number.isNaN(due.getTime()) && due.getTime() < Date.now()) {
+      return "지연";
+    }
+  }
+
+  return "진행 중";
+};
+
+const getScheduleStatus = (schedule: any): ItemStatus => {
+  const storedStatus = readStatusMetadata(schedule.description);
+  if (storedStatus) return storedStatus;
+
+  const eventDate = getGoogleEventDate(schedule);
+  if (eventDate && eventDate.getTime() < Date.now()) return "완료";
+  return "예정";
+};
+
+const getScheduleDateTime = (schedule: any, field: "start" | "end") => {
+  const value = schedule?.[field]?.dateTime ?? schedule?.[field]?.date;
+  return extractDateString(value);
+};
 
 export default function ApplicationDetailModal({
   open,
@@ -31,16 +140,28 @@ export default function ApplicationDetailModal({
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [todoModalOpen, setTodoModalOpen] = useState(false);
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
-  const [draftStatus, setDraftStatus] =
-    useState<Application["status"]>("작성중");
+  const [draftStatus, setDraftStatus] = useState<ApplicationStatus>("작성중");
   const [draftFinalResult, setDraftFinalResult] =
-    useState<Application["finalResult"]>(null);
+    useState<ApplicationFinalResult>(null);
   const [draftMemo, setDraftMemo] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSavingMemo, setIsSavingMemo] = useState(false);
+  const [savingApplicationState, setSavingApplicationState] = useState(false);
+  const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
+  const [openItemStatusId, setOpenItemStatusId] = useState<string | null>(null);
+  const [itemStatusOverrides, setItemStatusOverrides] = useState<
+    Record<string, ItemStatus>
+  >({});
   const addMenuRef = useRef<HTMLDivElement | null>(null);
-  const { addTodo, applications, updateApplication } = useApplication();
+  const statusMenuRef = useRef<HTMLDivElement | null>(null);
+  const { addTodo, applications, updateApplication, toggleTodo, removeTodo } =
+    useApplication();
 
   useClickOutside([addMenuRef], () => setShowAddMenu(false), showAddMenu);
+  useClickOutside(
+    [statusMenuRef],
+    () => setOpenItemStatusId(null),
+    Boolean(openItemStatusId),
+  );
 
   const foundApplication = application
     ? applications.find((app) => app.id === application.id) || application
@@ -52,6 +173,8 @@ export default function ApplicationDetailModal({
     setDraftStatus(foundApplication.status ?? "작성중");
     setDraftFinalResult(foundApplication.finalResult ?? null);
     setDraftMemo(foundApplication.memo ?? "");
+    setItemStatusOverrides({});
+    setOpenItemStatusId(null);
   }, [
     foundApplication?.id,
     foundApplication?.status,
@@ -65,6 +188,7 @@ export default function ApplicationDetailModal({
     foundApplication.calendarEvents?.length > 0
       ? foundApplication.calendarEvents
       : getSchedulesForApplication(calendarEvents, foundApplication);
+
   const currentApplication = {
     ...foundApplication,
     status: draftStatus,
@@ -74,16 +198,50 @@ export default function ApplicationDetailModal({
     calendarEventCount: linkedCalendarEvents.length,
   };
 
-  const handleSave = async () => {
-    if (isSaving) return;
-
-    if (draftStatus === "전형완료" && !draftFinalResult) {
-      alert("세부 결과를 선택해주세요.");
-      return;
-    }
+  const persistApplicationState = async (
+    nextStatus: ApplicationStatus,
+    nextFinalResult: ApplicationFinalResult,
+  ) => {
+    if (savingApplicationState) return;
 
     try {
-      setIsSaving(true);
+      setSavingApplicationState(true);
+      await updateApplication(currentApplication.id, {
+        ...foundApplication,
+        status: nextStatus,
+        finalResult: nextStatus === "전형완료" ? nextFinalResult : null,
+        memo: draftMemo,
+      });
+      await onChange?.();
+    } catch (error) {
+      console.error("지원상태 저장 실패:", error);
+      alert("지원상태 저장에 실패했습니다.");
+    } finally {
+      setSavingApplicationState(false);
+    }
+  };
+
+  const handleStageChange = async (nextStatus: ApplicationStatus) => {
+    const nextFinalResult = nextStatus === "전형완료" ? draftFinalResult : null;
+
+    setDraftStatus(nextStatus);
+    setDraftFinalResult(nextFinalResult);
+    await persistApplicationState(nextStatus, nextFinalResult);
+  };
+
+  const handleFinalResultChange = async (
+    nextResult: NonNullable<ApplicationFinalResult>,
+  ) => {
+    const value = draftFinalResult === nextResult ? null : nextResult;
+    setDraftFinalResult(value);
+    await persistApplicationState("전형완료", value);
+  };
+
+  const handleMemoSave = async () => {
+    if (isSavingMemo) return;
+
+    try {
+      setIsSavingMemo(true);
       await updateApplication(currentApplication.id, {
         ...foundApplication,
         status: draftStatus,
@@ -91,182 +249,317 @@ export default function ApplicationDetailModal({
         memo: draftMemo,
       });
       await onChange?.();
-      onClose();
     } catch (error) {
-      console.error("지원상태 저장 실패:", error);
-      alert("지원상태 저장에 실패했습니다.");
+      console.error("메모 저장 실패:", error);
+      alert("메모 저장에 실패했습니다.");
     } finally {
-      setIsSaving(false);
+      setIsSavingMemo(false);
     }
   };
+
+  const handleTodoStatusChange = async (todo: any, status: ItemStatus) => {
+    const itemId = `todo-${todo.id}`;
+    if (updatingItemId) return;
+
+    try {
+      setUpdatingItemId(itemId);
+      setItemStatusOverrides((prev) => ({ ...prev, [itemId]: status }));
+
+      await updateTodoApi(todo.id, {
+        title: todo.title,
+        dueDateTime: todo.dueDateTime,
+        memo: withStatusMetadata(todo.memo, status),
+        applicationId: currentApplication.id,
+        company: currentApplication.company,
+        jobTitle: currentApplication.jobTitle,
+      });
+
+      const shouldBeCompleted = status === "완료";
+      if (Boolean(todo.completed) !== shouldBeCompleted) {
+        await toggleTodo(todo.id);
+      }
+
+      await onChange?.();
+    } catch (error) {
+      console.error("할 일 상태 변경 실패:", error);
+      setItemStatusOverrides((prev) => {
+        const next = { ...prev };
+        delete next[itemId];
+        return next;
+      });
+      alert("할 일 상태 변경에 실패했습니다.");
+    } finally {
+      setUpdatingItemId(null);
+      setOpenItemStatusId(null);
+    }
+  };
+
+  const handleScheduleStatusChange = async (
+    schedule: any,
+    status: ItemStatus,
+  ) => {
+    const itemId = `calendar-${schedule.id}`;
+    if (updatingItemId || !schedule.id) return;
+
+    const startDateTime = getScheduleDateTime(schedule, "start");
+    const endDateTime = getScheduleDateTime(schedule, "end");
+
+    if (!startDateTime) {
+      alert("일정 시작 시간을 확인할 수 없습니다.");
+      return;
+    }
+
+    try {
+      setUpdatingItemId(itemId);
+      setItemStatusOverrides((prev) => ({ ...prev, [itemId]: status }));
+
+      await updateEvent(String(schedule.id), {
+        summary: schedule.summary || "일정",
+        location: schedule.location || "",
+        description: withStatusMetadata(
+          stripCalendarSystemMetadata(schedule.description),
+          status,
+        ),
+        category: schedule.category,
+        applicationId:
+          getScheduleApplicationId(schedule) || currentApplication.id,
+        start: {
+          dateTime: startDateTime,
+          timeZone: schedule.start?.timeZone || "Asia/Seoul",
+        },
+        end: endDateTime
+          ? {
+              dateTime: endDateTime,
+              timeZone:
+                schedule.end?.timeZone ||
+                schedule.start?.timeZone ||
+                "Asia/Seoul",
+            }
+          : undefined,
+      });
+
+      await onChange?.();
+    } catch (error) {
+      console.error("일정 상태 변경 실패:", error);
+      setItemStatusOverrides((prev) => {
+        const next = { ...prev };
+        delete next[itemId];
+        return next;
+      });
+      alert("일정 상태 변경에 실패했습니다.");
+    } finally {
+      setUpdatingItemId(null);
+      setOpenItemStatusId(null);
+    }
+  };
+
+  const handleDeleteItem = async (item: any) => {
+    if (!window.confirm(`${item.title} 항목을 삭제하시겠습니까?`)) return;
+
+    try {
+      setUpdatingItemId(item.id);
+      if (item.type === "할 일") {
+        await removeTodo(item.raw.id);
+      } else {
+        await deleteEvent(String(item.raw.id));
+      }
+      await onChange?.();
+    } catch (error) {
+      console.error("일정·할 일 삭제 실패:", error);
+      alert("항목 삭제에 실패했습니다.");
+    } finally {
+      setUpdatingItemId(null);
+    }
+  };
+
+  const scheduleItems = linkedCalendarEvents.map((schedule: any) => {
+    const scheduleDate = getGoogleEventDate(schedule);
+    const id = `calendar-${schedule.id}`;
+
+    return {
+      id,
+      type: "일정" as const,
+      title: schedule.summary || "일정",
+      date: formatDate(scheduleDate, "기한 없음"),
+      status: itemStatusOverrides[id] ?? getScheduleStatus(schedule),
+      raw: schedule,
+    };
+  });
+
+  const todoItems = (currentApplication.todos || []).map((todo: any) => {
+    const id = `todo-${todo.id}`;
+
+    return {
+      id,
+      type: "할 일" as const,
+      title: todo.title,
+      date: formatDate(todo.dueDateTime, "기한 없음"),
+      status: itemStatusOverrides[id] ?? getTodoStatus(todo),
+      raw: todo,
+    };
+  });
+
+  const detailItems = [...scheduleItems, ...todoItems];
 
   return (
     <>
       <div
-        className="fixed inset-0 z-[99] flex items-center justify-center bg-black/40 backdrop-blur-[1px]"
+        className="fixed inset-0 z-[99] flex items-center justify-center bg-black/35 backdrop-blur-[1px]"
         onClick={onClose}
       >
         <div
-          className="relative w-[1100px] min-h-[600px] max-h-[90vh] overflow-y-auto rounded-[20px] bg-[#F8FAFC] shadow-[0_10px_40px_rgba(15,23,42,0.12)]"
+          className="w-[94vw] max-w-[860px] overflow-hidden rounded-xl border border-[#E3E8EF] bg-[#FBFCFE] shadow-[0_24px_56px_-12px_rgba(22,28,38,0.20)]"
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="border-b border-[#EEF2F6] px-8 pt-5 pb-3 bg-white">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-2 text-[13px] text-[#94A3B8]">
-                  <span>지원 대시보드</span>
-                  <Icon icon="mdi:chevron-right" className="text-[14px]" />
-                  <span>상태 관리</span>
-                </div>
-
-                <div className="mt-4 flex items-center gap-4">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#E2E8F0] bg-[#F8FAFC]">
-                    <Icon
-                      icon="ep:office-building"
-                      className="text-[22px] text-[#64748B]"
-                    />
-                  </div>
-
-                  <div>
-                    <h1 className="text-[25px] font-bold leading-none text-[#0F172A]">
-                      {currentApplication.company}
-                    </h1>
-                    <p className="mt-1 text-[14px] text-[#64748B]">
-                      {currentApplication.jobTitle} ·{" "}
-                      {currentApplication.position}
-                    </p>
-                  </div>
-                </div>
+          <header className="flex items-start justify-between border-b border-[#E3E8EF] bg-white px-6 py-3.5">
+            <div className="min-w-0 flex-1">
+              <div className="mb-1.5 flex items-center gap-1.5 text-[11px] text-[#79859A]">
+                <span>지원 대시보드</span>
+                <ChevronRight className="h-3 w-3" />
+                <span className="text-[#28303D]">상태 관리</span>
               </div>
 
-              <button
-                onClick={onClose}
-                className="rounded-lg p-2 transition-colors hover:bg-[#F8FAFC]"
-              >
-                <Icon icon="mdi:close" className="text-[22px] text-[#64748B]" />
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-6 px-8 mt-5">
-            <Section title="공고 기본 정보">
-              <div className="rounded-2xl border border-[#E9EEF5] bg-white px-6 py-3 mb-7">
-                <div className="flex flex-col gap-4">
-                  <InfoRow label="기업명" value={currentApplication.company} />
-                  <InfoRow label="공고명" value={currentApplication.jobTitle} />
-                  <InfoRow label="직무" value={currentApplication.position} />
-                  <InfoRow
-                    label="마감일"
-                    value={
-                      currentApplication.deadlineDate ? (
-                        <div className="flex items-center gap-20">
-                          <span>
-                            {currentApplication.deadlineDate.split("T")[0]}
-                          </span>
-
-                          <span className="text-[#94A3B8]">
-                            {getDDay(currentApplication.deadlineDate)}
-                          </span>
-                        </div>
-                      ) : (
-                        "-"
-                      )
-                    }
-                  />
-                  {draftStatus === "전형완료" && (
-                    <InfoRow
-                      label="세부 결과"
-                      value={draftFinalResult || "미선택"}
-                    />
-                  )}
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#EFF2F6]">
+                  <Building2 className="h-4 w-4 text-[#79859A]" />
                 </div>
+                <div className="min-w-0">
+                  <h2 className="truncate text-[15px] font-semibold leading-tight text-[#161C26]">
+                    {currentApplication.company}
+                  </h2>
+                  <p className="mt-0.5 truncate text-xs text-[#79859A]">
+                    {currentApplication.jobTitle} ·{" "}
+                    {currentApplication.position}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="-mt-1 flex h-7 w-7 items-center justify-center rounded-md text-[#79859A] hover:bg-[#EFF2F6] hover:text-[#28303D]"
+              aria-label="닫기"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </header>
+
+          <div className="max-h-[calc(90vh-80px)] space-y-6 overflow-y-auto bg-[#FBFCFE] px-6 py-5">
+            <Section title="공고 기본 정보">
+              <div className="rounded-lg border border-[#E3E8EF] bg-white px-4 py-2">
+                <Field label="기업명">{currentApplication.company}</Field>
+                <Field label="공고명">{currentApplication.jobTitle}</Field>
+                <Field label="직무">{currentApplication.position}</Field>
+                <Field label="마감일">
+                  <span className="tabular-nums">
+                    {formatApplicationDate(currentApplication.deadlineDate)}
+                  </span>
+                  <span
+                    className={`ml-2 text-[11px] tabular-nums ${
+                      String(getDDay(currentApplication.deadlineDate)).match(
+                        /^D-[0-3]$|D-Day/,
+                      )
+                        ? "text-[#D24545]"
+                        : "text-[#79859A]"
+                    }`}
+                  >
+                    {getDDay(currentApplication.deadlineDate)}
+                  </span>
+                </Field>
               </div>
             </Section>
 
             <Section
               title="전형 흐름"
-              right={
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="rounded-lg bg-[#2563EB] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-                >
-                  {isSaving ? "저장 중" : "저장"}
-                </button>
+              action={
+                savingApplicationState ? (
+                  <span className="text-[10px] text-[#A4AEBE]">저장 중</span>
+                ) : null
               }
             >
-              <div className="rounded-2xl border border-[#E2E8F0] bg-white px-5 py-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  {APPLICATION_STATUSES.map((step, index) => {
-                    const active = step === draftStatus;
-
-                    return (
-                      <div key={step} className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setDraftStatus(step);
-                            if (step !== "전형완료") {
-                              setDraftFinalResult(null);
-                            }
-                          }}
-                          className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                            active
-                              ? getStatusStyle(step)
-                              : "bg-[#F8FAFC] text-[#64748B] hover:bg-[#EEF2FF]"
-                          }`}
-                        >
-                          {step}
-                        </button>
-
-                        {index !== APPLICATION_STATUSES.length - 1 && (
-                          <Icon
-                            icon="mdi:chevron-right"
-                            className="text-[#CBD5E1]"
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
+              <div className="space-y-3 rounded-lg border border-[#E3E8EF] bg-white px-4 py-3">
+                <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs leading-relaxed">
+                  {APPLICATION_STATUSES.map((step, index) => (
+                    <span
+                      key={step}
+                      className="inline-flex items-center gap-1.5"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => void handleStageChange(step)}
+                        disabled={savingApplicationState}
+                        className={`rounded px-1.5 py-0.5 transition-colors disabled:opacity-50 ${
+                          step === draftStatus
+                            ? "bg-[#EFF6FF] font-medium text-[#1D4ED8]"
+                            : "text-[#79859A] hover:bg-[#EFF2F6] hover:text-[#28303D]"
+                        }`}
+                      >
+                        {step}
+                      </button>
+                      {index < APPLICATION_STATUSES.length - 1 && (
+                        <span className="text-[#A4AEBE]/60">→</span>
+                      )}
+                    </span>
+                  ))}
                 </div>
 
                 {draftStatus === "전형완료" && (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {APPLICATION_FINAL_RESULTS.map((result) => (
-                      <button
-                        key={result}
-                        type="button"
-                        onClick={() => setDraftFinalResult(result)}
-                        className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-                          draftFinalResult === result
-                            ? "bg-[#0F172A] text-white"
-                            : "bg-[#F1F5F9] text-[#475569] hover:bg-[#E2E8F0]"
-                        }`}
-                      >
-                        {result}
-                      </button>
-                    ))}
+                  <div className="flex items-center gap-1.5 border-t border-[#E3E8EF]/70 pt-2.5">
+                    <span className="mr-1 text-[11px] text-[#79859A]">
+                      최종 결과
+                    </span>
+                    {APPLICATION_FINAL_RESULTS.map((result) => {
+                      const tone = getFinalResultTone(result);
+                      const active = draftFinalResult === result;
+
+                      return (
+                        <button
+                          key={result}
+                          type="button"
+                          onClick={() => void handleFinalResultChange(result)}
+                          disabled={savingApplicationState}
+                          className="rounded-full border px-2 py-0.5 text-[10px] font-semibold transition-colors disabled:opacity-50"
+                          style={
+                            active
+                              ? {
+                                  backgroundColor: tone.backgroundColor,
+                                  color: tone.color,
+                                  borderColor: `${tone.dotColor}4D`,
+                                }
+                              : {
+                                  backgroundColor: "white",
+                                  color: "#79859A",
+                                  borderColor: "#E3E8EF",
+                                }
+                          }
+                        >
+                          {result}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
             </Section>
+
             <Section
               title="일정 · 할 일"
-              right={
+              action={
                 <div ref={addMenuRef} className="relative">
                   <button
+                    type="button"
                     onClick={() => setShowAddMenu((prev) => !prev)}
-                    className="flex items-center gap-1 text-[14px] font-medium text-[#64748B] hover:text-[#2563EB]"
+                    className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-[#79859A] hover:bg-[#EFF2F6] hover:text-[#28303D]"
                   >
-                    <Icon icon="mdi:plus" className="text-[16px]" />
-                    추가
+                    <Plus className="h-3 w-3" /> 추가
                   </button>
 
                   {showAddMenu && (
-                    <div className="absolute right-0 top-8 z-50 w-[160px] overflow-hidden rounded-xl border border-[#E2E8F0] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
+                    <div className="absolute right-0 top-7 z-50 w-32 overflow-hidden rounded-md border border-[#E3E8EF] bg-white py-1 shadow-[0_12px_28px_-6px_rgba(22,28,38,0.14)]">
                       <button
-                        className="flex w-full items-center px-4 py-3 text-left text-[14px] text-[#0F172A] transition-colors hover:bg-[#F8FAFC]"
+                        type="button"
+                        className="block w-full px-3 py-1.5 text-left text-xs text-[#3E4859] hover:bg-[#F6F8FB]"
                         onClick={() => {
                           setShowAddMenu(false);
                           setScheduleModalOpen(true);
@@ -274,9 +567,9 @@ export default function ApplicationDetailModal({
                       >
                         일정 추가
                       </button>
-
                       <button
-                        className="flex w-full items-center px-4 py-3 text-left text-[14px] text-[#0F172A] transition-colors hover:bg-[#F8FAFC]"
+                        type="button"
+                        className="block w-full px-3 py-1.5 text-left text-xs text-[#3E4859] hover:bg-[#F6F8FB]"
                         onClick={() => {
                           setShowAddMenu(false);
                           setTodoModalOpen(true);
@@ -289,79 +582,120 @@ export default function ApplicationDetailModal({
                 </div>
               }
             >
-              <div className="overflow-hidden rounded-2xl border border-[#E9EEF5] bg-white">
-                <table className="w-full">
-                  <thead className="bg-[#FAFBFC]">
-                    <tr className="border-b border-[#EEF2F6] text-left">
-                      <th className="px-5 py-3 text-[13px] font-semibold text-[#64748B]">
+              <div className="overflow-visible rounded-lg border border-[#E3E8EF] bg-white">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-[#E3E8EF] bg-[#EFF2F6]/40 text-[10px] text-[#79859A]">
+                      <th className="w-16 px-3 py-1.5 text-left font-normal">
                         유형
                       </th>
-                      <th className="px-5 py-3 text-[13px] font-semibold text-[#64748B]">
+                      <th className="px-3 py-1.5 text-left font-normal">
                         제목
                       </th>
-                      <th className="px-5 py-3 text-[13px] font-semibold text-[#64748B]">
+                      <th className="w-24 px-3 py-1.5 text-left font-normal">
                         날짜
                       </th>
-                      <th className="px-5 py-3 text-[13px] font-semibold text-[#64748B]">
+                      <th className="w-24 px-3 py-1.5 text-left font-normal">
                         상태
                       </th>
+                      <th className="w-8" />
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      ...linkedCalendarEvents.map((schedule: any) => {
-                        const scheduleDate = getGoogleEventDate(schedule);
-
-                        return {
-                          id: `calendar-${schedule.id}`,
-                          type: "일정",
-                          title: schedule.summary || "일정",
-                          date: formatDate(scheduleDate, "기한 없음"),
-                          status: "예정",
-                        };
-                      }),
-
-                      ...(currentApplication.todos || []).map((todo: any) => ({
-                        id: `todo-${todo.id}`,
-                        type: "할 일",
-                        title: todo.title,
-                        date: formatDate(todo.dueDateTime, "기한 없음"),
-                        status: todo.completed ? "완료" : "진행 중",
-                      })),
-                    ].map((item) => (
+                    {detailItems.map((item) => (
                       <tr
                         key={item.id}
-                        className="border-b border-[#F1F5F9] last:border-b-0"
+                        className="group border-b border-[#E3E8EF]/60 last:border-0 hover:bg-[#EFF2F6]/30"
                       >
-                        <td className="px-5 py-2 text-[14px] text-[#64748B]">
+                        <td className="px-3 py-1.5 text-[#79859A]">
                           {item.type}
                         </td>
-
-                        <td className="px-5 py-2 text-[14px] font-medium text-[#0F172A]">
-                          {item.title}
+                        <td className="max-w-0 px-3 py-1.5 text-[#28303D]">
+                          <span className="block truncate">{item.title}</span>
                         </td>
-
-                        <td className="px-5 py-2 text-[14px] text-[#64748B]">
+                        <td className="px-3 py-1.5 tabular-nums text-[#79859A]">
                           {item.date}
                         </td>
-
-                        <td className="px-5 py-2">
-                          <span
-                            className={`rounded-md px-2 py-[5px] text-[12px] font-semibold
-                                  ${
-                                    item.status === "진행 중"
-                                      ? "bg-[#DBEAFE] text-[#2563EB]"
-                                      : item.status === "완료"
-                                        ? "bg-[#DCFCE7] text-[#16A34A]"
-                                        : "bg-[#F1F5F9] text-[#64748B]"
-                                  }
-                                `}
+                        <td className="relative px-3 py-1.5">
+                          <div
+                            ref={
+                              openItemStatusId === item.id
+                                ? statusMenuRef
+                                : null
+                            }
+                            className="relative inline-block"
                           >
-                            {item.status}
-                          </span>
+                            <button
+                              type="button"
+                              disabled={updatingItemId === item.id}
+                              onClick={() =>
+                                setOpenItemStatusId((current) =>
+                                  current === item.id ? null : item.id,
+                                )
+                              }
+                              className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium disabled:opacity-50 ${
+                                ITEM_STATUS_STYLES[
+                                  normalizeItemStatus(item.status)
+                                ]
+                              }`}
+                            >
+                              {normalizeItemStatus(item.status)}
+                            </button>
+
+                            {openItemStatusId === item.id && (
+                              <div className="absolute left-0 top-6 z-[80] min-w-[92px] overflow-hidden rounded-md border border-[#E3E8EF] bg-white py-1 shadow-[0_12px_28px_-6px_rgba(22,28,38,0.14)]">
+                                {ITEM_STATUS_OPTIONS.map((status) => (
+                                  <button
+                                    key={status}
+                                    type="button"
+                                    onClick={() =>
+                                      item.type === "할 일"
+                                        ? void handleTodoStatusChange(
+                                            item.raw,
+                                            status,
+                                          )
+                                        : void handleScheduleStatusChange(
+                                            item.raw,
+                                            status,
+                                          )
+                                    }
+                                    className={`block w-full px-2.5 py-1.5 text-left text-xs hover:bg-[#F6F8FB] ${
+                                      item.status === status
+                                        ? "font-semibold text-[#2563EB]"
+                                        : "text-[#5A6678]"
+                                    }`}
+                                  >
+                                    {status}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-2 py-1.5">
+                          <button
+                            type="button"
+                            onClick={() => void handleDeleteItem(item)}
+                            disabled={updatingItemId === item.id}
+                            aria-label={`${item.title} 삭제`}
+                            className="text-[#A4AEBE] opacity-0 transition-opacity hover:text-[#D24545] disabled:opacity-30 group-hover:opacity-100"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
                         </td>
                       </tr>
                     ))}
+
+                    {detailItems.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className="px-3 py-6 text-center text-[11px] text-[#79859A]"
+                        >
+                          연결된 일정·할 일이 없습니다.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -369,28 +703,29 @@ export default function ApplicationDetailModal({
 
             <Section
               title="메모"
-              right={
+              action={
                 <button
                   type="button"
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="rounded-lg border border-[#D8E0EA] bg-white px-3 py-1.5 text-sm font-semibold text-[#475569] hover:bg-[#F8FAFC] disabled:opacity-50"
+                  onClick={() => void handleMemoSave()}
+                  disabled={isSavingMemo}
+                  className="rounded px-1.5 py-0.5 text-[11px] text-[#79859A] hover:bg-[#EFF2F6] hover:text-[#28303D] disabled:opacity-50"
                 >
-                  메모 저장
+                  {isSavingMemo ? "저장 중" : "저장"}
                 </button>
               }
             >
               <textarea
                 value={draftMemo}
                 onChange={(event) => setDraftMemo(event.target.value)}
-                placeholder="메모를 입력하세요"
-                maxLength={500}
-                className=" min-h-[120px] w-full resize-none rounded-2xl border border-[#E2E8F0] bg-[#FCFDFE] px-5 py-4 mb-2 text-[15px] outline-none transition-colors placeholder:text-[#94A3B8] focus:border-[#2563EB]"
+                placeholder="이 공고에 대한 메모를 입력하세요"
+                rows={3}
+                className="w-full resize-none rounded-lg border border-[#E3E8EF] bg-white px-3 py-2.5 text-[13px] text-[#28303D] outline-none placeholder:text-[#A4AEBE] focus:border-[#2563EB] focus:ring-1 focus:ring-[#DBEAFE]"
               />
             </Section>
           </div>
         </div>
       </div>
+
       {scheduleModalOpen && (
         <PostSchedule
           application={currentApplication}
@@ -421,30 +756,35 @@ export default function ApplicationDetailModal({
   );
 }
 
-function Section({ title, right, children }: any) {
+function Section({
+  title,
+  action,
+  children,
+}: {
+  title: string;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <section>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-[17px] font-semibold text-[#334155]">
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-[11px] font-medium uppercase tracking-wide text-[#79859A]">
           {title}
-        </h2>
-        {right}
+        </h3>
+        {action}
       </div>
-
       {children}
     </section>
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex items-center">
-      <span className="w-[110px] text-[13px] font-medium text-[#94A3B8]">
-        {label}
-      </span>
-      <span className="text-[15px] font-medium text-[#0F172A]">
-        {value || "-"}
-      </span>
+    <div className="grid grid-cols-[100px_1fr] items-center gap-3 py-1.5">
+      <div className="text-[11px] text-[#79859A]">{label}</div>
+      <div className="min-w-0 text-[13px] text-[#28303D]">
+        {children || "-"}
+      </div>
     </div>
   );
 }

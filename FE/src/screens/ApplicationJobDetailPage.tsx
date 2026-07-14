@@ -9,14 +9,11 @@ import {
   Copy,
   Check,
   X,
-  Info,
-  ClipboardList,
-  ListChecks,
-  BookOpen,
+  Plus,
+  CalendarDays,
   ScrollText,
   Highlighter,
   AlertCircle,
-  FileText,
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import { getApplications } from "../api/application";
@@ -641,9 +638,11 @@ function EssayStatus({ status }: { status: string }) {
 function CopyButton({
   text,
   label = "복사",
+  always = false,
 }: {
   text: string;
   label?: string;
+  always?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   return (
@@ -653,11 +652,14 @@ function CopyButton({
         try {
           await navigator.clipboard.writeText(text);
           setCopied(true);
-          toast("복사했어요");
+          toast("복사 완료했습니다.");
           setTimeout(() => setCopied(false), 1500);
         } catch {}
       }}
-      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
+      className={cn(
+        "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-[#79859A] transition-colors hover:bg-[#EFF2F6] hover:text-[#28303D]",
+        always ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+      )}
       title="복사하기"
     >
       {copied ? (
@@ -754,6 +756,61 @@ function HighlightableLine({
   );
 }
 
+function DetailSection({
+  n,
+  title,
+  subtitle,
+  right,
+  children,
+}: {
+  n: number;
+  title: string;
+  subtitle?: string;
+  right?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="mb-5 last:mb-0">
+      <div className="group rounded-2xl border border-[#E3E8EF] bg-white px-6 py-5">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[#EFF2F6] text-[10px] font-bold tabular-nums text-[#79859A]">
+              {n}
+            </span>
+            <h2 className="text-[15px] font-semibold tracking-tight text-[#161C26]">
+              {title}
+            </h2>
+            {subtitle && (
+              <span className="text-[11px] text-[#79859A]">{subtitle}</span>
+            )}
+          </div>
+          {right}
+        </div>
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function getDetailStatusClass(status?: string | null) {
+  switch (status) {
+    case "작성중":
+      return "bg-[#EFF6FF] text-[#1D4ED8]";
+    case "지원완료":
+      return "bg-[#EFF2F6] text-[#5A6678]";
+    case "서류전형":
+      return "bg-[#EEF2FF] text-[#4F46E5]";
+    case "필기전형":
+      return "bg-[#ECFEFF] text-[#0F766E]";
+    case "면접전형":
+      return "bg-[#FFF7ED] text-[#C2410C]";
+    case "전형완료":
+      return "bg-[#EFF2F6] text-[#5A6678]";
+    default:
+      return "bg-[#EFF2F6] text-[#5A6678]";
+  }
+}
+
 // ---------- Main component ----------
 export default function ApplicationJobDetailPage() {
   const { applicationId } = useParams();
@@ -772,6 +829,7 @@ export default function ApplicationJobDetailPage() {
   const [savingEssay, setSavingEssay] = useState(false);
   const rawButtonRef = useRef<HTMLSpanElement | null>(null);
   const rawPanelRef = useRef<HTMLElement | null>(null);
+  const [checkedDocs, setCheckedDocs] = useState<Set<string>>(new Set());
 
   // 자소서 문항 ref — 작성중인 서류에서 진입 시 마지막 작업 문항으로 스크롤
   const essayRefs = useRef<(HTMLLIElement | null)[]>([]);
@@ -1059,6 +1117,35 @@ export default function ApplicationJobDetailPage() {
     { groupKey: "요구 역량", items: job.competencies },
   ];
 
+
+  const urgent = !job.expired && job.dday !== null && job.dday <= 3;
+  const submitDocs = (job.eligibility["제출 서류"] ?? []) as string[];
+  const requirementGroups = Object.entries(job.eligibility).filter(
+    ([label]) => label !== "제출 서류",
+  ) as [string, string[]][];
+  const basicCopy = Object.entries(job.basic)
+    .map(([label, value]) => `${label}: ${String(value)}`)
+    .join("\n");
+  const jobCopy = `[직무 설명]\n${job.jobDescription}\n\n[요구 역량]\n${job.competencies
+    .map((item: string) => `· ${item}`)
+    .join("\n")}`;
+  const requirementCopy = requirementGroups
+    .map(
+      ([label, items]) =>
+        `[${label}]\n${items.map((item) => `· ${item}`).join("\n")}`,
+    )
+    .join("\n\n");
+  const documentCopy = submitDocs.map((item) => `· ${item}`).join("\n");
+
+  const toggleDocument = (documentName: string) => {
+    setCheckedDocs((previous) => {
+      const next = new Set(previous);
+      if (next.has(documentName)) next.delete(documentName);
+      else next.add(documentName);
+      return next;
+    });
+  };
+
   // Navigate to Tab3 (AI Cover) immediately — no confirmation
   const goToTab3 = (essay: DetailEssay) => {
     const params = new URLSearchParams({
@@ -1113,38 +1200,35 @@ export default function ApplicationJobDetailPage() {
   }
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-[#FBFCFE]">
       <Sidebar />
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Main scroll area */}
-        <div className="flex-1 overflow-y-auto">
-          {/* Sticky top bar */}
-          <div className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b border-border">
-            <div className="px-8 py-3 flex items-center justify-between">
-              <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <div className="flex min-w-0 flex-1 overflow-hidden">
+        <div className="min-w-0 flex-1 overflow-y-auto bg-white">
+          <div className="sticky top-0 z-20 border-b border-[#E3E8EF]/70 bg-white/95 backdrop-blur">
+            <div className="mx-auto flex max-w-[860px] items-center justify-between px-8 py-3">
+              <nav className="flex min-w-0 items-center gap-1.5 text-xs text-[#79859A]">
                 <Link
                   to="/main"
-                  className="hover:text-foreground transition-colors"
+                  className="shrink-0 transition-colors hover:text-[#28303D]"
                 >
                   지원 대시보드
                 </Link>
-                <ChevronRight className="w-3 h-3" />
-                <span className="text-foreground font-medium">
+                <ChevronRight className="h-3 w-3 shrink-0" />
+                <span className="truncate font-medium text-[#28303D]">
                   {job.company} {job.division ?? ""}
                 </span>
               </nav>
 
-              <div className="flex items-center gap-2">
-                {/* 원문 보기 — triggers right slide panel */}
+              <div className="flex shrink-0 items-center gap-2">
                 <span ref={rawButtonRef} className="inline-flex">
                   <Button
-                    variant={rawOpen ? "default" : "outline"}
+                    variant={rawOpen ? "default" : "ghost"}
                     size="sm"
-                    className="h-7 text-xs gap-1.5 rounded-md"
-                    onClick={() => setRawOpen((v) => !v)}
+                    className="h-7 rounded-md px-2.5 text-xs"
+                    onClick={() => setRawOpen((open) => !open)}
                   >
-                    <ScrollText className="w-3.5 h-3.5" />
+                    <ScrollText className="h-3.5 w-3.5" />
                     {rawOpen ? "원문 닫기" : "원문 보기"}
                   </Button>
                 </span>
@@ -1152,677 +1236,504 @@ export default function ApplicationJobDetailPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 text-xs gap-1.5 rounded-md"
+                  className="h-7 rounded-md px-2.5 text-xs"
                   onClick={() => navigate("/main")}
                 >
-                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <ArrowLeft className="h-3.5 w-3.5" />
                   대시보드로
                 </Button>
               </div>
             </div>
           </div>
 
-          {/* Expired / D-3 notice */}
-          {(job.expired ||
-            (!job.expired && job.dday !== null && job.dday <= 3)) && (
-            <div className="px-8 pt-4">
-              <div
-                className={cn(
-                  "flex items-center gap-2 text-[13px] rounded-lg px-4 py-2.5",
-                  job.expired
-                    ? "bg-muted/40 text-muted-foreground"
-                    : "bg-[var(--pickd-red-light,#fff1f2)] text-pickd-red",
-                )}
-              >
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                {job.expired
-                  ? "마감된 공고입니다"
-                  : `마감 D-${job.dday} · 서류 제출 기한이 얼마 남지 않았습니다`}
-              </div>
-            </div>
-          )}
-
-          {/* Document header — title area */}
-          <div className="px-8 pt-6 pb-5 border-b border-border">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1.5">
-                <span className="font-medium text-foreground">
-                  {job.company}
-                </span>
+          <main className="mx-auto max-w-[860px] px-8 pb-24 pt-11">
+            <header className="mb-8">
+              <div className="mb-1.5 flex items-center gap-1.5 text-xs text-[#79859A]">
+                <span className="font-medium text-[#28303D]">{job.company}</span>
                 {job.division && (
                   <>
-                    <span className="text-border">·</span>
+                    <span className="text-[#CBD3DE]">·</span>
                     <span>{job.division}</span>
                   </>
                 )}
-                <span className="text-border">·</span>
+                <span className="text-[#CBD3DE]">·</span>
                 <span>{job.role}</span>
               </div>
-              <h1 className="text-[26px] font-bold text-foreground tracking-[-0.04em] leading-tight">
+
+              <h1 className="text-[26px] font-bold leading-tight tracking-[-0.04em] text-[#161C26]">
                 {job.title}
               </h1>
 
-              <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
-                <SummaryItem label="지원 기간" value={job.period} />
-                <SummaryItem
-                  label="마감"
-                  value={
-                    <span
-                      className={cn(
-                        "font-medium",
-                        job.dday !== null && job.dday <= 3
-                          ? "text-pickd-red"
-                          : "text-foreground",
-                      )}
-                    >
-                      {job.deadline}
-                    </span>
-                  }
-                />
-                <SummaryItem
-                  label="D-day"
-                  value={
-                    <span
-                      className={cn(
-                        "font-semibold tabular-nums",
-                        job.dday !== null && job.dday <= 3
-                          ? "text-pickd-red"
-                          : "text-foreground",
-                      )}
-                    >
-                      {formatDday(job.dday)}
-                    </span>
-                  }
-                />
-                <SummaryItem
-                  label="지원 상태"
-                  value={
-                    <span className="px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-medium">
-                      {job.status}
-                    </span>
-                  }
-                />
+              <div className="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-2 text-xs text-[#79859A]">
+                <span className="inline-flex items-center gap-1.5">
+                  <CalendarDays className="h-3.5 w-3.5" />
+                  마감 {job.deadline}
+                </span>
+                <span
+                  className={cn(
+                    "inline-flex h-5 items-center rounded-full px-2 text-[10px] font-semibold tabular-nums",
+                    urgent
+                      ? "bg-[#FCEBEC] text-[#B4232C]"
+                      : "bg-[#EFF2F6] text-[#5A6678]",
+                  )}
+                >
+                  {formatDday(job.dday)}
+                </span>
+                <span
+                  className={cn(
+                    "inline-flex h-5 items-center gap-1.5 rounded-full px-2 text-[10px] font-semibold",
+                    getDetailStatusClass(job.status),
+                  )}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
+                  {job.status}
+                </span>
               </div>
 
-              {/* Essay progress summary */}
-              {job.essays.length > 0 &&
-                (() => {
-                  const doneCount = job.essays.filter(
-                    (e: DetailEssay) => e.status === "완료",
-                  ).length;
-                  return (
-                    <div className="mt-4 pt-4 border-t border-border/50 flex items-center gap-3">
-                      <div className="flex items-center gap-1.5">
-                        <FileText className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">
-                          자소서
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {job.essays.map((e: DetailEssay) => (
-                          <div
-                            key={e.id ?? e.no}
-                            title={`Q${e.no}: ${e.status}`}
-                            className={cn(
-                              "w-2.5 h-2.5 rounded-full transition-colors",
-                              e.status === "완료"
-                                ? "bg-pickd-green"
-                                : e.status === "작성중"
-                                  ? "bg-indigo-500"
-                                  : e.status === "초안"
-                                    ? "bg-pickd-orange"
-                                    : "bg-border",
-                            )}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-xs text-muted-foreground tabular-nums">
-                        {doneCount}/{job.essays.length} 완료
-                      </span>
-                    </div>
-                  );
-                })()}
-            </div>
-          </div>
-
-          {/* Body */}
-          <div className="px-8 py-6 space-y-10 max-w-[900px]">
-            {/* Section 1. 기본 정보 */}
-            <section>
-              <SectionHeader
-                icon={Info}
-                title="1. 기본 정보"
-                subtitle="Properties"
-              />
-              <div className="border border-border rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
-                  <tbody>
-                    {Object.entries(job.basic).map(([k, v], i) => (
-                      <tr
-                        key={k}
-                        className={cn(
-                          "group border-b border-border/60 last:border-b-0 hover:bg-muted/20",
-                          i % 2 === 1 && "bg-muted/10",
-                        )}
-                      >
-                        <td className="w-[160px] px-4 py-2.5 text-xs text-muted-foreground font-medium align-top">
-                          {k}
-                        </td>
-                        <td className="px-4 py-2.5 text-[13px] leading-relaxed">
-                          <div className="flex items-start justify-between gap-3">
-                            <span
-                              className={cn(
-                                "break-words",
-                                k === "D-day" &&
-                                  job.dday !== null &&
-                                  job.dday <= 3
-                                  ? "text-pickd-red font-semibold"
-                                  : "text-foreground",
-                              )}
-                            >
-                              {String(v)}
-                            </span>
-                            <CopyButton text={String(v)} />
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-            {/* Section 2. 지원 핵심 정보 — 중요 표시 기능 포함 */}
-            <section>
-              <SectionHeader
-                icon={ClipboardList}
-                title="2. 지원 핵심 정보"
-                subtitle="Eligibility & Requirements"
-                rightSlot={
-                  eligibilityHighlightCount > 0 && (
-                    <button
-                      onClick={() => clearHighlightsByPrefix("eligibility::")}
-                      className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-                    >
-                      <X className="w-3 h-3" />
-                      강조 {eligibilityHighlightCount}개 초기화
-                    </button>
-                  )
-                }
-              />
-
-              {/* Highlight hint — shown once until first highlight */}
-              {eligibilityHighlightCount === 0 && (
-                <p className="text-[11px] text-muted-foreground mb-3 flex items-center gap-1.5">
-                  <Highlighter className="w-3 h-3" />
-                  줄에 마우스를 올리면 중요 표시 버튼이 나타납니다
-                </p>
+              {(job.expired || urgent) && (
+                <div
+                  className={cn(
+                    "mt-3 inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px]",
+                    job.expired
+                      ? "bg-[#EFF2F6] text-[#79859A]"
+                      : "bg-[#FCEBEC] text-[#B4232C]",
+                  )}
+                >
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  {job.expired
+                    ? "마감된 공고입니다"
+                    : "제출 기한이 얼마 남지 않았어요"}
+                </div>
               )}
+            </header>
 
-              <div className="border border-border rounded-lg overflow-hidden">
-                {Object.entries(job.eligibility).map(
-                  ([groupKey, items]: any, i) => (
-                    <div
-                      key={groupKey}
+            <DetailSection
+              n={1}
+              title="기본 정보"
+              right={<CopyButton label="복사" text={basicCopy} />}
+            >
+              <dl className="divide-y divide-[#E3E8EF]/50">
+                {Object.entries(job.basic).map(([label, value]) => (
+                  <div key={label} className="flex items-start gap-3 py-2">
+                    <dt className="w-28 shrink-0 pt-0.5 text-xs text-[#79859A]">
+                      {label}
+                    </dt>
+                    <dd
                       className={cn(
-                        "grid grid-cols-[160px_1fr] border-b border-border/60 last:border-b-0",
-                        i % 2 === 1 && "bg-muted/10",
+                        "flex-1 break-words text-[13px] leading-relaxed text-[#28303D]",
+                        label === "D-day" && urgent &&
+                          "font-semibold text-[#B4232C]",
                       )}
                     >
-                      <div className="px-4 py-3 text-xs font-medium text-muted-foreground border-r border-border/60 self-start pt-3.5">
-                        {groupKey}
-                      </div>
-                      <div className="px-4 py-2">
-                        <ul className="space-y-0.5">
-                          {items.map((text: string, idx: number) => {
-                            const key = hlKey("eligibility", groupKey, idx);
-                            return (
-                              <HighlightableLine
-                                key={idx}
-                                lineKey={key}
-                                text={text}
-                                highlighted={isHighlighted(key)}
-                                onToggle={toggleHighlight}
-                              />
-                            );
-                          })}
-                        </ul>
-                      </div>
-                    </div>
-                  ),
-                )}
-              </div>
-            </section>
+                      {String(value)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </DetailSection>
 
-            {/* Section 3. 전형 정보 */}
-            <section>
-              <SectionHeader
-                icon={ListChecks}
-                title="3. 전형 정보"
-                subtitle="Hiring Process"
-              />
-              <div className="relative pl-6">
-                {/* 수직 타임라인 선 */}
-                <div className="absolute left-2.5 top-3 bottom-3 w-px bg-border" />
-                <div className="space-y-3">
-                  {job.process.map((p: any, i: number) => (
-                    <div
-                      key={i}
-                      className="relative flex items-start gap-4 group"
-                    >
-                      {/* 스텝 번호 */}
-                      <div className="absolute -left-6 flex items-center justify-center w-5 h-5 rounded-full bg-background border-2 border-border group-hover:border-indigo-400 transition-colors mt-2.5">
-                        <span className="text-[10px] font-bold text-muted-foreground group-hover:text-indigo-500 transition-colors">
-                          {i + 1}
-                        </span>
-                      </div>
-                      <div className="flex-1 border border-border rounded-lg px-4 py-3 hover:bg-muted/20 hover:border-indigo-200 transition-all">
-                        <div className="flex items-start justify-between gap-4 flex-wrap">
-                          <div className="min-w-0">
-                            <p className="text-[13px] font-semibold text-foreground">
-                              {p.step}
-                            </p>
-                            <p className="text-[12px] text-muted-foreground mt-0.5">
-                              {p.detail}
-                            </p>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p className="text-[12px] tabular-nums text-foreground/80">
-                              {p.schedule}
-                            </p>
-                            {p.note && (
-                              <p className="text-[11px] text-muted-foreground mt-0.5">
-                                {p.note}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+            <DetailSection
+              n={2}
+              title="직무 설명 · 요구 역량"
+              right={<CopyButton label="복사" text={jobCopy} />}
+            >
+              <div className="space-y-5">
+                <div>
+                  <h3 className="mb-1 text-xs font-semibold text-[#79859A]">
+                    직무 설명
+                  </h3>
+                  <p className="text-[13px] leading-relaxed text-[#28303D]">
+                    {job.jobDescription}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="mb-1 text-xs font-semibold text-[#79859A]">
+                    요구 역량
+                  </h3>
+                  <ul className="space-y-0.5">
+                    {job.competencies.map((competency: string, index: number) => {
+                      const key = hlKey("jd", "competency", index);
+                      return (
+                        <HighlightableLine
+                          key={key}
+                          lineKey={key}
+                          text={competency}
+                          highlighted={isHighlighted(key)}
+                          onToggle={toggleHighlight}
+                        />
+                      );
+                    })}
+                  </ul>
                 </div>
               </div>
-            </section>
+            </DetailSection>
 
-            {/* Section 4. 직무 설명 · 요구 역량 — 지원 핵심 정보와 동일한 표 형식 */}
-            <section>
-              <SectionHeader
-                icon={BookOpen}
-                title="4. 직무 설명 · 요구 역량"
-                subtitle="Job Description"
-                rightSlot={
-                  jdHighlightCount > 0 && (
+            <DetailSection
+              n={3}
+              title="지원 자격 · 우대"
+              right={
+                <div className="flex items-center gap-2">
+                  {eligibilityHighlightCount > 0 && (
                     <button
-                      onClick={() => clearHighlightsByPrefix("jd::")}
-                      className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                      type="button"
+                      onClick={() => clearHighlightsByPrefix("eligibility::")}
+                      className="flex items-center gap-1 text-[11px] text-[#79859A] hover:text-[#28303D]"
                     >
-                      <X className="w-3 h-3" />
-                      강조 {jdHighlightCount}개 초기화
+                      <X className="h-3 w-3" />
+                      강조 {eligibilityHighlightCount}개 초기화
                     </button>
-                  )
-                }
-              />
-
-              {jdHighlightCount === 0 && (
-                <p className="text-[11px] text-muted-foreground mb-3 flex items-center gap-1.5">
-                  <Highlighter className="w-3 h-3" />
-                  줄에 마우스를 올리면 중요 표시 버튼이 나타납니다
-                </p>
-              )}
-
-              <div className="border border-border rounded-lg overflow-hidden">
-                {jobDescriptionRows.map(({ groupKey, items }, i) => (
-                  <div
-                    key={groupKey}
-                    className={cn(
-                      "grid grid-cols-[160px_1fr] border-b border-border/60 last:border-b-0",
-                      i % 2 === 1 && "bg-muted/10",
-                    )}
-                  >
-                    <div className="px-4 py-3 text-xs font-medium text-muted-foreground border-r border-border/60 self-start pt-3.5">
-                      {groupKey}
-                    </div>
-                    <div className="px-4 py-2">
-                      <ul className="space-y-0.5">
-                        {items.map((text: string, idx: number) => {
-                          const key = hlKey("jd", groupKey, idx);
-                          return (
-                            <HighlightableLine
-                              key={idx}
-                              lineKey={key}
-                              text={text}
-                              highlighted={isHighlighted(key)}
-                              onToggle={toggleHighlight}
-                            />
-                          );
-                        })}
-                      </ul>
-                    </div>
+                  )}
+                  <CopyButton label="복사" text={requirementCopy} />
+                </div>
+              }
+            >
+              <div className="space-y-5">
+                {requirementGroups.map(([label, items]) => (
+                  <div key={label}>
+                    <h3 className="mb-1 text-xs font-semibold text-[#79859A]">
+                      {label}
+                    </h3>
+                    <ul className="space-y-0.5">
+                      {items.map((text, index) => {
+                        const key = hlKey("eligibility", label, index);
+                        return (
+                          <HighlightableLine
+                            key={key}
+                            lineKey={key}
+                            text={text}
+                            highlighted={isHighlighted(key)}
+                            onToggle={toggleHighlight}
+                          />
+                        );
+                      })}
+                    </ul>
                   </div>
                 ))}
               </div>
-            </section>
+            </DetailSection>
 
-            {/* Section 5. 자소서 문항 */}
-            <section>
-              <SectionHeader
-                icon={PenLine}
-                title="5. 자소서 문항"
-                subtitle={`${job.essays.length}문항`}
-                rightSlot={
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs rounded-md"
-                    onClick={handleAddEssay}
-                  >
-                    <PenLine className="w-3.5 h-3.5" />
-                    문항 추가
-                  </Button>
-                }
-              />
+            <DetailSection
+              n={4}
+              title="전형 절차"
+              right={
+                <span className="text-[11px] text-[#A4AEBE]">
+                  일정이 없으면 ‘미정’으로 표시돼요
+                </span>
+              }
+            >
+              <div>
+                {job.process.map((process: any, index: number) => {
+                  const hasSchedule = Boolean(
+                    process.schedule && String(process.schedule).trim(),
+                  );
 
-              {essayFormOpen && (
-                <div className="mb-4 rounded-xl border border-indigo-200 bg-indigo-50/30 p-4">
-                  <div className="flex items-center justify-between gap-3 mb-3">
-                    <p className="text-[13px] font-semibold text-foreground">
-                      {essayDraft.id ? "자소서 문항 수정" : "자소서 문항 추가"}
-                    </p>
-                    <button
-                      onClick={handleCancelEssay}
-                      className="w-7 h-7 rounded-md hover:bg-white border border-transparent hover:border-border text-muted-foreground hover:text-foreground flex items-center justify-center transition-all"
+                  return (
+                    <div
+                      key={`${process.step}-${index}`}
+                      className="flex items-start gap-3.5 border-b border-[#E3E8EF]/50 py-3 last:border-0"
                     >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div className="space-y-3">
+                      <span className="w-5 shrink-0 pt-0.5 text-right text-[13px] font-semibold tabular-nums text-[#A4AEBE]">
+                        {index + 1}
+                      </span>
+                      <div className="flex min-w-0 flex-1 items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-medium text-[#28303D]">
+                            {process.step}
+                          </p>
+                          {process.detail && (
+                            <p className="mt-0.5 text-xs text-[#79859A]">
+                              {process.detail}
+                            </p>
+                          )}
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p
+                            className={cn(
+                              "text-xs tabular-nums",
+                              hasSchedule
+                                ? "text-[#4E5968]"
+                                : "text-[#A4AEBE]",
+                            )}
+                          >
+                            {hasSchedule ? process.schedule : "일정 미정"}
+                          </p>
+                          {process.note && (
+                            <p className="mt-0.5 text-[11px] text-[#79859A]">
+                              {process.note}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </DetailSection>
+
+            <DetailSection
+              n={5}
+              title="제출 서류"
+              right={
+                submitDocs.length > 0 ? (
+                  <CopyButton label="복사" text={documentCopy} />
+                ) : undefined
+              }
+            >
+              {submitDocs.length === 0 ? (
+                <p className="px-2 py-1 text-[11px] text-[#A4AEBE]">
+                  공고에 명시된 제출 서류가 없어요
+                </p>
+              ) : (
+                <ul className="space-y-0.5">
+                  {submitDocs.map((documentName) => {
+                    const checked = checkedDocs.has(documentName);
+                    return (
+                      <li key={documentName}>
+                        <button
+                          type="button"
+                          onClick={() => toggleDocument(documentName)}
+                          className="-mx-2 flex w-[calc(100%+16px)] items-center gap-2.5 rounded px-2 py-1.5 text-left transition-colors hover:bg-[#F6F8FB]"
+                        >
+                          <span
+                            className={cn(
+                              "flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] border transition-colors",
+                              checked
+                                ? "border-[#15926A] bg-[#15926A] text-white"
+                                : "border-[#CBD3DE] bg-white",
+                            )}
+                          >
+                            {checked && <Check className="h-3 w-3" />}
+                          </span>
+                          <span
+                            className={cn(
+                              "truncate text-[13px] leading-relaxed",
+                              checked
+                                ? "text-[#79859A] line-through"
+                                : "text-[#28303D]",
+                            )}
+                          >
+                            {documentName}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </DetailSection>
+
+            <DetailSection
+              n={6}
+              title="자기소개서"
+              subtitle={`${job.essays.length}문항`}
+              right={
+                <button
+                  type="button"
+                  onClick={handleAddEssay}
+                  className="flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-medium text-[#79859A] hover:bg-[#F6F8FB] hover:text-[#2563EB]"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  문항 추가
+                </button>
+              }
+            >
+              {essayFormOpen && (
+                <div className="mb-4 rounded-xl border border-[#E3E8EF] bg-[#F8FAFC] p-4">
+                  <div className="grid gap-3 sm:grid-cols-[1fr_130px]">
                     <div>
-                      <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
+                      <label className="mb-1.5 block text-[11px] font-medium text-[#79859A]">
                         문항
                       </label>
-                      <textarea
+                      <input
                         value={essayDraft.question}
                         onChange={(event) =>
-                          setEssayDraft((prev) => ({
-                            ...prev,
+                          setEssayDraft((previous) => ({
+                            ...previous,
                             question: event.target.value,
                           }))
                         }
-                        placeholder="예: 지원 동기와 입사 후 목표를 작성해 주세요."
-                        className="min-h-[86px] w-full resize-none rounded-lg border border-border bg-white px-3 py-2 text-[13px] leading-relaxed outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                        placeholder="자기소개서 문항을 입력하세요"
+                        className="h-9 w-full rounded-lg border border-[#D8E0EA] bg-white px-3 text-[13px] outline-none focus:border-[#2563EB]"
                       />
                     </div>
-                    <div className="grid grid-cols-[140px_1fr] gap-3">
-                      <div>
-                        <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
-                          글자 수 제한
-                        </label>
-                        <input
-                          value={essayDraft.maxLength}
-                          onChange={(event) =>
-                            setEssayDraft((prev) => ({
-                              ...prev,
-                              maxLength: event.target.value.replace(
-                                /[^0-9]/g,
-                                "",
-                              ),
-                            }))
-                          }
-                          placeholder="700"
-                          className="h-9 w-full rounded-lg border border-border bg-white px-3 text-[13px] outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
-                          답변 초안/메모 선택 입력
-                        </label>
-                        <input
-                          value={essayDraft.answer}
-                          onChange={(event) =>
-                            setEssayDraft((prev) => ({
-                              ...prev,
-                              answer: event.target.value,
-                            }))
-                          }
-                          placeholder="아직 답변이 없으면 비워둬도 됩니다."
-                          className="h-9 w-full rounded-lg border border-border bg-white px-3 text-[13px] outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                        />
-                      </div>
+                    <div>
+                      <label className="mb-1.5 block text-[11px] font-medium text-[#79859A]">
+                        글자 수
+                      </label>
+                      <input
+                        value={essayDraft.maxLength}
+                        onChange={(event) =>
+                          setEssayDraft((previous) => ({
+                            ...previous,
+                            maxLength: event.target.value.replace(/[^0-9]/g, ""),
+                          }))
+                        }
+                        placeholder="700"
+                        className="h-9 w-full rounded-lg border border-[#D8E0EA] bg-white px-3 text-[13px] outline-none focus:border-[#2563EB]"
+                      />
                     </div>
-                    <div className="flex justify-end gap-2 pt-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 text-xs"
-                        onClick={handleCancelEssay}
-                        disabled={savingEssay}
-                      >
-                        취소
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="h-8 text-xs"
-                        onClick={handleSaveEssay}
-                        disabled={savingEssay}
-                      >
-                        {savingEssay ? "저장 중" : "저장"}
-                      </Button>
-                    </div>
+                  </div>
+                  <textarea
+                    value={essayDraft.answer}
+                    onChange={(event) =>
+                      setEssayDraft((previous) => ({
+                        ...previous,
+                        answer: event.target.value,
+                      }))
+                    }
+                    placeholder="답변 초안이나 메모가 있으면 입력하세요"
+                    className="mt-3 min-h-[82px] w-full resize-y rounded-lg border border-[#D8E0EA] bg-white px-3 py-2 text-[13px] outline-none focus:border-[#2563EB]"
+                  />
+                  <div className="mt-3 flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs"
+                      onClick={handleCancelEssay}
+                      disabled={savingEssay}
+                    >
+                      취소
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="h-8 text-xs"
+                      onClick={handleSaveEssay}
+                      disabled={savingEssay}
+                    >
+                      {savingEssay ? "저장 중" : "저장"}
+                    </Button>
                   </div>
                 </div>
               )}
 
               {job.essays.length === 0 ? (
-                <div className="border border-border rounded-lg px-4 py-6 text-center">
-                  <p className="text-[13px] text-muted-foreground">
-                    이 공고는 별도 문항이 없어요
-                  </p>
-                  <button
-                    onClick={handleAddEssay}
-                    className="mt-2 text-[12px] font-medium text-primary hover:underline"
-                  >
-                    직접 문항 추가하기
-                  </button>
-                </div>
+                <p className="px-2 py-3 text-[13px] text-[#79859A]">
+                  이 공고는 별도 문항이 없어요
+                </p>
               ) : (
-                <ol className="space-y-3">
-                  {job.essays.map((e: DetailEssay, idx: number) => (
+                <ol className="divide-y divide-[#E3E8EF]">
+                  {job.essays.map((essay: DetailEssay, index: number) => (
                     <li
-                      key={e.id ?? e.no}
-                      ref={(el) => {
-                        essayRefs.current[idx] = el;
+                      key={essay.id ?? essay.no}
+                      ref={(element) => {
+                        essayRefs.current[index] = element;
                       }}
-                      className={cn(
-                        "rounded-xl border bg-card transition-shadow hover:shadow-sm",
-                        e.status === "작성중" &&
-                          "border-indigo-200 bg-indigo-50/30",
-                        e.status === "초안" &&
-                          "border-pickd-orange/30 bg-orange-50/20",
-                        e.status === "완료" &&
-                          "border-pickd-green/30 bg-green-50/20",
-                        e.status === "미작성" && "border-border",
-                      )}
+                      className="py-5 first:pt-2"
                     >
-                      <div className="p-5">
-                        {/* 상단: 번호 + 상태 + 메타 + 버튼 */}
-                        <div className="flex items-start justify-between gap-3 mb-3">
-                          <div className="flex items-center gap-2.5">
-                            <div
-                              className={cn(
-                                "w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold",
-                                e.status === "완료"
-                                  ? "bg-pickd-green text-white"
-                                  : e.status === "작성중"
-                                    ? "bg-indigo-500 text-white"
-                                    : e.status === "초안"
-                                      ? "bg-pickd-orange text-white"
-                                      : "bg-muted text-muted-foreground",
-                              )}
-                            >
-                              {e.status === "완료" ? (
-                                <Check className="w-3.5 h-3.5" />
-                              ) : (
-                                e.no
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <EssayStatus status={e.status} />
-                              {e.aiGenerated && (
-                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-100 text-violet-600">
-                                  AI 추출
-                                </span>
-                              )}
-                              {e.source === "NOTICE" && (
-                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                                  공고 문항
-                                </span>
-                              )}
-                              <span className="text-[11px] text-muted-foreground tabular-nums">
-                                {e.charLimit
-                                  ? `${e.charLimit.toLocaleString()}자 이내`
-                                  : "제한 없음"}
-                              </span>
-                              {e.updated && (
-                                <span className="text-[11px] text-muted-foreground/50">
-                                  수정 {e.updated}
-                                </span>
-                              )}
-                            </div>
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-2 flex flex-wrap items-center gap-2">
+                            <span className="text-[11px] font-semibold tabular-nums text-[#79859A]">
+                              Q{essay.no}
+                            </span>
+                            <EssayStatus status={essay.status} />
+                            <span className="text-[11px] text-[#79859A]">
+                              {essay.charLimit
+                                ? `${essay.charLimit.toLocaleString()}자`
+                                : "제한 없음"}
+                              {essay.updated ? ` · 수정 ${essay.updated}` : ""}
+                            </span>
                           </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 text-xs gap-1 whitespace-nowrap rounded-md"
-                              onClick={() => handleEditEssay(e)}
-                            >
-                              수정
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant={
-                                e.status === "미작성" ? "outline" : "default"
-                              }
-                              className={cn(
-                                "h-7 text-xs gap-1 whitespace-nowrap rounded-md",
-                                e.status !== "미작성" &&
-                                  "bg-indigo-600 hover:bg-indigo-700 text-white border-0",
-                              )}
-                              onClick={() => goToTab3(e)}
-                            >
-                              <PenLine className="w-3 h-3" />
-                              {e.status === "미작성"
-                                ? "작성하기"
-                                : "이어서 작성하기"}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 px-2 text-xs rounded-md text-muted-foreground hover:text-pickd-red"
-                              onClick={() => void handleDeleteEssay(e)}
-                            >
-                              삭제
-                            </Button>
-                          </div>
+                          <p className="text-sm font-semibold leading-relaxed text-[#28303D]">
+                            {essay.question}
+                          </p>
+                          {essay.preview ? (
+                            <p className="mt-1.5 line-clamp-3 whitespace-pre-wrap text-[13px] leading-relaxed text-[#79859A]">
+                              {essay.preview}
+                            </p>
+                          ) : (
+                            <p className="mt-1 text-xs text-[#A4AEBE]">
+                              아직 작성된 내용이 없어요
+                            </p>
+                          )}
                         </div>
 
-                        {/* 문항 */}
-                        <p className="text-[14px] font-medium text-foreground leading-relaxed pl-9">
-                          {e.question}
-                        </p>
-
-                        {/* 작성 내용 미리보기 */}
-                        {e.preview && (
-                          <div className="mt-3 pl-9">
-                            <div className="relative bg-background border border-border/60 rounded-lg px-4 py-3">
-                              <div className="absolute top-3 left-3 w-0.5 h-[calc(100%-24px)] bg-indigo-300 rounded-full" />
-                              <p className="pl-3 text-[13px] text-foreground/75 leading-relaxed line-clamp-3">
-                                {e.preview}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* 미작성 안내 */}
-                        {!e.preview && e.status === "미작성" && (
-                          <p className="mt-2 pl-9 text-[12px] text-muted-foreground/50">
-                            아직 작성된 내용이 없어요
-                          </p>
-                        )}
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 rounded-md text-xs"
+                            onClick={() => handleEditEssay(essay)}
+                          >
+                            수정
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 rounded-md text-xs text-[#2563EB]"
+                            onClick={() => goToTab3(essay)}
+                          >
+                            <PenLine className="h-3 w-3" />
+                            {essay.status === "미작성" ? "작성하기" : "이어서 작성"}
+                          </Button>
+                          {essay.id && (
+                            <button
+                              type="button"
+                              onClick={() => void handleDeleteEssay(essay)}
+                              className="h-8 rounded-md px-2 text-[11px] text-[#A4AEBE] hover:bg-[#FCEBEC] hover:text-[#B4232C]"
+                            >
+                              삭제
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </li>
                   ))}
                 </ol>
               )}
-            </section>
-
-            <div className="h-12" />
-          </div>
+            </DetailSection>
+          </main>
         </div>
 
-        {/* Right slide panel: raw source */}
         <aside
           ref={rawPanelRef}
           className={cn(
-            "border-l border-border flex flex-col shrink-0 transition-all duration-300 overflow-hidden",
+            "flex shrink-0 flex-col overflow-hidden border-l border-[#E3E8EF] bg-white transition-[width] duration-300",
             rawOpen ? "w-[440px]" : "w-0",
           )}
         >
           {rawOpen && (
-            <div className="flex flex-col h-full w-[440px]">
-              {/* Panel header */}
-              <div className="px-5 py-3.5 border-b border-border bg-muted/30 flex items-center justify-between shrink-0 gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-background border border-border flex items-center justify-center shrink-0">
-                    <ScrollText className="w-4 h-4 text-muted-foreground" />
+            <div className="flex h-full w-[440px] flex-col">
+              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#E3E8EF] bg-[#F8FAFC] px-5 py-3.5">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#E3E8EF] bg-white">
+                    <ScrollText className="h-4 w-4 text-[#79859A]" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[13px] font-semibold text-foreground leading-tight">
-                      원문 공고
+                    <p className="text-[13px] font-semibold leading-tight text-[#28303D]">
+                      공고 원문
                     </p>
-                    <p className="text-[11px] text-muted-foreground truncate">
-                      {job.company} · 원본 채용공고문
+                    <p className="truncate text-[11px] text-[#79859A]">
+                      {job.company} · 추출된 원본
                     </p>
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setRawOpen(false)}
-                  className="w-7 h-7 rounded-md hover:bg-muted border border-transparent hover:border-border text-muted-foreground hover:text-foreground flex items-center justify-center shrink-0 transition-all"
+                  aria-label="원문 닫기"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-transparent text-[#79859A] transition-all hover:border-[#E3E8EF] hover:bg-[#EFF2F6] hover:text-[#28303D]"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
 
-              {/* Scrollable content */}
-              <div className="flex-1 overflow-y-auto p-4 bg-muted/10">
-                <div className="bg-background rounded-xl border border-border shadow-sm overflow-hidden">
-                  {/* Mini toolbar */}
-                  <div className="px-4 py-2 border-b border-border/60 bg-muted/20 flex items-center justify-between">
-                    <span className="text-[11px] font-mono text-muted-foreground tabular-nums">
-                      {job.rawSource.length.toLocaleString()}자
-                    </span>
-                    <CopyButton text={job.rawSource} label="전체 복사" />
-                  </div>
-                  {/* Raw text */}
-                  <pre className="p-5 text-[12px] leading-[1.85] text-foreground/80 whitespace-pre-wrap font-mono select-text">
-                    {job.rawSource}
-                  </pre>
-                </div>
+              <div className="flex-1 overflow-y-auto bg-[#FBFCFE] p-4">
+                <pre className="whitespace-pre-wrap font-mono text-xs leading-[1.85] text-[#4E5968]">
+                  {job.rawSource || "추출된 공고 원문이 없습니다."}
+                </pre>
               </div>
 
-              {/* Footer */}
-              <div className="px-5 py-3 border-t border-border bg-muted/30 shrink-0 flex items-center justify-between gap-2">
-                <p className="text-[11px] text-muted-foreground">
-                  원본 공고 출처
-                </p>
+              <div className="flex shrink-0 items-center justify-between gap-2 border-t border-[#E3E8EF] bg-[#F8FAFC] px-5 py-3">
+                <CopyButton always label="전체 복사" text={job.rawSource} />
                 <a
                   href={job.sourceUrl}
                   target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline font-medium"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-[#2563EB] hover:underline"
                 >
                   원문 사이트 열기
-                  <ExternalLink className="w-3 h-3" />
+                  <ExternalLink className="h-3 w-3" />
                 </a>
               </div>
             </div>
@@ -1833,11 +1744,3 @@ export default function ApplicationJobDetailPage() {
   );
 }
 
-function SummaryItem({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="text-foreground">{value}</span>
-    </div>
-  );
-}
