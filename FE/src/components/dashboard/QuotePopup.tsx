@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Quote, X } from "lucide-react";
-import { CloverIcon } from "../../assets";
+import { PickdLogoIcon } from "../../assets";
 import QUOTES from "../../constants/quotes.json";
 
-export const QuotePopup = () => {
+export const QuotePopup = ({ compact = false }: { compact?: boolean }) => {
   const [isOpen, setIsOpen] = useState(false);
   const popupRef = useRef<HTMLDivElement | null>(null);
 
@@ -49,7 +49,7 @@ export const QuotePopup = () => {
         className="flex items-center justify-center"
         aria-label="오늘의 명언 보기"
       >
-        <CloverIcon size={30} />
+        <PickdLogoIcon size={compact ? 18 : 30} />
       </button>
 
       {/* 팝업 창 */}
@@ -64,7 +64,7 @@ export const QuotePopup = () => {
 
         <div className="flex items-center justify-between px-5 pt-4">
           <div className="flex items-center gap-1.5">
-            <CloverIcon size={16} />
+            <PickdLogoIcon size={16} />
             <span className="text-[12px] font-semibold text-[#008463]">
               오늘의 응원
             </span>

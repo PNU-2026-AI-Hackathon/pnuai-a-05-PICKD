@@ -1,18 +1,20 @@
-import { Star } from "lucide-react";
+import { Pencil, Star } from "lucide-react";
 import ApplicationMenu from "../ApplicationMenu";
-import { useState, type MouseEvent } from "react";
-import { getPositionColor } from "../../../../utils/application";
+import { useState, type DragEvent, type MouseEvent } from "react";
+import { Link } from "react-router-dom";
 import {
   formatApplicationDate,
   getDDay,
   toBackendLocalDateTime,
   toDateInputValue,
 } from "../../../../utils/date";
-import { getStatusStyle } from "../../../../utils/status";
+import { getFinalResultTone, getStatusTone } from "../../../../utils/status";
 import { getRelativeTime } from "../../../../utils/document";
 import { useApplication } from "../../../../context/ApplicationContext";
 import { Icon } from "@iconify/react";
 import { getCurrentDeadlineInfo } from "../../../../utils/applicationDeadline";
+import { createApplication } from "../../../../api/application";
+import type { ApplicationStatus } from "../../../../types/application";
 
 interface Props {
   row: any;
@@ -21,14 +23,17 @@ interface Props {
   setFocusedApplication: any;
   focusedApplication: any;
   onEdit: any;
-  onDelete: any;
   onChange: any;
-  deleteApplications: any;
-  addDocument: any;
-  setCheckedIds: any;
   tableColumns: readonly (readonly [string, string])[];
   setIsDetailModalOpen: any;
   widths: Record<string, number>;
+  isDragging: boolean;
+  dropPosition: "before" | "after" | null;
+  onRowDragStart: (applicationId: number) => void;
+  onRowDragOver: (applicationId: number, position: "before" | "after") => void;
+  onRowDrop: (applicationId: number, position: "before" | "after") => void;
+  onRowDragEnd: () => void;
+  onRequestDelete: (applicationId: number) => void;
 }
 
 const getEmploymentType = (row: any) =>
@@ -41,14 +46,17 @@ export default function ApplicationRow({
   setFocusedApplication,
   focusedApplication,
   onEdit,
-  onDelete,
   onChange,
-  deleteApplications,
-  addDocument,
-  setCheckedIds,
   tableColumns,
   setIsDetailModalOpen,
   widths,
+  isDragging,
+  dropPosition,
+  onRowDragStart,
+  onRowDragOver,
+  onRowDrop,
+  onRowDragEnd,
+  onRequestDelete,
 }: Props) {
   const { updateApplication } = useApplication();
   const isChecked = checkedIds.includes(row.id);
@@ -102,6 +110,54 @@ export default function ApplicationRow({
     setIsDetailModalOpen(true);
   };
 
+  const handleToggleImportant = async () => {
+    await updateApplication(row.id, {
+      ...row,
+      important: !row.important,
+    });
+    await onChange?.();
+  };
+
+  const handleDuplicate = async () => {
+    try {
+      await createApplication({
+        ...row,
+        noticeId: null,
+        company: row.company,
+        jobTitle: row.jobTitle,
+        position: row.position,
+        industry: row.industry,
+        status: row.status,
+        finalResult:
+          row.status === "전형완료" ? (row.finalResult ?? null) : null,
+        manualRegistration: true,
+      });
+      await onChange?.();
+    } catch (error) {
+      console.error("공고 복제 실패:", error);
+      alert("공고 복제에 실패했습니다.");
+    }
+  };
+
+  const handleChangeStatus = async (nextStatus: ApplicationStatus) => {
+    try {
+      await updateApplication(row.id, {
+        ...row,
+        status: nextStatus,
+        finalResult:
+          nextStatus === "전형완료" ? (row.finalResult ?? null) : null,
+      });
+      await onChange?.();
+    } catch (error) {
+      console.error("상태 변경 실패:", error);
+      alert("상태 변경에 실패했습니다.");
+    }
+  };
+
+  const handleDelete = () => {
+    onRequestDelete(row.id);
+  };
+
   const saveDeadline = async () => {
     setIsEditingDeadline(false);
 
@@ -131,14 +187,10 @@ export default function ApplicationRow({
         return (
           <td
             key={key}
-            className="border-b whitespace-nowrap border-r border-[#F1F5F9] overflow-hidden"
+            className="overflow-hidden px-4 py-2.5 text-[15px] text-[#64748B] whitespace-nowrap"
             style={cellStyle(key)}
           >
-            <span
-              className="block truncate px-3 text-black font-medium text-sm"
-            >
-              {row.company || "-"}
-            </span>
+            <span className="block truncate">{row.company || "-"}</span>
           </td>
         );
 
@@ -146,12 +198,17 @@ export default function ApplicationRow({
         return (
           <td
             key={key}
-            className="px-3 border-b whitespace-nowrap text-sm border-r border-[#F1F5F9] overflow-hidden truncate"
+            className="overflow-hidden px-4 py-2.5 text-[14px] font-medium whitespace-nowrap"
             style={cellStyle(key)}
           >
-            <span className="font-medium text-[#0F172A]">
+            <Link
+              to={`/applications/${row.id}`}
+              onClick={(event) => event.stopPropagation()}
+              className="block truncate text-[#161C26] transition-colors hover:text-[#2563EB] hover:underline hover:underline-offset-2"
+              data-tooltip={`${row.jobTitle || "공고"} — 공고 상세 보기`}
+            >
               {row.jobTitle || "-"}
-            </span>
+            </Link>
           </td>
         );
 
@@ -159,16 +216,10 @@ export default function ApplicationRow({
         return (
           <td
             key={key}
-            className="border-b whitespace-nowrap text-sm text-center border-r border-[#F1F5F9] overflow-hidden"
+            className="overflow-hidden px-4 py-2.5 text-[14px] text-[#64748B] whitespace-nowrap"
             style={cellStyle(key)}
           >
-            <span
-              className={`inline-flex items-center justify-center px-2 py-[2px] text-xs font-semibold rounded ${getPositionColor(
-                row.position || "-",
-              )}`}
-            >
-              {row.position || "-"}
-            </span>
+            <span className="block truncate">{row.position || "-"}</span>
           </td>
         );
 
@@ -176,42 +227,67 @@ export default function ApplicationRow({
         return (
           <td
             key={key}
-            className="px-3 border-b whitespace-nowrap text-sm text-[#64748B] border-r border-[#F1F5F9] overflow-hidden truncate"
+            className="overflow-hidden px-4 py-2.5 text-[14px] text-[#64748B] whitespace-nowrap"
             style={cellStyle(key)}
           >
-            {getEmploymentType(row)}
+            <span className="block truncate">{getEmploymentType(row)}</span>
           </td>
         );
 
-      case "status":
+      case "status": {
+        const statusTone = getStatusTone(status);
+        const finalTone = getFinalResultTone(finalResult);
+
         return (
           <td
             key={key}
-            className="border-b border-r border-[#F1F5F9] overflow-hidden"
+            className="overflow-hidden px-4 py-2.5 whitespace-nowrap"
             style={cellStyle(key)}
           >
-            <div className="flex items-center justify-center">
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={openStatusModal}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold ${getStatusStyle(status)}`}
+                className="inline-flex h-5 items-center gap-1.5 rounded-full px-2 text-[10px] font-semibold tracking-[-0.01em] transition-opacity hover:opacity-75"
+                style={{
+                  backgroundColor: statusTone.backgroundColor,
+                  color: statusTone.color,
+                }}
               >
+                <span
+                  className="h-1.5 w-1.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: statusTone.dotColor }}
+                />
                 <span>{status}</span>
-                {status === "전형완료" && finalResult && (
-                  <span className="ml-1 rounded bg-white/70 px-1.5 py-0.5 text-[10px]">
-                    {finalResult}
-                  </span>
-                )}
               </button>
+
+              {status === "전형완료" && finalResult && (
+                <button
+                  type="button"
+                  onClick={openStatusModal}
+                  className="inline-flex h-5 items-center gap-1.5 rounded-full px-2 text-[10px] font-semibold tracking-[-0.01em] transition-opacity hover:opacity-75"
+                  style={{
+                    backgroundColor: finalTone.backgroundColor,
+                    color: finalTone.color,
+                  }}
+                >
+                  <span
+                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: finalTone.dotColor }}
+                  />
+                  <span>{finalResult}</span>
+                </button>
+              )}
             </div>
           </td>
         );
+      }
 
       case "deadlineDate":
         return (
           <td
             key={key}
-            className="px-3 border-b whitespace-nowrap text-sm text-[#334155] border-r border-[#F1F5F9]"
+            className="px-4 py-2.5 text-[15px] text-[#475569] whitespace-nowrap"
             style={cellStyle(key)}
             onClick={(event) => event.stopPropagation()}
           >
@@ -223,15 +299,13 @@ export default function ApplicationRow({
                 onChange={(event) => setDeadlineValue(event.target.value)}
                 onBlur={saveDeadline}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.currentTarget.blur();
-                  }
+                  if (event.key === "Enter") event.currentTarget.blur();
                   if (event.key === "Escape") {
                     setDeadlineValue(toDateInputValue(row.deadlineDate));
                     setIsEditingDeadline(false);
                   }
                 }}
-                className="w-full rounded-md border border-[#CBD5E1] px-2 py-1 text-sm outline-none focus:border-[#2563EB]"
+                className="w-full rounded-md border border-[#CBD5E1] px-2 py-1 text-[14px] outline-none focus:border-[#2563EB]"
               />
             ) : (
               <button
@@ -240,13 +314,16 @@ export default function ApplicationRow({
                   setDeadlineValue(toDateInputValue(row.deadlineDate));
                   setIsEditingDeadline(true);
                 }}
-                className="rounded px-1 py-1 hover:bg-[#F1F5F9] hover:text-[#2563EB]"
-                data-tooltip="마감일 수정" aria-label="마감일 수정"
+                className="rounded px-1 py-1 transition-colors hover:bg-[#F1F5F9] hover:text-[#2563EB]"
+                data-tooltip="마감일 수정"
+                aria-label="마감일 수정"
               >
                 <span className="inline-flex flex-col leading-tight">
                   <span>{formatApplicationDate(row.deadlineDate)}</span>
                   {deadlineInfo.label !== "지원마감일" && (
-                    <span className="text-[10px] text-[#94A3B8]">대표: {deadlineInfo.label}</span>
+                    <span className="text-[12px] text-[#94A3B8]">
+                      대표: {deadlineInfo.label}
+                    </span>
                   )}
                 </span>
               </button>
@@ -254,61 +331,67 @@ export default function ApplicationRow({
           </td>
         );
 
-      case "dday":
+      case "dday": {
+        const ddayTone =
+          currentDday === "-"
+            ? "bg-[#F1F5F9] text-[#94A3B8]"
+            : currentDday.startsWith("D+")
+              ? "bg-[#F1F5F9] text-[#94A3B8]"
+              : currentDday === "D-Day" ||
+                  (currentDday.startsWith("D-") &&
+                    parseInt(currentDday.replace("D-", "")) <= 7)
+                ? "bg-[#FEF2F2] text-[#EF4444]"
+                : "bg-[#F1F5F9] text-[#64748B]";
+
         return (
           <td
             key={key}
-            className={`px-3 border-b whitespace-nowrap text-sm font-semibold border-r border-[#F1F5F9] ${
-              currentDday === "-"
-                ? "text-[#64748B]"
-                : currentDday.startsWith("D+")
-                  ? "text-[#94A3B8]"
-                  : currentDday === "D-Day" ||
-                      (currentDday.startsWith("D-") &&
-                        parseInt(currentDday.replace("D-", "")) <= 7)
-                    ? "text-[#EF4444]"
-                    : "text-[#64748B]"
-            }`}
+            className="px-4 py-2.5 text-left whitespace-nowrap"
             style={cellStyle(key)}
           >
-            {currentDday}
+            <span
+              className={`inline-flex min-w-9 items-center justify-center rounded-full px-2 py-1 text-[12px] font-semibold ${ddayTone}`}
+            >
+              {currentDday}
+            </span>
           </td>
         );
+      }
 
       case "checklistInComplete":
         return (
           <td
             key={key}
-            className="px-3 border-b whitespace-nowrap border-r border-[#F1F5F9] overflow-hidden"
+            className="overflow-hidden px-4 py-2.5 whitespace-nowrap"
             style={cellStyle(key)}
             onClick={openStatusModal}
           >
             <button
               type="button"
-              className="flex h-full w-full items-center justify-center gap-3 text-[13px] text-[#475569]"
+              className="inline-flex items-center gap-2.5 text-[15px] text-[#475569]"
             >
               {scheduleCount > 0 && (
-                <span className="flex items-center gap-1">
+                <span className="inline-flex items-center gap-1">
                   <Icon
                     icon="lucide:calendar-days"
-                    className="h-4 w-4 text-[#94A3B8]"
+                    className="h-[18px] w-[18px] text-[#94A3B8]"
                   />
                   <span>{scheduleCount}</span>
                 </span>
               )}
 
               {todoCount > 0 && (
-                <span className="flex items-center gap-1">
+                <span className="inline-flex items-center gap-1">
                   <Icon
                     icon="lucide:square-check"
-                    className="h-4 w-4 text-[#94A3B8]"
+                    className="h-[18px] w-[18px] text-[#94A3B8]"
                   />
                   <span>{todoCount}</span>
                 </span>
               )}
 
               {scheduleCount === 0 && todoCount === 0 && (
-                <span className="text-[#CBD5E1]">-</span>
+                <span className="text-[#CBD5E1]">—</span>
               )}
             </button>
           </td>
@@ -318,10 +401,10 @@ export default function ApplicationRow({
         return (
           <td
             key={key}
-            className="px-3 border-b whitespace-nowrap text-sm font-semibold border-r border-[#F1F5F9] overflow-hidden truncate"
+            className="overflow-hidden px-4 py-2.5 text-[15px] text-[#64748B] whitespace-nowrap"
             style={cellStyle(key)}
           >
-            {row.industry || "-"}
+            <span className="block truncate">{row.industry || "-"}</span>
           </td>
         );
 
@@ -329,7 +412,7 @@ export default function ApplicationRow({
         return (
           <td
             key={key}
-            className="px-3 border-b whitespace-nowrap text-sm text-[#64748B] border-r border-[#F1F5F9]"
+            className="px-4 py-2.5 text-[15px] text-[#64748B] whitespace-nowrap"
             style={cellStyle(key)}
           >
             {row.updatedAt
@@ -344,7 +427,7 @@ export default function ApplicationRow({
         return (
           <td
             key={key}
-            className="px-3 border-b whitespace-nowrap text-sm text-[#64748B] border-r border-[#F1F5F9]"
+            className="px-4 py-2.5 text-[15px] text-[#64748B] tabular-nums whitespace-nowrap"
             style={cellStyle(key)}
           >
             {formatApplicationDate(row.createdAt)}
@@ -355,7 +438,7 @@ export default function ApplicationRow({
         return (
           <td
             key={key}
-            className="px-3 border-b whitespace-nowrap text-sm text-[#64748B] border-r border-[#F1F5F9]"
+            className="px-4 py-2.5 text-[15px] text-[#64748B] whitespace-nowrap"
             style={cellStyle(key)}
           >
             -
@@ -364,15 +447,47 @@ export default function ApplicationRow({
     }
   };
 
+  const getDropPosition = (event: DragEvent<HTMLTableRowElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    return event.clientY < rect.top + rect.height / 2 ? "before" : "after";
+  };
+
   return (
     <tr
-      className={`hover:bg-[#F8FAFC] ${
+      className={`group h-11 border-b border-[#E2E8F0]/60 transition-[background-color,box-shadow,opacity] hover:bg-[#F8FAFC] ${
         focusedApplication?.id === row.id ? "bg-[#F8FAFC]" : ""
+      } ${isDragging ? "opacity-45" : ""} ${
+        dropPosition === "before"
+          ? "shadow-[inset_0_2px_0_#2563EB]"
+          : dropPosition === "after"
+            ? "shadow-[inset_0_-2px_0_#2563EB]"
+            : ""
       }`}
+      onDragOver={(event) => {
+        if (isDragging) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        onRowDragOver(row.id, getDropPosition(event));
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        onRowDrop(row.id, getDropPosition(event));
+      }}
     >
-      <td className="w-[48px] min-w-[48px] max-w-[48px] border-b text-sm border-r border-[#F1F5F9]">
+      <td className="relative w-12 py-2.5 pl-1 pr-3 whitespace-nowrap">
+        <ApplicationMenu
+          row={row}
+          onEdit={onEdit}
+          onToggleImportant={handleToggleImportant}
+          onDuplicate={handleDuplicate}
+          onChangeStatus={handleChangeStatus}
+          onDelete={handleDelete}
+          isDragging={isDragging}
+          onRowDragStart={() => onRowDragStart(row.id)}
+          onRowDragEnd={onRowDragEnd}
+        />
         <label
-          className="flex items-center justify-center cursor-pointer p-2 -m-1.5"
+          className="ml-5 flex h-4 w-4 cursor-pointer items-center justify-center"
           onClick={(e) => e.stopPropagation()}
         >
           <input
@@ -381,10 +496,10 @@ export default function ApplicationRow({
             checked={isChecked}
             onChange={() => toggleCheck(row.id)}
           />
-          <div className="w-[15px] h-[15px] rounded-[4px] border-[1.5px] border-[#2563EB] flex items-center justify-center">
+          <div className="flex h-4 w-4 items-center justify-center rounded-[4px] border-[1.5px] border-[#2563EB]">
             {isChecked && (
               <svg
-                className="w-3 h-3 text-[#2563EB]"
+                className="h-[13px] w-[13px] text-[#2563EB]"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="3"
@@ -396,19 +511,13 @@ export default function ApplicationRow({
           </div>
         </label>
       </td>
-      <td className="w-[48px] min-w-[48px] max-w-[48px] border-b border-r border-[#F1F5F9] text-center">
+      <td className="w-9 px-2 py-2.5 text-left whitespace-nowrap">
         <button
           onClick={async (e) => {
             e.stopPropagation();
-
-            const updated = {
-              ...row,
-              important: !row.important,
-            };
-            await updateApplication(row.id, () => updated);
-            await onChange?.();
+            await handleToggleImportant();
           }}
-          className="flex h-[48px] w-full items-center justify-center"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md"
         >
           <Star
             size={18}
@@ -421,35 +530,15 @@ export default function ApplicationRow({
 
       {tableColumns.map(([key]) => renderTableCell(key))}
 
-      <td
-        className="w-[56px] min-w-[56px] max-w-[56px] border-b border-[#F1F5F9] sticky right-0 bg-white z-10"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <ApplicationMenu
-          row={row}
-          onEdit={onEdit}
-          onDelete={async () => {
-            const ok = window.confirm(
-              `${row.company} 항목을 삭제하시겠습니까?`,
-            );
-            if (!ok) return;
-
-            await deleteApplications([row.id]);
-            onDelete?.(row.id);
-
-            setCheckedIds((prev: number[]) =>
-              prev.filter((id) => id !== row.id),
-            );
-            if (focusedApplication?.id === row.id) {
-              setFocusedApplication(null);
-            }
-            if (onChange) await onChange();
-            alert("삭제되었습니다");
-          }}
-          onAddDocument={addDocument}
-          onChange={onChange}
-        />
+      <td className="w-14 py-2.5" onClick={(e) => e.stopPropagation()}>
+        <Link
+          to={`/applications/${row.id}`}
+          className="mx-auto flex h-8 w-8 items-center justify-center rounded-md text-[#A4AEBE] opacity-0 transition-all hover:bg-[#EFF2F6] hover:text-[#5A6678] group-hover:opacity-100"
+        >
+          <Pencil className="h-4 w-4" strokeWidth={2} />
+        </Link>
       </td>
+      <td aria-hidden />
     </tr>
   );
 }

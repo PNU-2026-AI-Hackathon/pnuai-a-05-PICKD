@@ -60,7 +60,13 @@ export default function ExperienceDetailModal({
   const [headerTypeOpen, setHeaderTypeOpen] = useState(false);
   const [rowTypeOpen, setRowTypeOpen] = useState(false);
   const [keywordOpen, setKeywordOpen] = useState(false);
+  const [directKeywordInputOpen, setDirectKeywordInputOpen] = useState(false);
+  const [directKeywordValue, setDirectKeywordValue] = useState("");
   const [addFieldOpen, setAddFieldOpen] = useState(false);
+  const [otherFieldMenuOpen, setOtherFieldMenuOpen] = useState(false);
+  const [customFieldModalOpen, setCustomFieldModalOpen] = useState(false);
+  const [customFieldLabel, setCustomFieldLabel] = useState("");
+  const [customFieldValue, setCustomFieldValue] = useState("");
   const [activeFieldMenuKey, setActiveFieldMenuKey] = useState<string | null>(
     null,
   );
@@ -78,6 +84,7 @@ export default function ExperienceDetailModal({
   const [generatedSentences, setGeneratedSentences] = useState<string[]>([]);
   const [aiQuestionIndex, setAiQuestionIndex] = useState(0);
   const [toastMessage, setToastMessage] = useState("");
+  const [saveState, setSaveState] = useState<"저장됨" | "작성중">("저장됨");
   const bodyTextAreaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const preset = item ? EXPERIENCE_PRESETS[item.type] : null;
@@ -96,9 +103,14 @@ export default function ExperienceDetailModal({
     setRowTypeOpen(false);
     setKeywordOpen(false);
     setAddFieldOpen(false);
+    setOtherFieldMenuOpen(false);
     setActiveFieldMenuKey(null);
     setHeaderMenuOpen(false);
   };
+
+  useEffect(() => {
+    if (open && item) setSaveState("저장됨");
+  }, [open, item?.id]);
 
   useEffect(() => {
     if (!open) {
@@ -113,6 +125,12 @@ export default function ExperienceDetailModal({
       setToastMessage("");
       setHeaderMenuOpen(false);
       setDeleteConfirmOpen(false);
+      setOtherFieldMenuOpen(false);
+      setCustomFieldModalOpen(false);
+      setCustomFieldLabel("");
+      setCustomFieldValue("");
+      setDirectKeywordInputOpen(false);
+      setDirectKeywordValue("");
     }
   }, [open]);
 
@@ -125,6 +143,8 @@ export default function ExperienceDetailModal({
   }, [toastMessage]);
 
   if (!open || !item || !preset) return null;
+
+  const currentStatus = item.status === "완료" ? "완료" : "작성중";
 
   const defaultRows: FieldRowData[] = [
     {
@@ -176,10 +196,31 @@ export default function ExperienceDetailModal({
     (row) => !hiddenKeys.has(row.key),
   );
 
+  const existingFieldKeys = new Set(allRows.map((row) => row.key));
+  const seenOtherFieldKeys = new Set<string>();
+  const otherTypeFieldGroups = EXPERIENCE_TYPES.filter(
+    (type) => type !== item.type,
+  )
+    .map((type) => ({
+      type,
+      fields: EXPERIENCE_PRESETS[type].topFields.filter((field) => {
+        if (
+          existingFieldKeys.has(field.key) ||
+          seenOtherFieldKeys.has(field.key)
+        ) {
+          return false;
+        }
+        seenOtherFieldKeys.add(field.key);
+        return true;
+      }),
+    }))
+    .filter((group) => group.fields.length > 0);
+
   const isImportant = Boolean(item.important);
   const hiddenFieldCount = item.hiddenFieldKeys?.length ?? 0;
 
   const updateItem = (next: Partial<ExperienceItem>) => {
+    setSaveState("작성중");
     onChange({
       ...item,
       ...next,
@@ -199,6 +240,7 @@ export default function ExperienceDetailModal({
     if (key === "period") nextItem.period = value;
     if (key === "role") nextItem.role = value;
 
+    setSaveState("작성중");
     onChange(nextItem);
   };
 
@@ -247,15 +289,26 @@ export default function ExperienceDetailModal({
   };
 
   const addDirectKeyword = () => {
-    const keyword = window.prompt("추가할 키워드를 입력해주세요.");
+    setKeywordOpen(false);
+    setDirectKeywordInputOpen(true);
+    setDirectKeywordValue("");
+  };
 
-    if (!keyword?.trim()) return;
-    if (item.keywords.includes(keyword.trim())) return;
+  const submitDirectKeyword = () => {
+    const keyword = directKeywordValue.trim();
+
+    if (!keyword) return;
+    if (item.keywords.includes(keyword)) {
+      showToast("이미 추가된 키워드예요.");
+      setDirectKeywordValue("");
+      return;
+    }
 
     onChange({
       ...item,
-      keywords: [...item.keywords, keyword.trim()],
+      keywords: [...item.keywords, keyword],
     });
+    setDirectKeywordValue("");
   };
 
   const addField = (field: { key: string; label: string }) => {
@@ -275,14 +328,42 @@ export default function ExperienceDetailModal({
   };
 
   const addCustomField = () => {
-    const label = window.prompt("필드 이름을 입력해주세요.");
+    setAddFieldOpen(false);
+    setOtherFieldMenuOpen(false);
+    setCustomFieldLabel("");
+    setCustomFieldValue("");
+    setCustomFieldModalOpen(true);
+  };
 
-    if (!label?.trim()) return;
+  const confirmAddCustomField = () => {
+    const label = customFieldLabel.trim();
+    if (!label) return;
 
-    addField({
-      key: label.trim().replace(/\s/g, "_"),
-      label: label.trim(),
+    const normalizedKey =
+      label
+        .toLowerCase()
+        .replace(/[^a-z0-9가-힣]+/g, "_")
+        .replace(/^_+|_+$/g, "") || "field";
+    const key = `custom_${normalizedKey}_${Date.now()}`;
+    const newField: CustomTopField = {
+      key,
+      label,
+      placeholder: `${label} 입력`,
+    };
+
+    onChange({
+      ...item,
+      fields: {
+        ...item.fields,
+        [key]: customFieldValue.trim(),
+      },
+      customTopFields: [...(item.customTopFields ?? []), newField],
+      topFieldOrder: [...orderedRows.map((row) => row.key), key],
     });
+
+    setCustomFieldModalOpen(false);
+    setCustomFieldLabel("");
+    setCustomFieldValue("");
   };
 
   const renameField = (field: FieldRowData) => {
@@ -528,17 +609,20 @@ export default function ExperienceDetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4"
+      className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/35 px-4 backdrop-blur-[1px]"
       onClick={onClose}
     >
       <div
         className="
-          h-[92vh]
-          w-[1280px]
+          h-[96vh]
+          max-h-[96vh]
+          w-[95vw]
+          max-w-[1140px]
           overflow-hidden
-          rounded-[8px]
+          rounded-xl
+          border border-[#E3E8EF]
           bg-[#FBFCFE]
-          shadow-[0_26px_90px_rgba(15,23,42,0.35)]
+          shadow-[0_24px_60px_-16px_rgba(15,23,42,0.34)]
         "
         onClick={(event) => event.stopPropagation()}
         onMouseDown={(event) => {
@@ -549,11 +633,11 @@ export default function ExperienceDetailModal({
         }}
       >
         {/* HEADER */}
-        <div className="flex h-[88px] items-start justify-between border-b border-[#E5E7EB] px-7 py-5">
+        <div className="flex min-h-[64px] items-center justify-between gap-4 border-b border-[#E5E7EB] px-6 py-3.5">
           <div>
             <div
               data-floating-area
-              className="relative flex items-center gap-2 text-[13px] font-[600] text-[#64748B]"
+              className="relative flex items-center gap-2 text-[11px] font-[600] text-[#64748B]"
             >
               <span>경험정리</span>
               <span>›</span>
@@ -566,10 +650,10 @@ export default function ExperienceDetailModal({
                   setAddFieldOpen(false);
                   setActiveFieldMenuKey(null);
                 }}
-                className="inline-flex items-center gap-1 font-[800] text-[#0F172A]"
+                className="inline-flex items-center gap-1 rounded px-1 py-0.5 font-[500] text-[#0F172A] hover:bg-[#EFF2F6]"
               >
                 {item.type}
-                <ChevronDown size={14} />
+                <ChevronDown size={12} />
               </button>
 
               {headerTypeOpen && (
@@ -589,9 +673,9 @@ export default function ExperienceDetailModal({
                 mt-2
                 w-[460px]
                 bg-transparent
-                text-[24px]
-                font-[800]
-                tracking-[-0.03em]
+                text-[20px]
+                font-[700]
+                tracking-[-0.01em]
                 text-[#0F172A]
                 outline-none
                 placeholder:text-[#0F172A]
@@ -599,14 +683,15 @@ export default function ExperienceDetailModal({
             />
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 items-center rounded-[8px] border border-[#E2E8F0] bg-white p-1">
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="text-[11px] text-[#79859A]">{saveState}</span>
+            <div className="flex h-7 items-center rounded-md border border-[#E3E8EF] bg-[#EFF2F6]/50 p-0.5">
               {(["작성중", "완료"] as const).map((status) => (
                 <button
                   key={status}
                   type="button"
                   onClick={() => updateItem({ status })}
-                  className={`h-7 rounded-[6px] px-2 text-[12px] font-[800] ${item.status === status ? "bg-[#EFF6FF] text-[#2563EB]" : "text-[#94A3B8] hover:text-[#64748B]"}`}
+                  className={`h-5 rounded px-2 text-[11px] transition-colors ${currentStatus === status ? "bg-white font-[600] text-[#28303D] shadow-sm" : "text-[#79859A] hover:text-[#28303D]"}`}
                 >
                   {status}
                 </button>
@@ -616,18 +701,24 @@ export default function ExperienceDetailModal({
             {onSave && (
               <button
                 type="button"
-                onClick={() => onSave(item)}
+                onClick={() => {
+                  setSaveState("저장됨");
+                  onSave({
+                    ...item,
+                    status: currentStatus,
+                  });
+                }}
                 disabled={!item.name.trim()}
-                className="inline-flex h-9 items-center gap-1.5 rounded-[8px] bg-[#2563EB] px-3 text-[13px] font-[800] text-white transition-colors hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:bg-[#94A3B8]"
+                className="inline-flex h-7 items-center gap-1 rounded-md bg-[#2563EB] px-2.5 text-[11px] font-[600] text-white transition-colors hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:bg-[#A4AEBE]"
               >
-                <Check size={15} />
+                <Check size={12} />
                 저장
               </button>
             )}
 
             <button
               onClick={() => updateItem({ pin: !item.pin })}
-              className={`flex h-9 w-9 items-center justify-center rounded-[8px] border bg-white transition-colors ${
+              className={`flex h-7 w-7 items-center justify-center rounded-md border bg-white transition-colors ${
                 item.pin
                   ? "border-[#E2E8F0] text-[#0F172A]"
                   : "border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC]"
@@ -636,7 +727,7 @@ export default function ExperienceDetailModal({
               aria-label={item.pin ? "고정 해제" : "고정"}
             >
               <Pin
-                size={16}
+                size={14}
                 fill={item.pin ? "currentColor" : "none"}
                 strokeWidth={item.pin ? 2.6 : 2}
               />
@@ -644,19 +735,20 @@ export default function ExperienceDetailModal({
 
             <button
               onClick={() => setAiOpen((prev) => !prev)}
-              className={`flex h-9 w-9 items-center justify-center rounded-[8px] border transition-colors ${
+              className={`flex h-7 w-7 items-center justify-center rounded-md border transition-colors ${
                 aiOpen
                   ? "border-[#DBEAFE] bg-[#EFF6FF] text-[#2563EB]"
                   : "border-[#E2E8F0] bg-white text-[#64748B] hover:bg-[#F8FAFC]"
               }`}
-              data-tooltip="AI로 더 구체화 하기" aria-label="AI로 더 구체화 하기"
+              data-tooltip="AI로 더 구체화 하기"
+              aria-label="AI로 더 구체화 하기"
             >
-              <Sparkles size={16} />
+              <Sparkles size={14} />
             </button>
 
             <button
               onClick={() => setCopyOpen(true)}
-              className="h-9 rounded-[8px] border border-[#E2E8F0] bg-white px-3 text-[13px] font-[700] text-[#0F172A]"
+              className="h-7 rounded-md border border-[#E3E8EF] bg-white px-2 text-[11px] text-[#5A6678] hover:bg-[#F6F8FB] hover:text-[#28303D]"
             >
               복붙용 문장 만들기
             </button>
@@ -672,10 +764,10 @@ export default function ExperienceDetailModal({
                   setAddFieldOpen(false);
                   setActiveFieldMenuKey(null);
                 }}
-                className="flex h-9 w-9 items-center justify-center rounded-[8px] text-[#64748B] hover:bg-[#F8FAFC]"
+                className="flex h-7 w-7 items-center justify-center rounded-md text-[#79859A] hover:bg-[#EFF2F6]"
                 aria-label="경험 더보기 메뉴"
               >
-                <MoreHorizontal size={20} />
+                <MoreHorizontal size={15} />
               </button>
 
               {headerMenuOpen && (
@@ -689,17 +781,17 @@ export default function ExperienceDetailModal({
 
             <button
               onClick={onClose}
-              className="flex h-9 w-9 items-center justify-center text-[#64748B]"
+              className="flex h-7 w-7 items-center justify-center rounded-md text-[#79859A] hover:bg-[#EFF2F6]"
             >
-              <X size={21} />
+              <X size={16} />
             </button>
           </div>
         </div>
 
-        <div className="flex h-[calc(92vh-88px)] overflow-hidden">
+        <div className="flex h-[calc(96vh-64px)] overflow-hidden">
           <div className="min-w-0 flex-1 overflow-y-auto">
-            <div className="mx-auto w-full max-w-[930px] px-8 pb-10 pt-11">
-              <div className="relative w-[790px] max-w-full">
+            <div className="mx-auto w-full max-w-[820px] space-y-8 px-10 py-8">
+              <div className="relative w-full max-w-full">
                 {orderedRows.map((field) => (
                   <TopFieldRow
                     key={field.key}
@@ -710,6 +802,8 @@ export default function ExperienceDetailModal({
                     item={item}
                     isImportant={isImportant}
                     keywordOpen={keywordOpen}
+                    directKeywordInputOpen={directKeywordInputOpen}
+                    directKeywordValue={directKeywordValue}
                     rowTypeOpen={rowTypeOpen}
                     activeMenuOpen={activeFieldMenuKey === field.key}
                     isDragging={draggingFieldKey === field.key}
@@ -742,6 +836,8 @@ export default function ExperienceDetailModal({
                     }}
                     onSelectType={changeType}
                     onOpenKeyword={() => {
+                      setDirectKeywordInputOpen(false);
+                      setDirectKeywordValue("");
                       setKeywordOpen((prev) => !prev);
                       setHeaderTypeOpen(false);
                       setRowTypeOpen(false);
@@ -751,6 +847,12 @@ export default function ExperienceDetailModal({
                     onToggleKeyword={toggleKeyword}
                     onRemoveKeyword={removeKeyword}
                     onAddDirectKeyword={addDirectKeyword}
+                    onChangeDirectKeyword={setDirectKeywordValue}
+                    onSubmitDirectKeyword={submitDirectKeyword}
+                    onCancelDirectKeyword={() => {
+                      setDirectKeywordInputOpen(false);
+                      setDirectKeywordValue("");
+                    }}
                     onToggleImportant={() =>
                       updateItem({
                         important: !isImportant,
@@ -776,12 +878,13 @@ export default function ExperienceDetailModal({
                 {/* FIELD ADD */}
                 <div
                   data-floating-area
-                  className="relative grid min-h-[40px] grid-cols-[150px_1fr] items-center"
+                  className="relative grid min-h-[36px] grid-cols-[120px_1fr] items-center gap-x-4"
                 >
                   <div>
                     <button
                       onClick={() => {
                         setAddFieldOpen((prev) => !prev);
+                        setOtherFieldMenuOpen(false);
                         setHeaderTypeOpen(false);
                         setRowTypeOpen(false);
                         setKeywordOpen(false);
@@ -795,6 +898,11 @@ export default function ExperienceDetailModal({
 
                   {addFieldOpen && (
                     <AddFieldMenu
+                      otherTypeFieldGroups={otherTypeFieldGroups}
+                      otherFieldMenuOpen={otherFieldMenuOpen}
+                      onToggleOtherFieldMenu={() =>
+                        setOtherFieldMenuOpen((prev) => !prev)
+                      }
                       onAddField={addField}
                       onAddCustomField={addCustomField}
                     />
@@ -802,10 +910,10 @@ export default function ExperienceDetailModal({
                 </div>
               </div>
 
-              <div className="mt-9 h-px w-[790px] max-w-full bg-[#E5E7EB]" />
+              <div className="h-px w-full bg-[#E3E8EF]" />
 
               {/* DOCUMENT AREA */}
-              <div className="mt-8 w-[790px] max-w-full">
+              <div className="w-full">
                 <div className="mb-5 flex items-center justify-between">
                   <p className="text-[14px] font-[700] text-[#64748B]">
                     비어 있음
@@ -838,20 +946,19 @@ export default function ExperienceDetailModal({
                   onDrop={handleGeneratedSentenceDrop}
                   placeholder="자유롭게 써내려가 보세요. 자소서 초안을 그대로 옮겨 적어도 좋아요."
                   className="
-                    min-h-[420px]
+                    min-h-[440px]
                     w-full
                     resize-none
                     bg-transparent
-                    text-[18px]
-                    font-[500]
-                    leading-[1.8]
-                    text-[#0F172A]
+                    text-[14px]
+                    leading-7
+                    text-[#28303D]
                     outline-none
                     placeholder:text-[#B8C2D1]
                   "
                 />
 
-                <p className="mt-16 text-[13px] font-[500] text-[#94A3B8]">
+                <p className="mt-3 text-[10px] leading-5 text-[#A4AEBE]">
                   추천 흐름 — {preset.description}
                 </p>
               </div>
@@ -884,8 +991,8 @@ export default function ExperienceDetailModal({
         </div>
 
         {toastMessage && (
-          <div className="fixed bottom-8 right-8 z-[70] flex min-h-[54px] items-center gap-3 rounded-[10px] border border-[#E2E8F0] bg-white px-5 py-3 text-[15px] font-[600] text-[#334155] shadow-[0_18px_40px_rgba(15,23,42,0.18)]">
-            <Check size={19} className="text-[#2563EB]" />
+          <div className="fixed bottom-6 left-1/2 z-[10001] flex -translate-x-1/2 items-center gap-2 rounded-lg bg-[#161C26] px-4 py-2.5 text-[13px] font-[500] text-white shadow-[0_14px_30px_-8px_rgba(15,23,42,0.48)]">
+            <Check size={15} className="text-white/90" />
             {toastMessage}
           </div>
         )}
@@ -895,6 +1002,21 @@ export default function ExperienceDetailModal({
         <DeleteConfirmModal
           onCancel={() => setDeleteConfirmOpen(false)}
           onConfirm={confirmDeleteExperience}
+        />
+      )}
+
+      {customFieldModalOpen && (
+        <CustomFieldModal
+          label={customFieldLabel}
+          value={customFieldValue}
+          onChangeLabel={setCustomFieldLabel}
+          onChangeValue={setCustomFieldValue}
+          onCancel={() => {
+            setCustomFieldModalOpen(false);
+            setCustomFieldLabel("");
+            setCustomFieldValue("");
+          }}
+          onConfirm={confirmAddCustomField}
         />
       )}
 
@@ -963,6 +1085,110 @@ function HeaderMoreMenu({
   );
 }
 
+interface CustomFieldModalProps {
+  label: string;
+  value: string;
+  onChangeLabel: (value: string) => void;
+  onChangeValue: (value: string) => void;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
+function CustomFieldModal({
+  label,
+  value,
+  onChangeLabel,
+  onChangeValue,
+  onCancel,
+  onConfirm,
+}: CustomFieldModalProps) {
+  const canSubmit = Boolean(label.trim());
+
+  return (
+    <div
+      className="fixed inset-0 z-[10020] flex items-center justify-center bg-black/70 px-4"
+      onClick={(event) => {
+        event.stopPropagation();
+        if (event.target === event.currentTarget) onCancel();
+      }}
+    >
+      <div
+        className="w-full max-w-[530px] rounded-[12px] border border-[#E2E8F0] bg-[#FBFCFE] px-9 pb-5 pt-7 shadow-[0_26px_90px_rgba(15,23,42,0.35)]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h2 className="text-[20px] font-[800] tracking-[-0.03em] text-[#0F172A]">
+              사용자 지정 필드
+            </h2>
+            <p className="mt-3 text-[14px] font-[500] text-[#64748B]">
+              원하는 항목명과 값을 자유롭게 입력하세요.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] text-[#475569] hover:bg-[#F8FAFC]"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <label className="mt-5 block">
+          <span className="mb-2 block text-[14px] font-[600] text-[#64748B]">
+            항목명
+          </span>
+          <input
+            autoFocus
+            value={label}
+            onChange={(event) => onChangeLabel(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && canSubmit) onConfirm();
+              if (event.key === "Escape") onCancel();
+            }}
+            placeholder="예: 멘토"
+            className="h-[40px] w-full rounded-[10px] border border-[#CBD5E1] bg-white px-4 text-[14px] text-[#334155] outline-none placeholder:text-[#94A3B8] focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20"
+          />
+        </label>
+
+        <label className="mt-4 block">
+          <span className="mb-2 block text-[14px] font-[600] text-[#64748B]">
+            값 (선택)
+          </span>
+          <input
+            value={value}
+            onChange={(event) => onChangeValue(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && canSubmit) onConfirm();
+              if (event.key === "Escape") onCancel();
+            }}
+            placeholder="값을 입력하세요"
+            className="h-[40px] w-full rounded-[9px] border border-[#CBD5E1] bg-white px-4 text-[14px] text-[#334155] outline-none placeholder:text-[#94A3B8] focus:border-[#2563EB]"
+          />
+        </label>
+
+        <div className="mt-7 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="h-9 rounded-[8px] border border-[#E2E8F0] bg-white px-3 text-[14px] font-[800] text-[#0F172A] hover:bg-[#F8FAFC]"
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            disabled={!canSubmit}
+            onClick={onConfirm}
+            className="h-9 rounded-[8px] bg-[#7FAAF4] px-3 text-[14px] font-[800] text-white hover:bg-[#6798EF] disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            추가
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface DeleteConfirmModalProps {
   onCancel: () => void;
   onConfirm: () => void;
@@ -978,16 +1204,16 @@ function DeleteConfirmModal({ onCancel, onConfirm }: DeleteConfirmModalProps) {
       }}
     >
       <div
-        className="w-[570px] rounded-[12px] border border-[#E2E8F0] bg-[#FBFCFE] px-9 pb-9 pt-8 shadow-[0_26px_90px_rgba(15,23,42,0.35)]"
+        className="w-[570px] rounded-[12px] border border-[#E2E8F0] bg-[#FBFCFE] px-9 pb-7 pt-8 shadow-[0_26px_90px_rgba(15,23,42,0.35)]"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-6">
           <div>
-            <h2 className="text-[24px] font-[800] tracking-[-0.03em] text-[#0F172A]">
-              정말 삭제하시겠어요?
+            <h2 className="text-[20px] font-[800] tracking-[-0.03em] text-[#0F172A]">
+              휴지통으로 옮길까요?
             </h2>
-            <p className="mt-3 text-[19px] font-[600] tracking-[-0.03em] text-[#64748B]">
-              이 경험을 삭제하면 되돌릴 수 없어요.
+            <p className="mt-3 text-[16px] font-[600] tracking-[-0.03em] text-[#64748B]">
+              이 경험을 휴지통으로 옮겨요. 14일 안에 복원할 수 있어요.
             </p>
           </div>
 
@@ -997,7 +1223,7 @@ function DeleteConfirmModal({ onCancel, onConfirm }: DeleteConfirmModalProps) {
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] text-[#475569] hover:bg-[#F8FAFC]"
             aria-label="삭제 확인 창 닫기"
           >
-            <X size={22} />
+            <X size={20} />
           </button>
         </div>
 
@@ -1005,7 +1231,7 @@ function DeleteConfirmModal({ onCancel, onConfirm }: DeleteConfirmModalProps) {
           <button
             type="button"
             onClick={onCancel}
-            className="h-12 rounded-[8px] border border-[#E2E8F0] bg-white px-5 text-[16px] font-[800] text-[#0F172A] hover:bg-[#F8FAFC]"
+            className="h-10 rounded-[8px] border border-[#E2E8F0] bg-white px-5 text-[14px] font-[800] text-[#0F172A] hover:bg-[#F8FAFC]"
           >
             취소
           </button>
@@ -1013,7 +1239,7 @@ function DeleteConfirmModal({ onCancel, onConfirm }: DeleteConfirmModalProps) {
           <button
             type="button"
             onClick={onConfirm}
-            className="h-12 rounded-[8px] bg-[#E0525D] px-5 text-[16px] font-[800] text-white hover:bg-[#DC4450]"
+            className="h-10 rounded-[8px] bg-[#E0525D] px-5 text-[14px] font-[800] text-white hover:bg-[#DC4450]"
           >
             삭제
           </button>
@@ -1049,7 +1275,7 @@ function AiQuestionPanel({
   onClose,
 }: AiQuestionPanelProps) {
   return (
-    <aside className="w-[370px] shrink-0 overflow-y-auto border-l border-[#E5E7EB] bg-white">
+    <aside className="w-[320px] shrink-0 overflow-y-auto border-l border-[#E3E8EF] bg-white">
       <div className="border-b border-[#F1F5F9] px-5 py-5">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -1233,6 +1459,8 @@ interface TopFieldRowProps {
   item: ExperienceItem;
   isImportant: boolean;
   keywordOpen: boolean;
+  directKeywordInputOpen: boolean;
+  directKeywordValue: string;
   rowTypeOpen: boolean;
   activeMenuOpen: boolean;
   isDragging: boolean;
@@ -1249,6 +1477,9 @@ interface TopFieldRowProps {
   onToggleKeyword: (keyword: string) => void;
   onRemoveKeyword: (keyword: string) => void;
   onAddDirectKeyword: () => void;
+  onChangeDirectKeyword: (value: string) => void;
+  onSubmitDirectKeyword: () => void;
+  onCancelDirectKeyword: () => void;
   onToggleImportant: () => void;
   onOpenFieldMenu: () => void;
   onRename: () => void;
@@ -1266,6 +1497,8 @@ function TopFieldRow({
   item,
   isImportant,
   keywordOpen,
+  directKeywordInputOpen,
+  directKeywordValue,
   rowTypeOpen,
   activeMenuOpen,
   isDragging,
@@ -1282,6 +1515,9 @@ function TopFieldRow({
   onToggleKeyword,
   onRemoveKeyword,
   onAddDirectKeyword,
+  onChangeDirectKeyword,
+  onSubmitDirectKeyword,
+  onCancelDirectKeyword,
   onToggleImportant,
   onOpenFieldMenu,
   onRename,
@@ -1318,8 +1554,9 @@ function TopFieldRow({
         group
         relative
         grid
-        min-h-[43px]
-        grid-cols-[150px_1fr]
+        min-h-[38px]
+        grid-cols-[120px_1fr]
+        gap-x-4
         items-center
         rounded-[6px]
         ${isDragging ? "opacity-45" : ""}
@@ -1384,7 +1621,7 @@ function TopFieldRow({
         )}
       </div>
 
-      <p className="text-[15px] font-[600] text-[#64748B]">{label}</p>
+      <p className="text-[11px] text-[#79859A]">{label}</p>
 
       <div className="min-w-0">
         {field.kind === "title" && (
@@ -1394,7 +1631,7 @@ function TopFieldRow({
             placeholder={placeholder}
             className="
               w-full bg-transparent
-              text-[15px] font-[500] text-[#0F172A]
+              text-[13px] text-[#28303D]
               outline-none
               placeholder:text-[#AAB4C3]
             "
@@ -1408,7 +1645,7 @@ function TopFieldRow({
             placeholder={placeholder}
             className="
               w-full bg-transparent
-              text-[15px] font-[500] text-[#0F172A]
+              text-[13px] text-[#28303D]
               outline-none
               placeholder:text-[#AAB4C3]
             "
@@ -1424,13 +1661,12 @@ function TopFieldRow({
               <span
                 key={keyword}
                 className="
-                  inline-flex h-[26px] items-center gap-1
-                  rounded-full
-                  bg-[#F1F5F9]
-                  px-3
-                  text-[13px]
-                  font-[700]
-                  text-[#475569]
+                  inline-flex h-5 items-center gap-1
+                  rounded-md border border-[#E3E8EF]
+                  bg-[#F6F8FB]
+                  px-1.5
+                  text-[11px]
+                  text-[#5A6678]
                 "
               >
                 {keyword}
@@ -1444,23 +1680,44 @@ function TopFieldRow({
               </span>
             ))}
 
-            <button
-              onClick={onOpenKeyword}
-              className="
-                h-[26px]
-                rounded-full
-                border border-dashed border-[#CBD5E1]
-                bg-white
-                px-3
-                text-[13px]
-                font-[700]
-                text-[#64748B]
-              "
-            >
-              + 키워드
-            </button>
+            {directKeywordInputOpen ? (
+              <input
+                autoFocus
+                value={directKeywordValue}
+                onChange={(event) => onChangeDirectKeyword(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    onSubmitDirectKeyword();
+                  }
+                  if (event.key === "Escape") {
+                    onCancelDirectKeyword();
+                  }
+                }}
+                onBlur={() => {
+                  if (!directKeywordValue.trim()) onCancelDirectKeyword();
+                }}
+                placeholder="키워드 입력 후 Enter"
+                className="h-7 w-[244px] rounded-full border border-[#2563EB] bg-white px-3 text-[13px] text-[#475569] outline-none placeholder:text-[#94A3B8] focus:ring-1 focus:ring-[#2563EB]/25"
+              />
+            ) : (
+              <button
+                onClick={onOpenKeyword}
+                className="
+                  h-5
+                  rounded-md
+                  border border-dashed border-[#CDD5E0]
+                  bg-white
+                  px-1.5
+                  text-[11px]
+                  text-[#79859A]
+                "
+              >
+                + 키워드
+              </button>
+            )}
 
-            {keywordOpen && (
+            {keywordOpen && !directKeywordInputOpen && (
               <KeywordMenu
                 selectedKeywords={item.keywords}
                 onToggleKeyword={onToggleKeyword}
@@ -1473,7 +1730,7 @@ function TopFieldRow({
         {field.kind === "important" && (
           <button
             onClick={onToggleImportant}
-            className="inline-flex items-center gap-2 text-[15px] font-[600] text-[#64748B]"
+            className="inline-flex items-center gap-2 text-[13px] text-[#79859A]"
           >
             <Icon
               icon={isImportant ? "mdi:star" : "mdi:star-outline"}
@@ -1556,18 +1813,39 @@ function KeywordMenu({
   );
 }
 
+interface OtherTypeFieldGroup {
+  type: ExperienceType;
+  fields: { key: string; label: string; placeholder?: string }[];
+}
+
 interface AddFieldMenuProps {
+  otherTypeFieldGroups: OtherTypeFieldGroup[];
+  otherFieldMenuOpen: boolean;
+  onToggleOtherFieldMenu: () => void;
   onAddField: (field: { key: string; label: string }) => void;
   onAddCustomField: () => void;
 }
 
-function AddFieldMenu({ onAddField, onAddCustomField }: AddFieldMenuProps) {
+function AddFieldMenu({
+  otherTypeFieldGroups,
+  otherFieldMenuOpen,
+  onToggleOtherFieldMenu,
+  onAddField,
+  onAddCustomField,
+}: AddFieldMenuProps) {
+  const [activeType, setActiveType] = useState<ExperienceType | null>(null);
+
+  const handleAddField = (field: { key: string; label: string }) => {
+    onAddField(field);
+    setActiveType(null);
+  };
+
   return (
     <div
       className="
-        absolute left-0 top-9 z-30
-        w-[290px]
-        overflow-hidden
+        absolute top-8 left-0 z-50
+        w-[250px]
+        overflow-visible
         rounded-[8px]
         border border-[#E2E8F0]
         bg-white
@@ -1578,12 +1856,13 @@ function AddFieldMenu({ onAddField, onAddCustomField }: AddFieldMenuProps) {
       {EXTRA_FIELD_OPTIONS.map((field) => (
         <button
           key={field.key}
-          onClick={() => onAddField(field)}
+          type="button"
+          onClick={() => handleAddField(field)}
           className="
-            flex h-10 w-full items-center
-            px-4
+            flex h-9 w-full items-center
+            px-5
             text-left
-            text-[14px]
+            text-[13px]
             font-[600]
             text-[#0F172A]
             hover:bg-[#F8FAFC]
@@ -1593,26 +1872,137 @@ function AddFieldMenu({ onAddField, onAddCustomField }: AddFieldMenuProps) {
         </button>
       ))}
 
-      <button
-        className="
-          flex h-11 w-full items-center justify-between
-          border-y border-[#F1F5F9]
+      <div className="relative border-y border-[#F1F5F9]">
+        <button
+          type="button"
+          onClick={() => {
+            onToggleOtherFieldMenu();
+            setActiveType(null);
+          }}
+          onMouseEnter={() => {
+            if (!otherFieldMenuOpen) onToggleOtherFieldMenu();
+          }}
+          className={`
+            flex h-9 w-full items-center justify-between
+            px-5
+            text-left
+            text-[13px]
+            font-[600]
+            text-[#0F172A]
+            transition-colors
+            ${otherFieldMenuOpen ? "bg-[#EAF2FF]" : "hover:bg-[#F8FAFC]"}
+          `}
+        >
+          <span>다른 유형의 필드</span>
+          <ChevronRight size={15} />
+        </button>
+
+        {otherFieldMenuOpen && (
+          <div
+            className="
+              absolute bottom-0 left-[calc(100%+8px)] z-[60]
+              w-[190px]
+              overflow-visible
+              rounded-[8px]
+              border border-[#E2E8F0]
+              bg-white
+              py-1
+              shadow-[0_12px_28px_rgba(15,23,42,0.16)]
+            "
+          >
+            {otherTypeFieldGroups.length === 0 ? (
+              <p className="px-4 py-3 text-[12px] text-[#94A3B8]">
+                추가할 수 있는 필드가 없어요.
+              </p>
+            ) : (
+              otherTypeFieldGroups.map((group) => {
+                const selected = activeType === group.type;
+
+                return (
+                  <div
+                    key={group.type}
+                    className="relative"
+                    onMouseEnter={() => setActiveType(group.type)}
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setActiveType((previous) =>
+                          previous === group.type ? null : group.type,
+                        )
+                      }
+                      className={`
+          flex h-[42px] w-full items-center justify-between
           px-4
           text-left
-          text-[14px]
+          text-[13px]
           font-[600]
           text-[#0F172A]
-          hover:bg-[#F8FAFC]
-        "
-      >
-        다른 유형의 필드
-        <ChevronRight size={16} />
-      </button>
+          transition-colors
+          ${selected ? "bg-[#EAF2FF]" : "hover:bg-[#F8FAFC]"}
+        `}
+                    >
+                      <span>{group.type}</span>
+                      <ChevronRight size={15} />
+                    </button>
+
+                    {selected && (
+                      <div
+                        className="
+            absolute
+            left-full
+            top-0
+            z-[70]
+            ml-2
+            max-h-[340px]
+            w-[190px]
+            overflow-y-auto
+            rounded-[8px]
+            border border-[#E2E8F0]
+            bg-white
+            py-1
+            shadow-[0_12px_28px_rgba(15,23,42,0.16)]
+          "
+                      >
+                        {group.fields.length > 0 ? (
+                          group.fields.map((field) => (
+                            <button
+                              key={`${group.type}-${field.key}`}
+                              type="button"
+                              onClick={() => handleAddField(field)}
+                              className="
+                  flex min-h-[42px] w-full items-center
+                  px-4 py-2
+                  text-left
+                  text-[13px]
+                  font-[600]
+                  text-[#0F172A]
+                  hover:bg-[#F8FAFC]
+                "
+                            >
+                              {field.label}
+                            </button>
+                          ))
+                        ) : (
+                          <p className="px-4 py-4 text-[13px] text-[#94A3B8]">
+                            추가할 수 있는 필드가 없습니다.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+      </div>
 
       <button
+        type="button"
         onClick={onAddCustomField}
         className="
-          flex h-11 w-full items-center gap-2
+          flex h-10 w-full items-center gap-2
           px-4
           text-left
           text-[14px]

@@ -1,110 +1,95 @@
-import { useState } from "react";
+import { ChevronRight, Plus } from "lucide-react";
 import type { Schedule } from "../../../types/schedule";
-import { formatDate, getGoogleEventDate } from "../../../utils/date";
-import { categoryColor, getScheduleCategory } from "../../../utils/schedule";
+import { getGoogleEventDate } from "../../../utils/date";
 
 interface ScheduleSectionProps {
   weeklyEvents: Schedule[];
   selectedEvents: Schedule[];
   onClick: () => void;
+  onAdd?: () => void;
   selectedDate: Date | null;
 }
+
+const isSameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
+
+const getTimeLabel = (event: Schedule) => {
+  const date = getGoogleEventDate(event);
+  if (!date) return "-";
+
+  const start = event.start as any;
+  if (start?.date && !start?.dateTime) return "종일";
+
+  return date.toLocaleTimeString("ko-KR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+};
 
 export default function ScheduleSection({
   weeklyEvents,
   selectedEvents,
   onClick,
+  onAdd,
   selectedDate,
 }: ScheduleSectionProps) {
-  const [mode, setMode] = useState<"week" | "day">("week");
+  const today = new Date();
+  const isToday = selectedDate ? isSameDay(selectedDate, today) : true;
+  const displayEvents = (selectedDate ? selectedEvents : weeklyEvents)
+    .filter((event: any) => {
+      const text = `${event?.summary ?? ""} ${event?.category ?? ""}`;
+      return !text.includes("할 일") && !text.includes("할일");
+    })
+    .slice(0, 5);
 
-  const getSafeDate = (e: Schedule): Date | null => getGoogleEventDate(e);
-
-  const baseEvents = mode === "week" ? weeklyEvents : selectedEvents;
-
-  const isTodoEvent = (e: Schedule) => {
-    const event = e as any;
-    return (
-      event.type === "todo" || String(event.summary ?? "").startsWith("[할일]")
-    );
-  };
-
-  const displayEvents = baseEvents.filter((event) => !isTodoEvent(event));
-  
   return (
-    <div
-      onClick={onClick}
-      className="mt-4 bg-white rounded-2xl p-4 border border-[#E2E8F0] shadow-[0px_1px_3px_0px_#00000040] cursor-pointer"
-    >
-      <div className="flex items-center justify-between">
-        <h4 className="text-lg text-[#0F172A] font-bold mb-[15px] mt-2">
-          {mode === "week"
-            ? "이번 주 일정"
-            : selectedDate
-              ? `${selectedDate.getMonth() + 1}월 ${selectedDate.getDate()}일 일정`
-              : "선택한 날짜 일정"}
-        </h4>
-
+    <section>
+      <div className="mb-2 flex items-center gap-1">
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setMode((prev) => (prev === "week" ? "day" : "week"));
-          }}
-          className="text-sm text-gray-400 hover:text-gray-600"
+          type="button"
+          onClick={onClick}
+          className="group flex flex-1 items-center gap-1 text-left text-[11px] font-medium uppercase tracking-wide text-[#79859A] hover:text-[#28303D]"
         >
-          {mode === "week" ? "선택한 날짜 일정" : "이번주 일정"}
+          {isToday
+            ? "오늘의 일정"
+            : `${selectedDate!.getMonth() + 1}/${selectedDate!.getDate()} 일정`}
+          <ChevronRight className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-60" />
+        </button>
+        <button
+          type="button"
+          onClick={onAdd}
+          aria-label="일정 추가"
+          className="flex h-4 w-4 items-center justify-center rounded text-[#A4AEBE] hover:bg-[#EFF2F6] hover:text-[#28303D]"
+        >
+          <Plus className="h-3 w-3" />
         </button>
       </div>
 
-      <div
-        className={`h-[230px] overflow-y-auto pr-1 ${
-          displayEvents.length === 0 ? "flex items-center justify-center" : ""
-        }`}
-      >
-        {displayEvents.length === 0 ? (
-          <p className="text-sm font-semibold text-gray-400">일정 없음</p>
-        ) : (
-          displayEvents.map((e, index) => {
-            const d = getSafeDate(e);
-            const category = getScheduleCategory(e);
-            const dateText = d ? formatDate(d.toISOString()) : "";
-
-            const start = e.start as any;
-
-            return (
-              <div
-                key={
-                  e.id ??
-                  `${start?.dateTime ?? start?.date ?? "schedule"}-${index}`
-                }
-                className="flex gap-4 mb-3"
-              >
-                <div className="w-[15px] h-[15px] bg-[#D9D9D9] rounded-full mt-1 shrink-0" />
-
-                <div className="flex-1">
-                  <p className="text-[15px] font-semibold break-words">
-                    {e.summary}
-                  </p>
-
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    <p className="text-xs text-[#64748B] font-regular">
-                      {dateText}
-                    </p>
-
-                    <span
-                      className={`text-xs font-semibold px-2 py-[2px] rounded ${
-                        categoryColor[category] || categoryColor["일반"]
-                      }`}
-                    >
-                      {category}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-    </div>
+      {displayEvents.length === 0 ? (
+        <p className="px-2 py-1 text-[11px] text-[#79859A]">
+          {isToday ? "오늘 일정이 없어요" : "선택한 날짜의 일정이 없어요"}
+        </p>
+      ) : (
+        <ul className="space-y-0.5">
+          {displayEvents.map((event, index) => (
+            <li
+              key={event.id ?? `${event.summary}-${index}`}
+              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-white"
+            >
+              <span className="mt-0.5 h-1 w-1 shrink-0 rounded-full bg-[#2563EB]/60" />
+              <span className="min-w-0 flex-1 truncate leading-snug text-[#28303D]">
+                {event.summary}
+              </span>
+              <span className="shrink-0 text-[10px] tabular-nums text-[#79859A]">
+                {getTimeLabel(event)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

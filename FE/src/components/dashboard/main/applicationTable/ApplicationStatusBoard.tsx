@@ -1,4 +1,4 @@
-import { GripVertical, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   APPLICATION_FINAL_RESULTS,
@@ -38,51 +38,51 @@ type FlexibleApplication = Application & {
 const columns: {
   key: BoardViewStatus;
   title: string;
-  headerClassName: string;
-  dotClassName: string;
-  borderClassName: string;
+  backgroundColor: string;
+  color: string;
+  borderColor: string;
 }[] = [
   {
     key: "작성중",
     title: "작성중",
-    headerClassName: "bg-slate-50 text-slate-700",
-    dotClassName: "bg-slate-400",
-    borderClassName: "border-t-slate-300",
+    backgroundColor: "#EFF6FF",
+    color: "#1D4ED8",
+    borderColor: "#2563EB",
   },
   {
     key: "지원완료",
     title: "지원완료",
-    headerClassName: "bg-blue-50 text-blue-700",
-    dotClassName: "bg-blue-600",
-    borderClassName: "border-t-blue-600",
+    backgroundColor: "#EFF2F6",
+    color: "#28303D",
+    borderColor: "#A4AEBE",
   },
   {
     key: "서류전형",
     title: "서류전형",
-    headerClassName: "bg-sky-50 text-sky-700",
-    dotClassName: "bg-sky-600",
-    borderClassName: "border-t-sky-600",
+    backgroundColor: "#EEEEFB",
+    color: "#4848B3",
+    borderColor: "#5B5BD6",
   },
   {
     key: "필기전형",
     title: "필기전형",
-    headerClassName: "bg-violet-50 text-violet-700",
-    dotClassName: "bg-violet-600",
-    borderClassName: "border-t-violet-600",
+    backgroundColor: "#E6F5F3",
+    color: "#1F7A77",
+    borderColor: "#2A9D99",
   },
   {
     key: "면접전형",
     title: "면접전형",
-    headerClassName: "bg-amber-50 text-amber-700",
-    dotClassName: "bg-amber-500",
-    borderClassName: "border-t-amber-500",
+    backgroundColor: "#FCF3E2",
+    color: "#855906",
+    borderColor: "#C5860E",
   },
   {
     key: "전형완료",
     title: "전형완료",
-    headerClassName: "bg-emerald-50 text-emerald-700",
-    dotClassName: "bg-emerald-600",
-    borderClassName: "border-t-emerald-600",
+    backgroundColor: "#EFF2F6",
+    color: "#28303D",
+    borderColor: "#A4AEBE",
   },
 ] as const;
 
@@ -157,6 +157,19 @@ const getDday = (application: Application) => {
   if (diff === 0) return { label: "D-DAY", urgent: true };
   if (diff > 0) return { label: `D-${diff}`, urgent: diff <= 3 };
   return { label: `D+${Math.abs(diff)}`, urgent: true };
+};
+
+const getFinalResultClassName = (result?: ApplicationFinalResult) => {
+  switch (result) {
+    case "최종합격":
+      return "bg-[#E7F6EF] text-[#0C6347]";
+    case "불합격":
+      return "bg-[#FCEBEC] text-[#932A30]";
+    case "보류":
+      return "bg-[#F5F3FF] text-[#6D28D9]";
+    default:
+      return "bg-[#EFF2F6] text-[#79859A]";
+  }
 };
 
 const compareApplications = (a: Application, b: Application) => {
@@ -258,7 +271,7 @@ export default function ApplicationStatusBoard({
   return (
     <>
       <div className="h-full overflow-x-auto bg-white">
-        <div className="flex min-w-[1260px] gap-5 px-8 py-8">
+        <div className="flex min-w-[1120px] gap-4 p-5">
           {columns.map((column) => {
             const columnApplications = groupedApplications[column.key];
 
@@ -272,43 +285,43 @@ export default function ApplicationStatusBoard({
                 onDragLeave={() => setDragOverStatus(null)}
                 onDrop={() => handleDrop(column.key)}
                 className={cn(
-                  "min-h-[520px] w-[240px] shrink-0 rounded-2xl bg-slate-50/40 p-4 transition",
+                  "min-h-[320px] min-w-[170px] max-w-[240px] flex-1 rounded-xl border-2 border-transparent bg-[#F6F8FB]/30 p-2 transition-colors",
                   dragOverStatus === column.key &&
-                    "bg-blue-50/70 ring-2 ring-blue-200",
+                    "border-[#93C5FD] bg-[#EFF6FF]",
                 )}
               >
                 <div
-                  className={cn(
-                    "mb-3 flex h-[54px] items-center justify-between rounded-xl px-4",
-                    column.headerClassName,
-                  )}
+                  className="mb-2 flex items-center gap-2 rounded-lg px-2.5 py-2"
+                  style={{ backgroundColor: column.backgroundColor }}
                 >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        "h-2 w-2 rounded-full",
-                        column.dotClassName,
-                      )}
-                    />
-                    <span className="text-sm font-semibold">
-                      {column.title}
-                    </span>
-                  </div>
-
-                  <span className="rounded-full bg-white/80 px-3 py-1 text-sm font-semibold">
+                  <span
+                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: column.borderColor }}
+                  />
+                  <span
+                    className="min-w-0 flex-1 truncate text-xs font-semibold"
+                    style={{ color: column.color }}
+                  >
+                    {column.title}
+                  </span>
+                  <span
+                    className="shrink-0 rounded-full bg-white/70 px-1.5 py-0.5 text-[10px] font-bold leading-none tabular-nums"
+                    style={{ color: column.color }}
+                  >
                     {columnApplications.length}
                   </span>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {columnApplications.length === 0 ? (
-                    <div className="flex h-28 items-center justify-center text-sm text-slate-400">
+                    <div className="px-2 py-4 text-center text-[11px] text-[#A4AEBE]">
                       공고 없음
                     </div>
                   ) : (
                     columnApplications.map((application) => {
                       const dday = getDday(application);
                       const isImportant = getImportant(application);
+                      const finalResult = application.finalResult;
 
                       return (
                         <div
@@ -330,60 +343,75 @@ export default function ApplicationStatusBoard({
                             setDraggingId(null);
                             setDragOverStatus(null);
                           }}
-                          className={cn(
-                            "group cursor-pointer rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md",
-                            "border-t-4",
-                            column.borderClassName,
-                          )}
+                          className="group cursor-grab overflow-hidden rounded-lg border border-[#E3E8EF] bg-white transition-all hover:border-[#BFDBFE] hover:shadow-sm active:cursor-grabbing"
                         >
-                          <div className="mb-2 flex items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1">
-                                <GripVertical className="h-3.5 w-3.5 shrink-0 text-slate-300 opacity-0 transition group-hover:opacity-100" />
-                                <h3 className="truncate text-base font-semibold text-slate-900">
-                                  {getCompany(application)}
-                                </h3>
-                              </div>
+                          <div
+                            className="h-0.5 w-full"
+                            style={{ backgroundColor: column.borderColor }}
+                          />
+                          <div className="p-3">
+                            <div className="mb-1 flex items-center justify-between gap-1">
+                              <span className="truncate text-[13px] font-bold leading-tight text-[#161C26]">
+                                {getCompany(application)}
+                              </span>
 
-                              <p className="mt-1 truncate text-sm text-slate-500">
-                                {getJobTitle(application)}
-                              </p>
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  onToggleImportant(application.id);
+                                }}
+                                className={cn(
+                                  "shrink-0 rounded p-0.5 transition-opacity hover:bg-[#F6F8FB]",
+                                  !isImportant &&
+                                    "opacity-0 group-hover:opacity-100",
+                                )}
+                                aria-label={
+                                  isImportant ? "즐겨찾기 해제" : "즐겨찾기"
+                                }
+                              >
+                                <Star
+                                  className={cn(
+                                    "h-3 w-3",
+                                    isImportant
+                                      ? "fill-[#F5B800] text-[#F5B800]"
+                                      : "text-[#A4AEBE]",
+                                  )}
+                                />
+                              </button>
                             </div>
 
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                onToggleImportant(application.id);
-                              }}
-                              className="rounded-md p-1 hover:bg-slate-100"
-                            >
-                              <Star
-                                className={cn(
-                                  "h-4 w-4",
-                                  isImportant
-                                    ? "fill-yellow-400 text-yellow-400"
-                                    : "text-slate-300",
-                                )}
-                              />
-                            </button>
-                          </div>
+                            <p className="truncate text-[11px] leading-tight text-[#79859A]">
+                              {getJobTitle(application)}
+                            </p>
 
-                          <div className="mt-4 flex items-center justify-between gap-2">
-                            <span className="max-w-[130px] truncate rounded-md bg-slate-50 px-2 py-1 text-xs font-medium text-slate-500">
-                              {getEmploymentType(application)}
-                            </span>
+                            <div className="mt-2.5 flex items-center justify-between gap-1">
+                              <span className="max-w-[105px] shrink-0 truncate rounded-sm bg-[#EFF2F6]/70 px-1.5 py-0.5 text-[10px] text-[#79859A]">
+                                {getEmploymentType(application)}
+                              </span>
 
-                            <span
-                              className={cn(
-                                "rounded-full px-3 py-1 text-xs font-bold",
-                                dday.urgent
-                                  ? "bg-red-50 text-red-500"
-                                  : "bg-slate-100 text-slate-500",
+                              {column.key === "전형완료" && finalResult ? (
+                                <span
+                                  className={cn(
+                                    "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                                    getFinalResultClassName(finalResult),
+                                  )}
+                                >
+                                  {finalResult}
+                                </span>
+                              ) : (
+                                <span
+                                  className={cn(
+                                    "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums",
+                                    dday.urgent
+                                      ? "bg-[#FCEBEC] text-[#D24545]"
+                                      : "bg-[#EFF2F6] text-[#79859A]",
+                                  )}
+                                >
+                                  {dday.label}
+                                </span>
                               )}
-                            >
-                              {dday.label}
-                            </span>
+                            </div>
                           </div>
                         </div>
                       );

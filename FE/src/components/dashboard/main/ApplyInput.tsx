@@ -1,18 +1,20 @@
-import { LinkIcon } from "../../../assets";
+import { Plus, Search } from "lucide-react";
 
 export default function ApplyInput({ onAdd }: { onAdd: () => void }) {
   return (
-    <div className="bg-white border border-[#E2E8F0] rounded-xl p-2 flex items-center justify-between">
-      <LinkIcon size={25} className="ml-7 mr-5 text-[#94A3B8]" />
+    <div className="flex items-center gap-3 rounded-xl border border-[#E3E8EF] bg-white px-4 py-2 shadow-[0_1px_2px_rgba(22,28,38,0.05)]">
+      <Search className="h-3.5 w-3.5 shrink-0 text-[#79859A]" strokeWidth={2} />
       <input
-        placeholder="채용 공고 URL을 붙여넣으세요"
-        className="flex-1 outline-none text-base text-[#94A3B8] font-regular"
+        placeholder="채용공고 검색하기"
+        className="h-7 flex-1 bg-transparent px-0 text-sm text-[#28303D] outline-none placeholder:text-[#A4AEBE]"
       />
       <button
+        type="button"
         onClick={onAdd}
-        className="ml-4 px-4 py-2 bg-[#2563EB] text-[#FFFFFC] rounded-lg text-[14px] font-[600] mr-5 hover:bg-blue-700"
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#3B82F6] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2563EB]"
       >
-        + 공고등록
+        <Plus className="h-3.5 w-3.5" strokeWidth={2.2} />
+        공고 등록
       </button>
     </div>
   );

@@ -1,5 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Clipboard, Eye, EyeOff, Pencil, RotateCcw } from "lucide-react";
+import {
+  Briefcase,
+  Check,
+  Clipboard,
+  Eye,
+  EyeOff,
+  FileText,
+  GraduationCap,
+  Mail,
+  Pencil,
+  User,
+} from "lucide-react";
 import { getUserProfile, updateUserProfile } from "../../api/user";
 
 // "20050226" → "2005-02-26"
@@ -84,6 +95,13 @@ const FIELD_GROUPS: { title: string; keys: InfoKey[] }[] = [
   { title: "취업 목표", keys: ["industries", "jobGroups", "employmentType", "companyTypes", "targetCompany", "salaryRange", "targetPeriod", "currentStage", "focusItems"] },
   { title: "보유 자료", keys: ["hasResume", "hasBaseEssay", "hasPortfolio"] },
 ];
+
+const GROUP_ICONS: Record<string, typeof Mail> = {
+  "연락처": Mail,
+  "학력": GraduationCap,
+  "취업 목표": Briefcase,
+  "보유 자료": FileText,
+};
 
 const DEFAULT_VISIBLE: InfoKey[] = [
   "name",
@@ -218,9 +236,6 @@ export default function BasicInfoPanel() {
   useEffect(() => lsSet(LS_INFO_VALUES, values), [values]);
   useEffect(() => lsSet(LS_INFO_VISIBLE, visibleKeys), [visibleKeys]);
 
-  const filledCount = INFO_FIELDS.filter((field) => values[field.key]?.trim()).length;
-  const progress = Math.round((filledCount / INFO_FIELDS.length) * 100);
-
   const visibleGroups = useMemo(
     () =>
       FIELD_GROUPS.map((group) => ({
@@ -292,57 +307,7 @@ export default function BasicInfoPanel() {
   };
 
   return (
-    <div className="rounded-2xl border border-[#E2E8F0] bg-white p-6">
-      <div className="mb-5 flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-[18px] font-[800] text-[#0F172A]">기본정보</h2>
-          <p className="mt-1 text-[13px] font-[500] text-[#64748B]">
-            프로필에서 불러온 기본정보입니다.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-24 overflow-hidden rounded-full bg-[#E2E8F0]">
-              <div className="h-full rounded-full bg-[#2563EB]" style={{ width: `${progress}%` }} />
-            </div>
-            <span className="text-[12px] font-[700] text-[#64748B]">
-              {filledCount}/{INFO_FIELDS.length}
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={async () => {
-              if (editMode) {
-                await handleSave();
-              } else {
-                setSnapshot(values);
-              }
-              setEditMode((prev) => !prev);
-            }}
-            className="inline-flex h-9 items-center gap-2 rounded-[8px] border border-[#E2E8F0] bg-white px-3 text-[13px] font-[700] text-[#334155] hover:bg-[#F8FAFC]"
-          >
-            <Pencil size={15} />
-            {editMode ? "저장" : "전체 편집"}
-          </button>
-
-          {editMode && (
-            <button
-              type="button"
-              onClick={() => {
-                if (snapshot) setValues(snapshot);
-                setEditMode(false);
-              }}
-              className="inline-flex h-9 items-center gap-2 rounded-[8px] border border-[#E2E8F0] bg-white px-3 text-[13px] font-[700] text-[#64748B] hover:bg-[#F8FAFC]"
-            >
-              <RotateCcw size={15} />
-              취소
-            </button>
-          )}
-        </div>
-      </div>
-
+    <div className={editMode ? "pb-20" : undefined}>
       {editMode ? (
         <div className="grid grid-cols-2 gap-3">
           {INFO_FIELDS.map((field) => {
@@ -551,40 +516,113 @@ export default function BasicInfoPanel() {
           })}
         </div>
       ) : (
-        <div className="space-y-6">
-          {visibleGroups.map((group) => (
-            <section key={group.title}>
-              <h3 className="mb-3 text-[14px] font-[800] text-[#334155]">{group.title}</h3>
-              <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
-                {group.fields.map((field) => {
-                  const rawValue = values[field.key] || "";
-                  const value =
-                    field.key === "enrollmentStatus"
-                      ? ENROLLMENT_STATUS_LABEL[rawValue] ?? rawValue
-                      : rawValue;
-                  const masked = maskedKeys.has(field.key);
-                  return (
-                    <div key={field.key} className="group rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-[12px] font-[700] text-[#64748B]">{field.label}</p>
-                        <div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
-                          <button type="button" onClick={() => toggleMask(field.key)} className="text-[#94A3B8] hover:text-[#0F172A]">
-                            {masked ? <Eye size={14} /> : <EyeOff size={14} />}
-                          </button>
-                          <button type="button" onClick={() => copyValue(field.key)} className="text-[#94A3B8] hover:text-[#0F172A]">
-                            {copiedKey === field.key ? <Check size={14} /> : <Clipboard size={14} />}
-                          </button>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {visibleGroups.map((group) => {
+            const isPersonal = group.title === "인적사항";
+            const nameField = isPersonal
+              ? group.fields.find((field) => field.key === "name")
+              : undefined;
+            const rowFields = nameField
+              ? group.fields.filter((field) => field.key !== "name")
+              : group.fields;
+            const filledInGroup = group.fields.filter((field) => values[field.key]?.trim()).length;
+            const GroupIcon = GROUP_ICONS[group.title];
+
+            return (
+              <section key={group.title} className="rounded-2xl border border-[#E2E8F0] bg-white p-5">
+                {nameField ? (
+                  <div className="mb-4 flex items-center gap-3 border-b border-[#F1F5F9] pb-4">
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#F1F5F9] text-[#94A3B8]">
+                      <User size={26} />
+                    </div>
+                    <p className="min-w-0 flex-1 truncate text-base font-semibold text-[#0F172A]">
+                      {values.name || "이름 미입력"}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSnapshot(values);
+                        setEditMode(true);
+                      }}
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#E2E8F0] text-[#94A3B8] hover:bg-[#F8FAFC]"
+                    >
+                      <Pencil size={13} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mb-4 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      {GroupIcon && <GroupIcon size={16} className="text-[#94A3B8]" />}
+                      <h3 className="text-[14px] font-medium text-[#334155]">{group.title}</h3>
+                    </div>
+                    <span className="text-[12px] font-[700] text-[#94A3B8]">
+                      {filledInGroup}/{group.fields.length}
+                    </span>
+                  </div>
+                )}
+
+                <div className="divide-y divide-[#F1F5F9]">
+                  {rowFields.map((field) => {
+                    const rawValue = values[field.key] || "";
+                    const value =
+                      field.key === "enrollmentStatus"
+                        ? ENROLLMENT_STATUS_LABEL[rawValue] ?? rawValue
+                        : rawValue;
+                    const masked = maskedKeys.has(field.key);
+                    return (
+                      <div key={field.key} className="group flex items-center justify-between gap-3 py-2.5">
+                        <p className="shrink-0 text-[13px] font-base text-[#64748B]">{field.label}</p>
+
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          <p className="truncate text-right text-[14px] font-base text-[#0F172A]">
+                            {value ? (masked ? "••••••" : value) : "—"}
+                          </p>
+                          <div className="flex shrink-0 items-center gap-1 opacity-0 transition group-hover:opacity-100">
+                            <button type="button" onClick={() => toggleMask(field.key)} className="text-[#94A3B8] hover:text-[#0F172A]">
+                              {masked ? <Eye size={12} /> : <EyeOff size={12} />}
+                            </button>
+                            <button type="button" onClick={() => copyValue(field.key)} className="text-[#94A3B8] hover:text-[#0F172A]">
+                              {copiedKey === field.key ? <Check size={12} /> : <Clipboard size={12} />}
+                            </button>
+                          </div>
                         </div>
                       </div>
-                      <p className="mt-1 truncate text-[14px] font-[600] text-[#0F172A]">
-                        {value ? (masked ? "••••••" : value) : "—"}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      )}
+
+      {editMode && (
+        <div className="fixed inset-x-0 bottom-0 left-[60px] z-30 flex items-center justify-between border-t border-[#E2E8F0] bg-[#F8FAFC] px-[150px] py-4">
+          <p className="text-[13px] text-[#64748B]">변경한 내용은 저장을 눌러야 반영돼요</p>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (snapshot) setValues(snapshot);
+                setEditMode(false);
+              }}
+              className="inline-flex h-9 items-center rounded-[8px] border border-[#E2E8F0] bg-white px-4 text-[13px] font-[700] text-[#64748B] hover:bg-[#F8FAFC]"
+            >
+              취소
+            </button>
+
+            <button
+              type="button"
+              onClick={async () => {
+                await handleSave();
+                setEditMode(false);
+              }}
+              className="inline-flex h-9 items-center rounded-[8px] bg-[#2563EB] px-4 text-[13px] font-[700] text-white hover:bg-[#1D4ED8]"
+            >
+              저장
+            </button>
+          </div>
         </div>
       )}
     </div>

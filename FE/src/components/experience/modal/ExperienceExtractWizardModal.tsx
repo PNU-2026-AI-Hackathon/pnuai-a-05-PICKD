@@ -1,14 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   AlertCircle,
   Check,
-  ChevronRight,
-  FileUp,
+  ChevronLeft,
+  FileText,
   Layers,
   Loader2,
   RotateCcw,
   Sparkles,
+  Upload,
   X,
 } from "lucide-react";
 
@@ -38,6 +39,7 @@ interface Props {
 }
 
 type WizardStep = "upload" | "candidates" | "result" | "duplicates";
+type SourceMode = "file" | "text";
 
 export default function ExperienceExtractWizardModal({
   open,
@@ -48,22 +50,18 @@ export default function ExperienceExtractWizardModal({
   onPendingChanged,
 }: Props) {
   const [step, setStep] = useState<WizardStep>("upload");
+  const [sourceMode, setSourceMode] = useState<SourceMode>("file");
   const [file, setFile] = useState<File | null>(null);
+  const [questionText, setQuestionText] = useState("");
+  const [pastedText, setPastedText] = useState("");
   const [candidates, setCandidates] = useState<ExperienceTempResponse[]>([]);
   const [selectedTempIds, setSelectedTempIds] = useState<number[]>([]);
-  const [step2Result, setStep2Result] =
-    useState<ExperienceStep2Response | null>(null);
+  const [step2Result, setStep2Result] = useState<ExperienceStep2Response | null>(null);
   const [duplicateBatchId, setDuplicateBatchId] = useState<string | null>(null);
-  const [duplicateGroups, setDuplicateGroups] = useState<
-    DuplicateGroupResponse[]
-  >([]);
-  const [pendingBatches, setPendingBatches] = useState<
-    ExperiencePendingBatch[]
-  >([]);
+  const [duplicateGroups, setDuplicateGroups] = useState<DuplicateGroupResponse[]>([]);
+  const [pendingBatches, setPendingBatches] = useState<ExperiencePendingBatch[]>([]);
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
-  const [selectedItemsByGroup, setSelectedItemsByGroup] = useState<
-    Record<string, string[]>
-  >({});
+  const [selectedItemsByGroup, setSelectedItemsByGroup] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(false);
   const [pendingLoading, setPendingLoading] = useState(false);
   const [error, setError] = useState("");
@@ -72,7 +70,10 @@ export default function ExperienceExtractWizardModal({
     if (!open) return;
 
     setStep(mode === "pending" ? "duplicates" : "upload");
+    setSourceMode("file");
     setFile(null);
+    setQuestionText("");
+    setPastedText("");
     setCandidates([]);
     setSelectedTempIds([]);
     setStep2Result(null);
@@ -84,18 +85,17 @@ export default function ExperienceExtractWizardModal({
     void loadPendingBatches(mode === "pending");
   }, [open, mode, focusItemId]);
 
-  const hasDuplicates = duplicateBatchId && duplicateGroups.length > 0;
-
   if (!open) return null;
 
   async function loadPendingBatches(activateAfterLoad = false) {
     setPendingLoading(true);
     try {
       const response = await getPendingDuplicateBatches();
-      setPendingBatches(response.batches ?? []);
-      if (activateAfterLoad && response.batches?.length) {
-        const focusedBatch = findBatchByItemId(response.batches, focusItemId);
-        activateDuplicateBatch(focusedBatch ?? response.batches[0]);
+      const batches = response.batches ?? [];
+      setPendingBatches(batches);
+      if (activateAfterLoad && batches.length) {
+        const focusedBatch = findBatchByItemId(batches, focusItemId);
+        activateDuplicateBatch(focusedBatch ?? batches[0]);
       }
     } catch (err) {
       if (activateAfterLoad) setError(getErrorMessage(err));
@@ -110,42 +110,52 @@ export default function ExperienceExtractWizardModal({
     setDuplicateGroups(batch.duplicateGroups ?? []);
     setSelectedItemsByGroup(makeDefaultSelections(batch.duplicateGroups ?? []));
     setStep("duplicates");
+    setError("");
   }
 
   function toggleTempId(id: number) {
-    setSelectedTempIds((prev) =>
-      prev.includes(id)
-        ? prev.filter((itemId) => itemId !== id)
-        : [...prev, id],
+    setSelectedTempIds((previous) =>
+      previous.includes(id)
+        ? previous.filter((candidateId) => candidateId !== id)
+        : [...previous, id],
     );
   }
 
   function toggleDuplicateItem(groupId: string, itemId: string) {
-    setSelectedItemsByGroup((prev) => {
-      const current = prev[groupId] ?? [];
-      const next = current.includes(itemId)
-        ? current.filter((id) => id !== itemId)
-        : [...current, itemId];
-
+    setSelectedItemsByGroup((previous) => {
+      const current = previous[groupId] ?? [];
       return {
-        ...prev,
-        [groupId]: next,
+        ...previous,
+        [groupId]: current.includes(itemId)
+          ? current.filter((id) => id !== itemId)
+          : [...current, itemId],
       };
     });
   }
 
   async function handleStep1() {
-    if (!file) {
-      setError("자소서 PDF/문서 파일을 먼저 선택해 주세요.");
+    const sourceFile =
+      sourceMode === "file"
+        ? file
+        : pastedText.trim()
+          ? new File(
+              [questionText.trim() ? `${questionText.trim()}\n\n${pastedText.trim()}` : pastedText.trim()],
+              `cover-letter-${Date.now()}.txt`,
+              { type: "text/plain" },
+            )
+          : null;
+
+    if (!sourceFile) {
+      setError(sourceMode === "file" ? "자소서 파일을 먼저 선택해 주세요." : "자소서 답변을 붙여 넣어 주세요.");
       return;
     }
 
     setError("");
     setLoading(true);
     try {
-      const result = await extractExperienceStep1(file);
+      const result = await extractExperienceStep1(sourceFile);
       setCandidates(result ?? []);
-      setSelectedTempIds((result ?? []).map((item) => item.id));
+      setSelectedTempIds((result ?? []).map((candidate) => candidate.id));
       setStep("candidates");
     } catch (err) {
       setError(getErrorMessage(err));
@@ -156,7 +166,7 @@ export default function ExperienceExtractWizardModal({
 
   async function handleStep2() {
     if (selectedTempIds.length === 0) {
-      setError("상세 추출할 경험 후보를 하나 이상 선택해 주세요.");
+      setError("저장할 경험 후보를 하나 이상 선택해 주세요.");
       return;
     }
 
@@ -166,16 +176,12 @@ export default function ExperienceExtractWizardModal({
       const result = await extractExperienceStep2(selectedTempIds);
       setStep2Result(result);
 
-      const savedItems = (result.savedExperiences ?? []).map((item) =>
-        fromBackendExperience(item),
-      );
-      if (savedItems.length > 0) onCompleted(savedItems);
+      const savedItems = (result.savedExperiences ?? []).map(fromBackendExperience);
+      if (savedItems.length) onCompleted(savedItems);
 
       setDuplicateBatchId(result.duplicateBatchId);
       setDuplicateGroups(result.duplicateGroups ?? []);
-      setSelectedItemsByGroup(
-        makeDefaultSelections(result.duplicateGroups ?? []),
-      );
+      setSelectedItemsByGroup(makeDefaultSelections(result.duplicateGroups ?? []));
       setStep("result");
       await loadPendingBatches(false);
       onPendingChanged?.();
@@ -195,7 +201,7 @@ export default function ExperienceExtractWizardModal({
     }));
 
     if (groups.some((group) => group.selectedItemIds.length === 0)) {
-      setError("각 중복 그룹마다 남길 경험을 하나 이상 선택해 주세요.");
+      setError("각 중복 그룹에서 남길 경험을 하나 이상 선택해 주세요.");
       return;
     }
 
@@ -203,11 +209,7 @@ export default function ExperienceExtractWizardModal({
     setLoading(true);
     try {
       const result = await confirmExperienceStep3({ duplicateBatchId, groups });
-      onCompleted(
-        (result.selectedExperiences ?? []).map((item) =>
-          fromBackendExperience(item),
-        ),
-      );
+      onCompleted((result.selectedExperiences ?? []).map(fromBackendExperience));
       await loadPendingBatches(false);
       onPendingChanged?.();
       onClose();
@@ -218,64 +220,71 @@ export default function ExperienceExtractWizardModal({
     }
   }
 
+  const modalWidth = step === "duplicates" ? "max-w-[920px]" : step === "upload" ? "max-w-[560px]" : "max-w-[720px]";
+
   return createPortal(
     <div
-      className="fixed inset-0 z-[90] flex items-center justify-center bg-black/45 px-4 py-8"
-      onClick={onClose}
+      className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/35 px-4 py-6 backdrop-blur-[1px]"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !loading) onClose();
+      }}
     >
-      <section
-        className="flex max-h-[92vh] w-full max-w-[1080px] flex-col overflow-hidden rounded-[22px] border border-[#D8E4F5] bg-white shadow-[0_28px_80px_rgba(15,23,42,0.28)]"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <header className="flex items-start justify-between gap-5 border-b border-[#E2E8F0] px-6 py-5">
+      <section className={`flex max-h-[94vh] w-full ${modalWidth} flex-col overflow-hidden rounded-xl border border-[#E3E8EF] bg-white shadow-[0_24px_60px_-16px_rgba(15,23,42,0.34)]`}>
+        <header className="flex items-start justify-between border-b border-[#E3E8EF] px-6 py-4">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-[#EFF6FF] text-[#2563EB]">
-                <Sparkles size={18} />
-              </span>
-              <div>
-                <h2 className="text-[20px] font-[900] text-[#0F172A]">
-                  자소서에서 경험 추출
-                </h2>
-              </div>
-            </div>
+            <h2 className="text-[16px] font-[700] text-[#161C26]">
+              {mode === "pending" ? "비슷한 경험 정리" : "자소서 파일 불러오기"}
+            </h2>
+            <p className="mt-1 text-[13px] text-[#79859A]">
+              {mode === "pending"
+                ? "중복으로 분류된 경험에서 최종적으로 남길 내용을 선택하세요."
+                : "파일이나 텍스트를 불러오면 AI가 경험 후보를 정리해요."}
+            </p>
           </div>
-
           <button
             type="button"
             onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#64748B] transition hover:bg-[#F8FAFC]"
+            disabled={loading}
+            className="flex h-7 w-7 items-center justify-center rounded-md text-[#79859A] hover:bg-[#EFF2F6] hover:text-[#28303D] disabled:opacity-40"
+            aria-label="닫기"
           >
-            <X size={20} />
+            <X className="h-4 w-4" />
           </button>
         </header>
 
-        <div className="border-b border-[#E2E8F0] px-6 py-4">
-          <ProgressBar step={step} hasDuplicates={Boolean(hasDuplicates)} />
-        </div>
+        <ProgressBar step={step} />
 
-        <main className="min-h-0 flex-1 overflow-y-auto bg-[#F8FAFC] px-6 py-5">
+        <main className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
           {error && (
-            <div className="mb-4 flex items-start gap-2 rounded-[14px] border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-[13px] font-[700] text-[#B91C1C]">
-              <AlertCircle size={17} className="mt-0.5 shrink-0" />
+            <div className="mb-4 flex items-start gap-2 rounded-lg border border-[#F7D2D4] bg-[#FCEBEC] px-3 py-2.5 text-[12px] text-[#B5343A]">
+              <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <p className="whitespace-pre-line">{error}</p>
             </div>
           )}
 
-          <PendingDuplicatePanel
-            batches={pendingBatches}
-            loading={pendingLoading}
-            selectedBatchId={selectedBatchId}
-            onRefresh={() => loadPendingBatches(false)}
-            onSelect={activateDuplicateBatch}
-          />
+          {mode === "pending" && (
+            <PendingDuplicatePanel
+              batches={pendingBatches}
+              loading={pendingLoading}
+              selectedBatchId={selectedBatchId}
+              onRefresh={() => void loadPendingBatches(false)}
+              onSelect={activateDuplicateBatch}
+            />
+          )}
 
           {step === "upload" && (
             <UploadStep
+              sourceMode={sourceMode}
               file={file}
+              questionText={questionText}
+              pastedText={pastedText}
               loading={loading}
+              onChangeSourceMode={setSourceMode}
               onFileChange={setFile}
-              onSubmit={handleStep1}
+              onQuestionChange={setQuestionText}
+              onTextChange={setPastedText}
+              onCancel={onClose}
+              onSubmit={() => void handleStep1()}
             />
           )}
 
@@ -286,18 +295,19 @@ export default function ExperienceExtractWizardModal({
               loading={loading}
               onBack={() => setStep("upload")}
               onToggle={toggleTempId}
-              onSubmit={handleStep2}
-              onDone={() => {
-                onCompleted([]);
-                onClose();
-              }}
+              onToggleAll={() =>
+                setSelectedTempIds((previous) =>
+                  previous.length === candidates.length ? [] : candidates.map((candidate) => candidate.id),
+                )
+              }
+              onSubmit={() => void handleStep2()}
+              onDone={onClose}
             />
           )}
 
           {step === "result" && step2Result && (
             <Step2ResultStep
               result={step2Result}
-              loading={loading}
               onGoDuplicates={() => setStep("duplicates")}
               onDone={onClose}
             />
@@ -305,12 +315,11 @@ export default function ExperienceExtractWizardModal({
 
           {step === "duplicates" && (
             <DuplicateStep
-              duplicateBatchId={duplicateBatchId}
               groups={duplicateGroups}
               selectedItemsByGroup={selectedItemsByGroup}
               loading={loading}
               onToggle={toggleDuplicateItem}
-              onSubmit={handleStep3}
+              onSubmit={() => void handleStep3()}
             />
           )}
         </main>
@@ -320,56 +329,372 @@ export default function ExperienceExtractWizardModal({
   );
 }
 
-function ProgressBar({
-  step,
-  hasDuplicates,
-}: {
-  step: WizardStep;
-  hasDuplicates: boolean;
-}) {
-  const current =
-    step === "upload"
-      ? 1
-      : step === "candidates"
-        ? 1
-        : step === "result"
-          ? 2
-          : 3;
-  const steps = [
-    { no: 1, label: "후보 추출" },
-    { no: 2, label: "저장/중복 분류" },
-    { no: 3, label: hasDuplicates ? "중복 최종 선택" : "중복 없음" },
-  ];
+function ProgressBar({ step }: { step: WizardStep }) {
+  const current = step === "upload" || step === "candidates" ? 1 : step === "result" ? 2 : 3;
+  const labels = ["후보 선택", "저장·분류", "중복 선택"];
 
   return (
-    <div className="flex items-center gap-2">
-      {steps.map((item, index) => {
-        const active = current >= item.no;
-        return (
-          <div key={item.no} className="flex items-center gap-2">
-            <span
-              className={`flex h-7 w-7 items-center justify-center rounded-full text-[12px] font-[900] ${
-                active
-                  ? "bg-[#2563EB] text-white"
-                  : "bg-[#E2E8F0] text-[#64748B]"
-              }`}
-            >
-              {active && current > item.no ? <Check size={14} /> : item.no}
-            </span>
-            <span
-              className={`text-[13px] font-[800] ${
-                active ? "text-[#0F172A]" : "text-[#94A3B8]"
-              }`}
-            >
-              {item.label}
-            </span>
-            {index < steps.length - 1 && (
-              <ChevronRight size={16} className="text-[#CBD5E1]" />
-            )}
-          </div>
-        );
-      })}
+    <div className="border-b border-[#E3E8EF] px-6 py-3">
+      <div className="flex items-center">
+        {labels.map((label, index) => {
+          const no = index + 1;
+          const completed = current > no;
+          const active = current === no;
+          return (
+            <div key={label} className="flex min-w-0 flex-1 items-center last:flex-none">
+              <div className="flex items-center gap-2">
+                <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-[700] ${completed || active ? "bg-[#2563EB] text-white" : "bg-[#EFF2F6] text-[#A4AEBE]"}`}>
+                  {completed ? <Check className="h-3 w-3" /> : no}
+                </span>
+                <span className={`whitespace-nowrap text-[11px] ${active ? "font-[600] text-[#28303D]" : "text-[#79859A]"}`}>{label}</span>
+              </div>
+              {index < labels.length - 1 && <span className={`mx-3 h-px min-w-6 flex-1 ${current > no ? "bg-[#93C5FD]" : "bg-[#E3E8EF]"}`} />}
+            </div>
+          );
+        })}
+      </div>
     </div>
+  );
+}
+
+function UploadStep({
+  sourceMode,
+  file,
+  questionText,
+  pastedText,
+  loading,
+  onChangeSourceMode,
+  onFileChange,
+  onQuestionChange,
+  onTextChange,
+  onCancel,
+  onSubmit,
+}: {
+  sourceMode: SourceMode;
+  file: File | null;
+  questionText: string;
+  pastedText: string;
+  loading: boolean;
+  onChangeSourceMode: (mode: SourceMode) => void;
+  onFileChange: (file: File | null) => void;
+  onQuestionChange: (value: string) => void;
+  onTextChange: (value: string) => void;
+  onCancel: () => void;
+  onSubmit: () => void;
+}) {
+  const [dragging, setDragging] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const setDroppedFile = (list: FileList | null) => {
+    const nextFile = list?.[0] ?? null;
+    if (nextFile) onFileChange(nextFile);
+  };
+
+  return (
+    <section>
+      <div className="grid h-9 grid-cols-2 rounded-md bg-[#EFF2F6] p-1">
+        <button
+          type="button"
+          onClick={() => onChangeSourceMode("file")}
+          className={`rounded text-[12px] font-[500] transition-colors ${sourceMode === "file" ? "bg-white text-[#28303D] shadow-sm" : "text-[#79859A] hover:text-[#3E4859]"}`}
+        >
+          파일 업로드
+        </button>
+        <button
+          type="button"
+          onClick={() => onChangeSourceMode("text")}
+          className={`rounded text-[12px] font-[500] transition-colors ${sourceMode === "text" ? "bg-white text-[#28303D] shadow-sm" : "text-[#79859A] hover:text-[#3E4859]"}`}
+        >
+          텍스트 붙여넣기
+        </button>
+      </div>
+
+      {sourceMode === "file" ? (
+        <div className="mt-4">
+          <input
+            ref={inputRef}
+            type="file"
+            accept=".pdf,.doc,.docx,.hwp,.txt,application/pdf,text/plain"
+            className="hidden"
+            onChange={(event) => setDroppedFile(event.target.files)}
+          />
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            onDragEnter={(event) => {
+              event.preventDefault();
+              setDragging(true);
+            }}
+            onDragOver={(event) => event.preventDefault()}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(event) => {
+              event.preventDefault();
+              setDragging(false);
+              setDroppedFile(event.dataTransfer.files);
+            }}
+            className={`flex min-h-[190px] w-full flex-col items-center justify-center rounded-lg border border-dashed px-6 text-center transition-colors ${dragging ? "border-[#2563EB] bg-[#EFF6FF]" : "border-[#CDD5E0] hover:bg-[#F6F8FB]"}`}
+          >
+            <Upload className="h-5 w-5 text-[#79859A]" />
+            <p className="mt-2 text-[14px] text-[#28303D]">파일을 끌어다 놓거나 클릭하여 업로드</p>
+            <p className="mt-1 text-[11px] text-[#79859A]">PDF, DOCX, HWP, TXT</p>
+          </button>
+
+          {file && (
+            <div className="mt-3 flex items-center gap-3 rounded-lg border border-[#E3E8EF] bg-[#F6F8FB] px-3 py-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-md bg-white text-[#5A6678]">
+                <FileText className="h-4 w-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[12px] font-[600] text-[#28303D]">{file.name}</p>
+                <p className="mt-0.5 text-[10px] text-[#79859A]">{formatFileSize(file.size)}</p>
+              </div>
+              <button type="button" onClick={() => onFileChange(null)} className="flex h-6 w-6 items-center justify-center rounded text-[#79859A] hover:bg-white hover:text-[#28303D]" aria-label="파일 제거">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="mt-4 space-y-3">
+          <input
+            value={questionText}
+            onChange={(event) => onQuestionChange(event.target.value)}
+            placeholder="자소서 문항 (선택)"
+            className="h-9 w-full rounded-md border border-[#E3E8EF] px-3 text-[13px] text-[#28303D] outline-none placeholder:text-[#A4AEBE] focus:border-[#93C5FD]"
+          />
+          <textarea
+            value={pastedText}
+            onChange={(event) => onTextChange(event.target.value)}
+            placeholder="자소서 답변을 붙여넣어 주세요."
+            className="min-h-[180px] w-full resize-none rounded-md border border-[#E3E8EF] px-3 py-2.5 text-[13px] leading-6 text-[#28303D] outline-none placeholder:text-[#A4AEBE] focus:border-[#93C5FD]"
+          />
+        </div>
+      )}
+
+      <div className="mt-5 flex items-center justify-end gap-2 border-t border-[#E3E8EF] pt-4">
+        <button type="button" onClick={onCancel} disabled={loading} className="h-8 rounded-md border border-[#E3E8EF] px-3 text-[12px] font-[500] text-[#5A6678] hover:bg-[#F6F8FB] disabled:opacity-50">
+          취소
+        </button>
+        <button type="button" onClick={onSubmit} disabled={loading} className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[#2563EB] px-4 text-[12px] font-[600] text-white hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:bg-[#A4AEBE]">
+          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+          업로드하고 추출하기
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function CandidateStep({
+  candidates,
+  selectedIds,
+  loading,
+  onBack,
+  onToggle,
+  onToggleAll,
+  onSubmit,
+  onDone,
+}: {
+  candidates: ExperienceTempResponse[];
+  selectedIds: number[];
+  loading: boolean;
+  onBack: () => void;
+  onToggle: (id: number) => void;
+  onToggleAll: () => void;
+  onSubmit: () => void;
+  onDone: () => void;
+}) {
+  const allChecked = candidates.length > 0 && selectedIds.length === candidates.length;
+
+  return (
+    <section>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-[15px] font-[600] text-[#28303D]">추출된 경험 후보</h3>
+          <p className="mt-1 text-[12px] text-[#79859A]">
+            자소서에서 {candidates.length}개의 경험을 찾았어요. 저장할 항목을 선택하세요.
+          </p>
+        </div>
+        {candidates.length > 0 && (
+          <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-[#79859A]">
+            <CheckBox checked={allChecked} />
+            <input type="checkbox" checked={allChecked} onChange={onToggleAll} className="sr-only" />
+            전체 선택
+          </label>
+        )}
+      </div>
+
+      {candidates.length === 0 ? (
+        <EmptyBox text="추출된 경험 후보가 없습니다." />
+      ) : (
+        <div className="mt-4 space-y-2">
+          {candidates.map((candidate) => {
+            const checked = selectedIds.includes(candidate.id);
+            return (
+              <button
+                key={candidate.id}
+                type="button"
+                onClick={() => onToggle(candidate.id)}
+                className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors ${checked ? "border-[#93C5FD] bg-[#EFF6FF]" : "border-[#E3E8EF] hover:bg-[#F6F8FB]"}`}
+              >
+                <CheckBox checked={checked} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="shrink-0 rounded bg-[#EFF2F6] px-1.5 py-0.5 text-[10px] text-[#5A6678]">
+                      {fromBackendExperienceType(candidate.experienceType)}
+                    </span>
+                    <span className="truncate text-[13px] font-[600] text-[#28303D]">{candidate.experienceName}</span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-[#79859A]">{fromBackendExperienceGroup(candidate.experienceGroup)}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="mt-5 flex items-center justify-between border-t border-[#E3E8EF] pt-4">
+        <button type="button" onClick={onBack} className="inline-flex h-8 items-center gap-1 rounded-md px-2 text-[12px] text-[#79859A] hover:bg-[#F6F8FB] hover:text-[#28303D]">
+          <ChevronLeft className="h-3.5 w-3.5" /> 파일 다시 선택
+        </button>
+        {candidates.length === 0 ? (
+          <button type="button" onClick={onDone} className="h-8 rounded-md bg-[#2563EB] px-4 text-[12px] font-[600] text-white">완료</button>
+        ) : (
+          <button type="button" disabled={loading || selectedIds.length === 0} onClick={onSubmit} className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[#2563EB] px-4 text-[12px] font-[600] text-white hover:bg-[#1D4ED8] disabled:bg-[#A4AEBE]">
+            {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            선택한 {selectedIds.length}개 정리하기
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function Step2ResultStep({
+  result,
+  onGoDuplicates,
+  onDone,
+}: {
+  result: ExperienceStep2Response;
+  onGoDuplicates: () => void;
+  onDone: () => void;
+}) {
+  const saved = result.savedExperiences ?? [];
+  const groups = result.duplicateGroups ?? [];
+
+  return (
+    <section>
+      <h3 className="text-[15px] font-[600] text-[#28303D]">경험 저장 결과</h3>
+      <p className="mt-1 text-[12px] text-[#79859A]">새 경험은 바로 저장하고, 비슷한 경험은 확인할 수 있도록 분류했어요.</p>
+
+      <div className="mt-4 rounded-lg border border-[#E3E8EF]">
+        <div className="flex items-center justify-between border-b border-[#E3E8EF] px-4 py-3">
+          <span className="text-[13px] font-[600] text-[#28303D]">새로 저장된 경험</span>
+          <span className="rounded-full bg-[#EFF6FF] px-2 py-0.5 text-[11px] font-[600] text-[#2563EB]">{saved.length}</span>
+        </div>
+        {saved.length === 0 ? (
+          <p className="px-4 py-5 text-center text-[12px] text-[#A4AEBE]">새로 저장된 경험이 없습니다.</p>
+        ) : (
+          <div className="divide-y divide-[#E3E8EF]">
+            {saved.map((rawItem) => {
+              const item = fromBackendExperience(rawItem);
+              return (
+                <div key={item.id} className="flex items-center gap-3 px-4 py-3">
+                  <span className="rounded bg-[#EFF2F6] px-1.5 py-0.5 text-[10px] text-[#5A6678]">{item.type}</span>
+                  <span className="min-w-0 flex-1 truncate text-[13px] font-[500] text-[#28303D]">{item.name}</span>
+                  <Check className="h-3.5 w-3.5 text-[#15926A]" />
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="mt-3 rounded-lg border border-[#F8E4BD]">
+        <div className="flex items-center justify-between border-b border-[#F8E4BD] px-4 py-3">
+          <span className="inline-flex items-center gap-1.5 text-[13px] font-[600] text-[#28303D]"><Layers className="h-3.5 w-3.5 text-[#C5860E]" /> 비슷한 경험</span>
+          <span className="rounded-full bg-[#FCF3E2] px-2 py-0.5 text-[11px] font-[600] text-[#A56F08]">{groups.length}</span>
+        </div>
+        <p className="px-4 py-3 text-[12px] text-[#79859A]">
+          {groups.length > 0 ? "기존 경험과 비슷한 항목이 있어 최종 선택이 필요해요." : "비슷한 경험이 없어 모든 항목을 저장했어요."}
+        </p>
+      </div>
+
+      <div className="mt-5 flex justify-end gap-2 border-t border-[#E3E8EF] pt-4">
+        {groups.length === 0 ? (
+          <button type="button" onClick={onDone} className="h-8 rounded-md bg-[#2563EB] px-4 text-[12px] font-[600] text-white">완료</button>
+        ) : (
+          <button type="button" onClick={onGoDuplicates} className="h-8 rounded-md bg-[#2563EB] px-4 text-[12px] font-[600] text-white hover:bg-[#1D4ED8]">비슷한 경험 확인하기</button>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function DuplicateStep({
+  groups,
+  selectedItemsByGroup,
+  loading,
+  onToggle,
+  onSubmit,
+}: {
+  groups: DuplicateGroupResponse[];
+  selectedItemsByGroup: Record<string, string[]>;
+  loading: boolean;
+  onToggle: (groupId: string, itemId: string) => void;
+  onSubmit: () => void;
+}) {
+  if (groups.length === 0) return <EmptyBox text="선택할 비슷한 경험이 없습니다." />;
+
+  return (
+    <section>
+      <h3 className="text-[15px] font-[600] text-[#28303D]">비슷한 경험 최종 선택</h3>
+      <p className="mt-1 text-[12px] text-[#79859A]">각 그룹에서 남길 경험을 선택하세요. 여러 개를 선택하면 모두 유지됩니다.</p>
+
+      <div className="mt-4 space-y-4">
+        {groups.map((group, index) => (
+          <section key={group.groupId} className="overflow-hidden rounded-lg border border-[#E3E8EF]">
+            <header className="flex items-center justify-between bg-[#F6F8FB] px-4 py-2.5">
+              <span className="text-[12px] font-[600] text-[#3E4859]">비슷한 경험 {index + 1}</span>
+              <span className="text-[11px] text-[#79859A]">선택 {(selectedItemsByGroup[group.groupId] ?? []).length}개</span>
+            </header>
+            <div className="grid gap-3 p-3 md:grid-cols-2">
+              {group.items.map((duplicateItem) => {
+                const checked = (selectedItemsByGroup[group.groupId] ?? []).includes(duplicateItem.itemId);
+                const item = fromSnapshotExperience(duplicateItem.itemId, duplicateItem.experience);
+                return (
+                  <button
+                    key={duplicateItem.itemId}
+                    type="button"
+                    onClick={() => onToggle(group.groupId, duplicateItem.itemId)}
+                    className={`relative min-h-[150px] rounded-lg border p-4 text-left transition-colors ${checked ? "border-[#93C5FD] bg-[#EFF6FF]" : "border-[#E3E8EF] hover:bg-[#F6F8FB]"}`}
+                  >
+                    <span className="absolute right-3 top-3"><CheckBox checked={checked} /></span>
+                    <div className="flex flex-wrap items-center gap-1.5 pr-7">
+                      <span className={`rounded px-1.5 py-0.5 text-[10px] ${duplicateItem.source === "EXISTING" ? "bg-[#EFF2F6] text-[#5A6678]" : "bg-[#DBEAFE] text-[#2563EB]"}`}>
+                        {duplicateItem.source === "EXISTING" ? "기존 경험" : "새로 추출"}
+                      </span>
+                      {typeof duplicateItem.similarity === "number" && (
+                        <span className="rounded bg-[#FCF3E2] px-1.5 py-0.5 text-[10px] text-[#A56F08]">유사도 {Math.round(duplicateItem.similarity * 100)}%</span>
+                      )}
+                    </div>
+                    <p className="mt-3 line-clamp-1 text-[14px] font-[600] text-[#28303D]">{item.name}</p>
+                    <p className="mt-1 text-[11px] text-[#79859A]">{item.type} · {item.status}</p>
+                    {item.fields.__body && <p className="mt-3 line-clamp-3 whitespace-pre-line text-[11px] leading-5 text-[#5A6678]">{item.fields.__body}</p>}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
+
+      <div className="mt-5 flex justify-end border-t border-[#E3E8EF] pt-4">
+        <button type="button" disabled={loading} onClick={onSubmit} className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[#2563EB] px-4 text-[12px] font-[600] text-white hover:bg-[#1D4ED8] disabled:bg-[#A4AEBE]">
+          {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+          선택 반영하기
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -387,527 +712,46 @@ function PendingDuplicatePanel({
   onSelect: (batch: ExperiencePendingBatch) => void;
 }) {
   return (
-    <section className="mb-5 rounded-[18px] border border-[#D8E4F5] bg-white p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="flex items-center gap-2 text-[15px] font-[900] text-[#0F172A]">
-            <Layers size={17} className="text-[#2563EB]" />
-            미처리 중복 경험
-          </p>
-          <p className="mt-1 text-[12px] font-[600] text-[#64748B]">
-            Step3 선택 화면을 닫거나 새로고침했을 때 여기서 다시 복구할 수
-            있어요.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onRefresh}
-          className="inline-flex h-8 items-center gap-1 rounded-lg border border-[#E2E8F0] px-3 text-[12px] font-[800] text-[#64748B] hover:bg-[#F8FAFC]"
-        >
-          <RotateCcw size={13} />
-          새로고침
-        </button>
+    <div className="mb-4 rounded-lg border border-[#E3E8EF] bg-[#F6F8FB] p-3">
+      <div className="flex items-center justify-between">
+        <span className="inline-flex items-center gap-1.5 text-[12px] font-[600] text-[#3E4859]"><Layers className="h-3.5 w-3.5" /> 미처리 중복 경험</span>
+        <button type="button" onClick={onRefresh} className="inline-flex h-6 items-center gap-1 rounded px-2 text-[10px] text-[#79859A] hover:bg-white"><RotateCcw className="h-3 w-3" /> 새로고침</button>
       </div>
-
       {loading ? (
-        <div className="mt-3 flex items-center gap-2 text-[13px] font-[700] text-[#64748B]">
-          <Loader2 size={15} className="animate-spin" /> 조회 중...
-        </div>
+        <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-[#79859A]"><Loader2 className="h-3 w-3 animate-spin" /> 조회 중</p>
       ) : batches.length === 0 ? (
-        <p className="mt-3 rounded-[12px] bg-[#F8FAFC] px-3 py-2 text-[13px] font-[700] text-[#94A3B8]">
-          현재 미처리 중복 경험이 없습니다.
-        </p>
+        <p className="mt-2 text-[11px] text-[#A4AEBE]">현재 미처리 항목이 없습니다.</p>
       ) : (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-2 flex flex-wrap gap-1.5">
           {batches.map((batch, index) => (
-            <button
-              key={batch.duplicateBatchId}
-              type="button"
-              onClick={() => onSelect(batch)}
-              className={`rounded-[12px] border px-3 py-2 text-left transition ${
-                selectedBatchId === batch.duplicateBatchId
-                  ? "border-[#2563EB] bg-[#EFF6FF] text-[#2563EB]"
-                  : "border-[#E2E8F0] bg-white text-[#334155] hover:border-[#BFDBFE]"
-              }`}
-            >
-              <p className="text-[12px] font-[900]">Batch {index + 1}</p>
-              <p className="mt-1 text-[11px] font-[700] opacity-80">
-                중복 그룹 {batch.duplicateGroups.length}개 ·{" "}
-                {formatDate(batch.createdAt)}
-              </p>
+            <button key={batch.duplicateBatchId} type="button" onClick={() => onSelect(batch)} className={`rounded-md border px-2 py-1 text-[10px] ${selectedBatchId === batch.duplicateBatchId ? "border-[#93C5FD] bg-white text-[#2563EB]" : "border-[#E3E8EF] bg-white text-[#5A6678]"}`}>
+              Batch {index + 1} · {batch.duplicateGroups.length}그룹
             </button>
           ))}
         </div>
       )}
-    </section>
-  );
-}
-
-function UploadStep({
-  file,
-  loading,
-  onFileChange,
-  onSubmit,
-}: {
-  file: File | null;
-  loading: boolean;
-  onFileChange: (file: File | null) => void;
-  onSubmit: () => void;
-}) {
-  return (
-    <div className="rounded-[20px] border border-[#E2E8F0] bg-white p-6">
-      <p className="text-[17px] font-[900] text-[#0F172A]">
-        Step1. 자소서 파일 업로드
-      </p>
-      <p className="mt-2 text-[14px] font-[600] leading-6 text-[#64748B]">
-        자소서 PDF/문서 파일을 올리면 AI가 경험 후보 목록을 추출합니다.
-      </p>
-
-      <label className="mt-6 flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-[18px] border-2 border-dashed border-[#BFDBFE] bg-[#EFF6FF]/45 px-6 text-center transition hover:bg-[#EFF6FF]">
-        <FileUp size={40} className="text-[#2563EB]" />
-        <p className="mt-4 text-[15px] text-[#0F172A]">
-          {file ? file.name : "자소서 파일을 선택해 주세요"}
-        </p>
-        <input
-          type="file"
-          accept=".pdf,.doc,.docx,.hwp,.txt,application/pdf"
-          className="sr-only"
-          onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
-        />
-      </label>
-
-      <button
-        type="button"
-        disabled={loading}
-        onClick={onSubmit}
-        className="mt-5 inline-flex h-11 items-center gap-2 rounded-[12px] bg-[#2563EB] px-5 text-[14px] font-[900] text-white transition hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:bg-[#94A3B8]"
-      >
-        {loading ? (
-          <Loader2 size={17} className="animate-spin" />
-        ) : (
-          <Sparkles size={17} />
-        )}
-        AI 후보 추출하기
-      </button>
     </div>
   );
 }
 
-function CandidateStep({
-  candidates,
-  selectedIds,
-  loading,
-  onBack,
-  onToggle,
-  onSubmit,
-  onDone,
-}: {
-  candidates: ExperienceTempResponse[];
-  selectedIds: number[];
-  loading: boolean;
-  onBack: () => void;
-  onToggle: (id: number) => void;
-  onSubmit: () => void;
-  onDone: () => void;
-}) {
+function CheckBox({ checked }: { checked: boolean }) {
   return (
-    <section className="rounded-[20px] border border-[#E2E8F0] bg-white p-5">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-[17px] font-[900] text-[#0F172A]">
-            Step1 결과. 경험 후보 선택
-          </p>
-        </div>
-        <div className="text-right text-[12px] font-[800] text-[#2563EB]">
-          선택 {selectedIds.length}개 / 전체 {candidates.length}개
-        </div>
-      </div>
-
-      {candidates.length === 0 ? (
-        <div>
-          <EmptyBox text="추출된 경험 후보가 없습니다." />
-          <p className="mt-3 text-center text-[13px] font-[700] text-[#64748B]">
-            저장할 경험 후보가 없어서 상세 추출 단계는 건너뜁니다.
-          </p>
-        </div>
-      ) : (
-        <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
-          {candidates.map((candidate) => {
-            const selectedIndex = selectedIds.indexOf(candidate.id);
-            const checked = selectedIndex >= 0;
-            return (
-              <button
-                key={candidate.id}
-                type="button"
-                onClick={() => onToggle(candidate.id)}
-                className={`rounded-[16px] border p-4 text-left transition ${
-                  checked
-                    ? "border-[#2563EB] bg-[#EFF6FF]"
-                    : "border-[#E2E8F0] bg-white hover:border-[#BFDBFE]"
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <span
-                    className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border ${
-                      checked
-                        ? "border-[#2563EB] bg-[#2563EB]"
-                        : "border-[#CBD5E1] bg-white"
-                    }`}
-                  >
-                    {checked && (
-                      <Check size={13} strokeWidth={3} className="text-white" />
-                    )}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="mt-3 text-[15px] font-[900] text-[#0F172A]">
-                      {candidate.experienceName}
-                    </p>
-                    <p className="mt-2 text-[12px] font-[800] text-[#64748B]">
-                      {fromBackendExperienceType(candidate.experienceType)} ·{" "}
-                      {fromBackendExperienceGroup(candidate.experienceGroup)}
-                    </p>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      )}
-      <div className="mt-5 flex justify-between">
-        <button
-          type="button"
-          onClick={onBack}
-          className="h-10 rounded-[10px] border border-[#E2E8F0] px-4 text-[13px] font-[900] text-[#64748B] hover:bg-[#F8FAFC]"
-        >
-          파일 다시 선택
-        </button>
-
-        {candidates.length === 0 ? (
-          <button
-            type="button"
-            onClick={onDone}
-            className="inline-flex h-10 items-center gap-2 rounded-[10px] bg-[#2563EB] px-4 text-[13px] font-[900] text-white hover:bg-[#1D4ED8]"
-          >
-            완료
-          </button>
-        ) : (
-          <button
-            type="button"
-            disabled={loading || selectedIds.length === 0}
-            onClick={onSubmit}
-            className="inline-flex h-10 items-center gap-2 rounded-[10px] bg-[#2563EB] px-4 text-[13px] font-[900] text-white hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:bg-[#94A3B8]"
-          >
-            {loading && <Loader2 size={15} className="animate-spin" />}
-            선택 후보 상세 추출
-          </button>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function Step2ResultStep({
-  result,
-  loading,
-  onGoDuplicates,
-  onDone,
-}: {
-  result: ExperienceStep2Response;
-  loading: boolean;
-  onGoDuplicates: () => void;
-  onDone: () => void;
-}) {
-  const saved = result.savedExperiences ?? [];
-  const groups = result.duplicateGroups ?? [];
-
-  return (
-    <section className="space-y-5">
-      <div className="rounded-[20px] border border-[#BFDBFE] bg-white p-5">
-        <p className="text-[17px] font-[900] text-[#0F172A]">
-          Step2 결과. 저장 / 중복 분류
-        </p>
-      </div>
-
-      <section className="rounded-[18px] border border-[#D8E4F5] bg-white p-5">
-        <div className="flex items-center justify-between">
-          <p className="text-[15px] font-[900] text-[#0F172A]">
-            비중복 경험은 바로 저장되었습니다.
-          </p>
-          <span className="rounded-full bg-[#EFF6FF] px-3 py-1 text-[12px] font-[900] text-[#2563EB]">
-            {saved.length}개
-          </span>
-        </div>
-        {saved.length === 0 ? (
-          <EmptyBox text="즉시 저장된 경험이 없습니다." />
-        ) : (
-          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-            {saved.map((item) => (
-              <SmallExperienceCard
-                key={item.id}
-                item={fromBackendExperience(item)}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="rounded-[18px] border border-[#FED7AA] bg-white p-5">
-        <div className="flex items-center justify-between">
-          <p className="text-[15px] font-[900] text-[#0F172A]">
-            중복 후보 그룹
-          </p>
-          <span className="rounded-full bg-[#FFF7ED] px-3 py-1 text-[12px] font-[900] text-[#EA580C]">
-            {groups.length}개
-          </span>
-        </div>
-
-        {groups.length === 0 ? (
-          <div className="mt-4 rounded-[14px] border border-[#DCFCE7] bg-[#F0FDF4] p-4 text-[13px] font-[800] text-[#15803D]">
-            중복 후보가 없어 Step2에서 완료되었습니다.
-          </div>
-        ) : (
-          <div className="mt-4 space-y-3">
-            {groups.map((group) => (
-              <div
-                key={group.groupId}
-                className="rounded-[14px] border border-[#FED7AA] bg-[#FFF7ED] p-4"
-              >
-                <p className="mt-1 text-[12px] font-[700] text-[#C2410C]">
-                  선택 가능 항목 {group.items.length}개
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <div className="flex justify-end gap-2">
-        {groups.length === 0 ? (
-          <button
-            type="button"
-            onClick={onDone}
-            className="h-10 rounded-[10px] bg-[#2563EB] px-5 text-[13px] font-[900] text-white hover:bg-[#1D4ED8]"
-          >
-            완료
-          </button>
-        ) : (
-          <button
-            type="button"
-            disabled={loading}
-            onClick={onGoDuplicates}
-            className="h-10 rounded-[10px] bg-[#EA580C] px-5 text-[13px] font-[900] text-white hover:bg-[#C2410C] disabled:bg-[#FDBA74]"
-          >
-            중복 최종 선택으로 이동
-          </button>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function DuplicateStep({
-  duplicateBatchId,
-  groups,
-  selectedItemsByGroup,
-  loading,
-  onToggle,
-  onSubmit,
-}: {
-  duplicateBatchId: string | null;
-  groups: DuplicateGroupResponse[];
-  selectedItemsByGroup: Record<string, string[]>;
-  loading: boolean;
-  onToggle: (groupId: string, itemId: string) => void;
-  onSubmit: () => void;
-}) {
-  if (!duplicateBatchId || groups.length === 0) {
-    return <EmptyBox text="선택할 중복 경험 batch가 없습니다." />;
-  }
-
-  return (
-    <section className="space-y-5">
-      <div className="rounded-[20px] border border-[#FED7AA] bg-white p-5">
-        <p className="text-[17px] font-[900] text-[#0F172A]">
-          Step3. 중복 경험 최종 선택
-        </p>
-        <p className="mt-2 text-[13px] font-[600] text-[#64748B]">
-          duplicateBatchId:{" "}
-          <span className="font-[900] text-[#EA580C]">{duplicateBatchId}</span>
-        </p>
-        <p className="mt-1 text-[13px] font-[600] text-[#64748B]">
-          각 그룹에서 최종적으로 남길 경험을 선택하세요. 여러 개 선택하면 모두 유지됩니다.
-        </p>
-      </div>
-
-      {groups.map((group, index) => (
-        <section
-          key={group.groupId}
-          className="rounded-[18px] border border-[#E2E8F0] bg-white p-5"
-        >
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-[15px] font-[900] text-[#0F172A]">
-                중복 그룹 {index + 1}
-              </p>
-            </div>
-            <span className="rounded-full bg-[#F8FAFC] px-3 py-1 text-[12px] font-[900] text-[#64748B]">
-              선택 {(selectedItemsByGroup[group.groupId] ?? []).length}개
-            </span>
-          </div>
-
-          <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
-            {group.items.map((item) => {
-              const checked = (
-                selectedItemsByGroup[group.groupId] ?? []
-              ).includes(item.itemId);
-              const snapshotItem = fromSnapshotExperience(
-                item.itemId,
-                item.experience,
-              );
-              return (
-                <button
-                  key={item.itemId}
-                  type="button"
-                  onClick={() => onToggle(group.groupId, item.itemId)}
-                  className={`rounded-[16px] border p-4 text-left transition ${
-                    checked
-                      ? "border-[#2563EB] bg-[#EFF6FF]"
-                      : "border-[#E2E8F0] bg-white hover:border-[#BFDBFE]"
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <span
-                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border ${
-                        checked
-                          ? "border-[#2563EB] bg-[#2563EB]"
-                          : "border-[#CBD5E1] bg-white"
-                      }`}
-                    >
-                      {checked && (
-                        <Check
-                          size={13}
-                          strokeWidth={3}
-                          className="text-white"
-                        />
-                      )}
-                    </span>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span
-                          className={`rounded-full px-2 py-1 text-[11px] font-[900] ${
-                            item.source === "EXISTING"
-                              ? "bg-[#F1F5F9] text-[#475569]"
-                              : "bg-[#DBEAFE] text-[#2563EB]"
-                          }`}
-                        >
-                          {item.source === "EXISTING"
-                            ? "기존 경험"
-                            : "추출 draft"}
-                        </span>
-                        {typeof item.similarity === "number" && (
-                          <span className="rounded-full bg-[#FFF7ED] px-2 py-1 text-[11px] font-[900] text-[#EA580C]">
-                            유사도 {Math.round(item.similarity * 100)}%
-                          </span>
-                        )}
-                      </div>
-
-                      <p className="mt-3 break-all text-[11px] font-[800] text-[#94A3B8]">
-                        itemId: {item.itemId}
-                      </p>
-                      <p className="mt-2 text-[15px] font-[900] text-[#0F172A]">
-                        {snapshotItem.name}
-                      </p>
-                      <p className="mt-1 text-[12px] font-[800] text-[#64748B]">
-                        {snapshotItem.type} · {snapshotItem.status}
-                      </p>
-
-                      {snapshotItem.keywords.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-1.5">
-                          {snapshotItem.keywords.slice(0, 5).map((keyword) => (
-                            <span
-                              key={keyword}
-                              className="rounded-full bg-white px-2 py-1 text-[11px] font-[800] text-[#475569]"
-                            >
-                              {keyword}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {snapshotItem.fields.__body && (
-                        <p className="mt-3 line-clamp-4 whitespace-pre-line rounded-[12px] bg-white/70 p-3 text-[12px] font-[600] leading-5 text-[#475569]">
-                          {snapshotItem.fields.__body}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      ))}
-
-      <div className="flex justify-end">
-        <button
-          type="button"
-          disabled={loading}
-          onClick={onSubmit}
-          className="inline-flex h-11 items-center gap-2 rounded-[12px] bg-[#2563EB] px-5 text-[14px] font-[900] text-white hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:bg-[#94A3B8]"
-        >
-          {loading && <Loader2 size={16} className="animate-spin" />}
-          선택 반영하기
-        </button>
-      </div>
-    </section>
-  );
-}
-
-function SmallExperienceCard({ item }: { item: ExperienceItem }) {
-  return (
-    <article className="rounded-[14px] border border-[#E2E8F0] bg-[#F8FAFC] p-4">
-      <p className="text-[12px] font-[900] text-[#2563EB]">{item.type}</p>
-      <p className="mt-1 text-[15px] font-[900] text-[#0F172A]">{item.name}</p>
-      <p className="mt-1 text-[12px] font-[700] text-[#64748B]">
-        {[item.org || item.fields.org, item.period || item.fields.period]
-          .filter(Boolean)
-          .join(" · ") || "상세 정보 없음"}
-      </p>
-      {item.keywords.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {item.keywords.slice(0, 4).map((keyword) => (
-            <span
-              key={keyword}
-              className="rounded-full bg-white px-2 py-1 text-[11px] font-[800] text-[#475569]"
-            >
-              {keyword}
-            </span>
-          ))}
-        </div>
-      )}
-    </article>
+    <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border ${checked ? "border-[#2563EB] bg-[#2563EB]" : "border-[#CDD5E0] bg-white"}`}>
+      {checked && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+    </span>
   );
 }
 
 function EmptyBox({ text }: { text: string }) {
-  return (
-    <div className="mt-4 rounded-[14px] border border-dashed border-[#CBD5E1] bg-[#F8FAFC] py-10 text-center text-[13px] font-[800] text-[#94A3B8]">
-      {text}
-    </div>
-  );
+  return <div className="mt-4 rounded-lg border border-dashed border-[#CDD5E0] bg-[#F6F8FB] py-10 text-center text-[12px] text-[#A4AEBE]">{text}</div>;
 }
 
 function makeDefaultSelections(groups: DuplicateGroupResponse[]) {
   const result: Record<string, string[]> = {};
-
   groups.forEach((group) => {
     const existing = group.items.find((item) => item.source === "EXISTING");
-    result[group.groupId] = existing
-      ? [existing.itemId]
-      : group.items.slice(0, 1).map((item) => item.itemId);
+    result[group.groupId] = existing ? [existing.itemId] : group.items.slice(0, 1).map((item) => item.itemId);
   });
-
   return result;
 }
 
@@ -917,30 +761,23 @@ function findBatchByItemId(
 ) {
   if (itemId == null) return null;
   const normalizedId = String(itemId);
-
-  return (
-    batches.find((batch) =>
-      batch.duplicateGroups.some((group) =>
-        group.items.some((item) => item.itemId === normalizedId),
-      ),
-    ) ?? null
-  );
+  return batches.find((batch) =>
+    batch.duplicateGroups.some((group) =>
+      group.items.some((item) => item.itemId === normalizedId),
+    ),
+  ) ?? null;
 }
 
-function formatDate(value?: string | null) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) {
     try {
-      const parsed = JSON.parse(error.message) as {
-        message?: string;
-        error?: string;
-      };
+      const parsed = JSON.parse(error.message) as { message?: string; error?: string };
       return parsed.message ?? parsed.error ?? error.message;
     } catch {
       return error.message;
