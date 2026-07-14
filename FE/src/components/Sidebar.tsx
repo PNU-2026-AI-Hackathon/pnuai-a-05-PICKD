@@ -10,9 +10,21 @@ import {
 import { PickdLogoIcon } from "../assets";
 
 const navItems = [
-  { name: "지원 대시보드", path: "/main", Icon: LayoutDashboard },
-  { name: "경험정리", path: "/experience", Icon: BookOpen },
-  { name: "AI 자소서", path: "/ai", Icon: Sparkles },
+  {
+    name: "지원 대시보드",
+    path: "/main",
+    Icon: LayoutDashboard,
+  },
+  {
+    name: "개인경험 정리",
+    path: "/experience",
+    Icon: BookOpen,
+  },
+  {
+    name: "AI 자소서",
+    path: "/ai",
+    Icon: Sparkles,
+  },
 ];
 
 export default function Sidebar() {
@@ -26,13 +38,15 @@ export default function Sidebar() {
         location.pathname.startsWith("/applications/")
       );
     }
+
     return (
-      location.pathname === path || location.pathname.startsWith(`${path}/`)
+      location.pathname === path ||
+      location.pathname.startsWith(`${path}/`)
     );
   };
 
   const itemClass = (active: boolean) =>
-    `group relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
+    `group relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors active:scale-95 ${
       active
         ? "bg-[#EFF6FF] text-[#1D4ED8]"
         : "text-[#79859A] hover:bg-[#F6F8FB] hover:text-[#28303D]"
@@ -52,6 +66,7 @@ export default function Sidebar() {
       <nav className="flex min-h-0 flex-1 flex-col gap-1">
         {navItems.map(({ name, path, Icon }) => {
           const active = isActive(path);
+
           return (
             <button
               key={path}
