@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { Application } from "../types/application";
 import Header from "../components/dashboard/main/Header";
 import RightTab from "../components/dashboard/right/RightTab";
@@ -14,6 +15,7 @@ import { getCalendarEvents } from "../api/calendar";
 import { getUserProfile } from "../api/user";
 
 export default function MainScreen() {
+  const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState<any>(null);
   const [focusedApplication, setFocusedApplication] = useState<any>(null);
@@ -113,25 +115,23 @@ export default function MainScreen() {
   };
 
   return (
-    <div className="relative flex px-[150px] min-h-full overflow-hidden bg-gray-50">
-      <div className="flex-1 min-w-0 p-6">
+    <div className="flex h-full min-h-0 overflow-hidden bg-[#FBFCFE]">
+      {/* 패널이 열리면 flex-1 영역의 실제 너비가 줄어들어 대시보드가 왼쪽으로 재배치됩니다. */}
+      <div className="min-w-0 flex-1 overflow-y-auto px-10 py-8 transition-[width] duration-300 ease-in-out">
         {user && (
-          <>
-            <div className="relative flex justify-between items-center">
-              <Header user={user} />
-            </div>
+          <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-6">
+            <Header user={user} />
 
-            <div className="mt-6 space-y-4">
-              <ApplyInput onAdd={() => setIsModalOpen(true)} />
+            <ApplyInput onAdd={() => setIsModalOpen(true)} />
 
+            <div className="space-y-4">
               <ApplicationTable
                 onAdd={() => {
                   setSelectedApplication(null);
                   setIsModalOpen(true);
                 }}
                 onEdit={(row: Application) => {
-                  setEditData(row);
-                  setIsModalOpen(true);
+                  navigate(`/applications/${row.id}`);
                 }}
                 onDelete={() => {}}
                 onChange={handleAfterChange}
@@ -140,64 +140,51 @@ export default function MainScreen() {
                 setIsDetailModalOpen={setIsDetailModalOpen}
                 calendarEvents={googleEvents}
               />
+
+              <DocumentSection documents={documents} />
+
+              <CompletedSection applications={applications} />
             </div>
-
-            <DocumentSection documents={documents} />
-
-            <CompletedSection
-              applications={applications}
-              onOpenApplication={(application) => {
-                setFocusedApplication(application);
-                setIsDetailModalOpen(true);
-              }}
-            />
-          </>
+          </div>
         )}
       </div>
 
-      {user && isSidebarOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[1px]"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
       {user && (
-        <div
-          className={`fixed top-0 right-0 h-screen w-[350px] bg-white shadow-xl z-[60] flex flex-col transform transition-transform duration-300 ease-in-out ${
-            isSidebarOpen ? "translate-x-0" : "translate-x-full"
-          }`}
-        >
+        <div className="relative flex shrink-0">
           <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="absolute top-1/3 left-0 -translate-x-full -translate-y-1/2 flex items-center justify-center w-6 h-16 bg-white border border-r-0 border-gray-200 rounded-l-xl shadow-md hover:bg-gray-50 text-gray-500 transition-all group z-10"
+            type="button"
+            onClick={() => setIsSidebarOpen((open) => !open)}
+            aria-label={isSidebarOpen ? "오늘 패널 닫기" : "오늘 패널 열기"}
+            className="group absolute left-0 top-1/2 z-20 flex h-14 w-5 -translate-x-full -translate-y-1/2 items-center justify-center rounded-l-lg border border-[#E3E8EF] bg-white text-[#79859A] shadow-sm transition-colors hover:bg-[#F6F8FB] hover:text-[#28303D]"
           >
             <Icon
               icon={
                 isSidebarOpen ? "lucide:chevron-right" : "lucide:chevron-left"
               }
-              className={`w-4 h-4 transition-transform ${
-                isSidebarOpen
-                  ? "group-hover:translate-x-0.5"
-                  : "group-hover:-translate-x-0.5"
-              }`}
+              className="h-3 w-3"
             />
           </button>
 
-          <div className="flex-1 p-6 overflow-y-auto">
-            <RightTab
-              todoData={allTodos}
-              googleEvents={googleEvents}
-              setGoogleEvents={setGoogleEvents}
-              focusedApplication={focusedApplication}
-            />
+          <div
+            className={`h-full overflow-hidden transition-[width] duration-300 ease-in-out ${
+              isSidebarOpen ? "w-[400px]" : "w-0"
+            }`}
+          >
+            <aside className="h-full w-[400px] overflow-y-auto border-l border-[#E3E8EF] bg-[#F8FAFC]">
+              <RightTab
+                todoData={allTodos}
+                googleEvents={googleEvents}
+                setGoogleEvents={setGoogleEvents}
+                focusedApplication={focusedApplication}
+              />
+            </aside>
           </div>
         </div>
       )}
 
       {isModalOpen && (
         <div
-          className="fixed inset-0 bg-black/30 flex items-center justify-center z-[100]"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30"
           onClick={() => {
             setIsModalOpen(false);
             setSelectedApplication(null);

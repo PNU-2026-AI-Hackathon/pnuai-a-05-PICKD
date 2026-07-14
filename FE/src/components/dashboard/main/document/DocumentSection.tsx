@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Icon } from "@iconify/react";
+import { LayoutGrid, LayoutList } from "lucide-react";
 import DocumentCard from "./DocumentCard";
 import DocumentList from "./DocumentList";
 import type { DocumentItem } from "../../../../types/document";
-import { updateDocument } from "../../../../api/document";
 import { parseLocalDateTime } from "../../../../utils/date";
+import { useApplication } from "../../../../context/ApplicationContext";
 
 interface Props {
   documents?: DocumentItem[];
@@ -12,7 +12,12 @@ interface Props {
 
 const isWritingDocument = (document: DocumentItem) => {
   const documentStatus = String(document.status ?? "").replace(/\s/g, "");
-  return documentStatus === "작성중" && document.application?.status === "WRITING";
+  const applicationStatus = String(document.application?.status ?? "");
+
+  return (
+    documentStatus === "작성중" &&
+    (applicationStatus === "WRITING" || applicationStatus === "작성중")
+  );
 };
 
 const getDeadlineTime = (document: DocumentItem) => {
@@ -25,6 +30,7 @@ export default function DocumentSection({
 }: Props) {
   const [view, setView] = useState<"card" | "list">("card");
   const [documents, setDocuments] = useState<DocumentItem[]>(initialDocuments);
+  const { updateApplication } = useApplication();
 
   useEffect(() => {
     setDocuments(initialDocuments);
@@ -43,92 +49,97 @@ export default function DocumentSection({
       });
   }, [documents]);
 
-  const handleStatusChange = async (
-    id: number,
-    status: DocumentItem["status"],
-  ) => {
-    const target = documents.find((document) => document.id === id);
-    if (!target) return;
+  const handleToggleImportant = async (document: DocumentItem) => {
+    const applicationId = document.application?.id ?? document.applicationId;
+    if (!applicationId) return;
 
-    setDocuments((prev) =>
-      prev.map((document) =>
-        document.id === id ? { ...document, status } : document,
+    const nextImportant = !document.application?.important;
+
+    setDocuments((previous) =>
+      previous.map((item) =>
+        (item.application?.id ?? item.applicationId) === applicationId
+          ? {
+              ...item,
+              application: item.application
+                ? { ...item.application, important: nextImportant }
+                : item.application,
+            }
+          : item,
       ),
     );
 
     try {
-      await updateDocument(id, { ...target, status });
+      await updateApplication(applicationId, { important: nextImportant });
     } catch (error) {
-      console.error("서류 상태 변경 실패:", error);
-      setDocuments((prev) =>
-        prev.map((document) =>
-          document.id === id
-            ? { ...document, status: target.status }
-            : document,
-        ),
-      );
-      alert("서류 상태 변경에 실패했습니다.");
+      console.error("공고 즐겨찾기 변경 실패:", error);
+      setDocuments(initialDocuments);
+      alert("즐겨찾기 변경에 실패했습니다.");
     }
   };
 
   return (
-    <div className="mt-6 rounded-2xl border border-[#E2E8F0] bg-white overflow-visible">
-      <div className="flex items-center justify-between px-5 pt-2 pb-1.5">
+    <section className="overflow-hidden rounded-xl border border-[#E3E8EF] bg-white">
+      <div className="flex items-center justify-between border-b border-[#E3E8EF] px-4 pb-1.5 pt-2">
         <div className="flex items-center gap-2">
-          <h2 className="text-ms font-[600] text-[#0F172A]">작성중인 서류</h2>
-          <span className="text-sm text-[#94A3B8]">{displayDocuments.length}건</span>
+          <h2 className="text-[16px] font-semibold text-[#161C26]">
+            작성중인 서류
+          </h2>
+          <span className="text-[13px] text-[#79859A]">
+            {displayDocuments.length}건
+          </span>
         </div>
 
-        <div className="flex items-center rounded-lg border border-[#D8E0EA] bg-[#F8FAFC] p-[2px]">
+        <div className="inline-flex items-center gap-0.5 rounded-md border border-[#E3E8EF] bg-[#F6F8FB] p-0.5">
           <button
+            type="button"
             onClick={() => setView("card")}
-            className={`flex h-8 w-8 items-center justify-center rounded-md transition ${
+            aria-label="카드형"
+            className={`inline-flex h-[26px] w-[26px] items-center justify-center rounded transition-colors ${
               view === "card"
-                ? "bg-white text-[#334155] shadow-sm"
-                : "text-[#64748B] hover:bg-white/70"
+                ? "bg-white text-[#28303D] shadow-sm"
+                : "text-[#79859A] hover:text-[#28303D]"
             }`}
-            data-tooltip="카드형" aria-label="카드형"
+            data-tooltip="카드형"
           >
-            <Icon icon="mdi:view-grid-outline" width={16} />
+            <LayoutGrid className="h-4 w-4" strokeWidth={2} />
           </button>
 
           <button
+            type="button"
             onClick={() => setView("list")}
-            className={`flex h-8 w-8 items-center justify-center rounded-md transition ${
+            aria-label="리스트형"
+            className={`inline-flex h-[26px] w-[26px] items-center justify-center rounded transition-colors ${
               view === "list"
-                ? "bg-white text-[#334155] shadow-sm"
-                : "text-[#64748B] hover:bg-white/70"
+                ? "bg-white text-[#28303D] shadow-sm"
+                : "text-[#79859A] hover:text-[#28303D]"
             }`}
-            data-tooltip="리스트형" aria-label="리스트형"
+            data-tooltip="리스트형"
           >
-            <Icon icon="mdi:table-large" width={16} />
+            <LayoutList className="h-4 w-4" strokeWidth={2} />
           </button>
         </div>
       </div>
-      {view === "card" ? (
-        <div className="max-h-[320px] overflow-y-auto overflow-x-hidden px-5 pb-5">
-          {displayDocuments.length === 0 ? (
-            <div className="flex h-[140px] items-center justify-center text-sm text-[#94A3B8]">
-              작성중인 서류가 없습니다.
-            </div>
-          ) : (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(270px,1fr))] gap-4">
-              {displayDocuments.map((doc) => (
-                <DocumentCard
-                  key={doc.id}
-                  item={doc}
-                  onStatusChange={(status) => handleStatusChange(doc.id, status)}
-                />
-              ))}
-            </div>
-          )}
+
+      {displayDocuments.length === 0 ? (
+        <div className="px-4 py-8 text-center text-[14px] text-[#79859A]">
+          작성 중인 서류가 없어요.
+        </div>
+      ) : view === "card" ? (
+        <div className="grid grid-cols-1 gap-3.5 p-4 sm:grid-cols-2 lg:grid-cols-4">
+          {displayDocuments.map((document) => (
+            <DocumentCard
+              key={document.id}
+              item={document}
+              onToggleImportant={handleToggleImportant}
+            />
+          ))}
         </div>
       ) : (
         <DocumentList
           documents={displayDocuments}
-          onStatusChange={handleStatusChange}
+          onToggleImportant={handleToggleImportant}
         />
       )}
-    </div>
+    </section>
   );
 }

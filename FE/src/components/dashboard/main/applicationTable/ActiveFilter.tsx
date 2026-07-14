@@ -1,6 +1,122 @@
-import { Icon } from "@iconify/react";
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { Check, Columns3, Search, Table2 } from "lucide-react";
+import { createPortal } from "react-dom";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from "react";
 import { COLUMN_OPTIONS, DEFAULT_COLUMNS } from "../../../../types/application";
+
+
+interface PortalTooltipProps {
+  label: string;
+  children: ReactNode;
+  preferredSide?: "top" | "bottom";
+}
+
+function PortalTooltip({
+  label,
+  children,
+  preferredSide = "bottom",
+}: PortalTooltipProps) {
+  const anchorRef = useRef<HTMLSpanElement | null>(null);
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
+  const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState({ top: 0, left: 0, ready: false });
+
+  const updatePosition = () => {
+    const anchor = anchorRef.current;
+    const tooltip = tooltipRef.current;
+    if (!anchor || !tooltip) return;
+
+    const viewportPadding = 8;
+    const gap = 6;
+    const anchorRect = anchor.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const bottomTop = anchorRect.bottom + gap;
+    const topTop = anchorRect.top - tooltipRect.height - gap;
+    const canUseBottom =
+      bottomTop + tooltipRect.height <= window.innerHeight - viewportPadding;
+    const canUseTop = topTop >= viewportPadding;
+
+    let top =
+      preferredSide === "top"
+        ? canUseTop
+          ? topTop
+          : bottomTop
+        : canUseBottom
+          ? bottomTop
+          : topTop;
+
+    top = Math.min(
+      Math.max(viewportPadding, top),
+      window.innerHeight - tooltipRect.height - viewportPadding,
+    );
+
+    const centeredLeft =
+      anchorRect.left + anchorRect.width / 2 - tooltipRect.width / 2;
+    const left = Math.min(
+      Math.max(viewportPadding, centeredLeft),
+      window.innerWidth - tooltipRect.width - viewportPadding,
+    );
+
+    setPosition({ top, left, ready: true });
+  };
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    updatePosition();
+  }, [open, label, preferredSide]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleReposition = () => updatePosition();
+    window.addEventListener("resize", handleReposition);
+    window.addEventListener("scroll", handleReposition, true);
+
+    return () => {
+      window.removeEventListener("resize", handleReposition);
+      window.removeEventListener("scroll", handleReposition, true);
+    };
+  }, [open]);
+
+  return (
+    <>
+      <span
+        ref={anchorRef}
+        className="inline-flex"
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onFocusCapture={() => setOpen(true)}
+        onBlurCapture={() => setOpen(false)}
+      >
+        {children}
+      </span>
+
+      {open &&
+        createPortal(
+          <div
+            ref={tooltipRef}
+            role="tooltip"
+            className="pointer-events-none fixed z-[10050] whitespace-nowrap rounded bg-[#1F2937] px-2 py-1 text-[12px] font-semibold leading-[1.4] text-white shadow-lg"
+            style={{
+              top: position.top,
+              left: position.left,
+              visibility: position.ready ? "visible" : "hidden",
+            }}
+          >
+            {label}
+          </div>,
+          document.body,
+        )}
+    </>
+  );
+}
 
 interface Props {
   show: boolean;
@@ -8,10 +124,10 @@ interface Props {
   filters: { key: string; value: string }[];
   sort: { key: string; order: "asc" | "desc" } | null;
   groupedFilters: Record<string, string[]>;
-
   setFilters: Dispatch<SetStateAction<{ key: string; value: string }[]>>;
-  setSort: Dispatch<SetStateAction<{ key: string; order: "asc" | "desc" } | null>>;
-
+  setSort: Dispatch<
+    SetStateAction<{ key: string; order: "asc" | "desc" } | null>
+  >;
   visibleColumns: string[];
   setVisibleColumns: Dispatch<SetStateAction<string[]>>;
   searchKeyword: string;
@@ -20,41 +136,23 @@ interface Props {
   setViewMode: Dispatch<SetStateAction<"table" | "board">>;
 }
 
-const SORT_OPTIONS = [
-  { key: "deadlineDate", order: "asc", label: "마감일 가까운 순" },
-  { key: "deadlineDate", order: "desc", label: "마감일 먼 순" },
-  { key: "createdAt", order: "desc", label: "최근 등록 순" },
-  { key: "createdAt", order: "asc", label: "오래된 등록 순" },
-  { key: "updatedAt", order: "desc", label: "최근 수정 순" },
-  { key: "company", order: "asc", label: "기업명 가나다 순" },
-] as const;
+interface ColumnPickerProps {
+  visibleColumns: string[];
+  setVisibleColumns: Dispatch<SetStateAction<string[]>>;
+}
 
-export const getSortLabel = (sort: Props["sort"]) => {
-  if (!sort) return "정렬";
-
-  return (
-    SORT_OPTIONS.find(
-      (option) => option.key === sort.key && option.order === sort.order,
-    )?.label ?? "정렬"
-  );
-};
-
-export default function ActiveFilter({
-  setShow,
-  setFilters,
-  setSort,
+export function ColumnPicker({
   visibleColumns,
   setVisibleColumns,
-  searchKeyword,
-  setSearchKeyword,
-  viewMode,
-  setViewMode,
-  sort,
-}: Props) {
-  const columnRef = useRef<HTMLDivElement | null>(null);
-  const sortRef = useRef<HTMLDivElement | null>(null);
+}: ColumnPickerProps) {
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const [isColumnOpen, setIsColumnOpen] = useState(false);
-  const [isSortOpen, setIsSortOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({
+    top: 0,
+    left: 0,
+    maxHeight: 420,
+  });
 
   const toggleColumn = (key: string) => {
     setVisibleColumns((prev) =>
@@ -62,164 +160,189 @@ export default function ActiveFilter({
     );
   };
 
+  const updateMenuPosition = () => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+
+    const rect = trigger.getBoundingClientRect();
+    const menuWidth = 192;
+    const viewportPadding = 8;
+    const menuGap = 6;
+    const measuredHeight = menuRef.current?.getBoundingClientRect().height ?? 420;
+    const spaceBelow = window.innerHeight - rect.bottom - viewportPadding;
+    const spaceAbove = rect.top - viewportPadding;
+    const openBelow = spaceBelow >= Math.min(measuredHeight, 280) || spaceBelow >= spaceAbove;
+    const availableHeight = Math.max(
+      140,
+      (openBelow ? spaceBelow : spaceAbove) - menuGap,
+    );
+    const maxHeight = Math.min(measuredHeight, availableHeight);
+    const left = Math.min(
+      Math.max(viewportPadding, rect.right - menuWidth),
+      window.innerWidth - menuWidth - viewportPadding,
+    );
+    const top = openBelow
+      ? rect.bottom + menuGap
+      : Math.max(viewportPadding, rect.top - maxHeight - menuGap);
+
+    setMenuPosition({ top, left, maxHeight });
+  };
+
+  useEffect(() => {
+    if (!isColumnOpen) return;
+
+    updateMenuPosition();
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        triggerRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setIsColumnOpen(false);
+    };
+
+    const handleReposition = () => updateMenuPosition();
+
+    document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("resize", handleReposition);
+    window.addEventListener("scroll", handleReposition, true);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("resize", handleReposition);
+      window.removeEventListener("scroll", handleReposition, true);
+    };
+  }, [isColumnOpen]);
+
+  return (
+    <div className="relative ml-auto shrink-0">
+      <PortalTooltip label="표시할 컬럼">
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={() => {
+            updateMenuPosition();
+            setIsColumnOpen((prev) => !prev);
+          }}
+          className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-md border border-[#E3E8EF] text-[#79859A] transition-colors hover:bg-[#F6F8FB] hover:text-[#28303D]"
+          aria-label="표시할 컬럼"
+        >
+          <Columns3 className="h-[14px] w-[14px]" strokeWidth={2} />
+        </button>
+      </PortalTooltip>
+
+      {isColumnOpen &&
+        createPortal(
+          <div
+            ref={menuRef}
+            className="fixed z-[9999] min-w-[192px] overflow-x-hidden overflow-y-auto rounded-lg border border-[#E3E8EF] bg-white py-1 shadow-[0_12px_28px_-6px_rgba(22,28,38,0.16)]"
+            style={{
+              top: menuPosition.top,
+              left: menuPosition.left,
+              maxHeight: menuPosition.maxHeight,
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p className="px-3 py-2 text-[13px] font-medium text-[#79859A]">
+              표시할 컬럼 선택
+            </p>
+            <div className="h-px bg-[#EFF2F6]" />
+            {COLUMN_OPTIONS.map((column) => {
+              const checked = visibleColumns.includes(column.key);
+              return (
+                <button
+                  key={column.key}
+                  type="button"
+                  onClick={() => toggleColumn(column.key)}
+                  className="flex w-full items-center justify-between px-3 py-2 text-left text-[14px] text-[#3E4859] hover:bg-[#F6F8FB]"
+                >
+                  <span>{column.label}</span>
+                  {checked && (
+                    <Check
+                      className="h-4 w-4 text-[#2563EB]"
+                      strokeWidth={2.3}
+                    />
+                  )}
+                </button>
+              );
+            })}
+            <div className="h-px bg-[#EFF2F6]" />
+            <button
+              type="button"
+              onClick={() => setVisibleColumns(DEFAULT_COLUMNS)}
+              className="w-full px-3 py-2 text-left text-[14px] text-[#79859A] hover:bg-[#F6F8FB]"
+            >
+              기본값으로 초기화
+            </button>
+          </div>,
+          document.body,
+        )}
+    </div>
+  );
+}
+
+export default function ActiveFilter({
+  setShow,
+  setFilters,
+  searchKeyword,
+  setSearchKeyword,
+  viewMode,
+  setViewMode,
+}: Props) {
   useEffect(() => {
     setShow(false);
     setFilters([]);
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as Node;
-
-      if (columnRef.current && !columnRef.current.contains(target)) {
-        setIsColumnOpen(false);
-      }
-
-      if (sortRef.current && !sortRef.current.contains(target)) {
-        setIsSortOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+  }, [setFilters, setShow]);
 
   return (
-    <div className="relative">
-      <div className="ml-auto flex w-fit items-center gap-2">
-        <div ref={sortRef} className="relative">
-          <button
-            type="button"
-            onClick={() => setIsSortOpen((prev) => !prev)}
-            className="flex h-10 items-center gap-2 rounded-xl border border-[#D8E0EA] bg-white px-3 text-sm font-medium text-[#334155] hover:bg-[#F8FAFC]"
-          >
-            <Icon icon="lucide:arrow-up-down" width={16} height={16} />
-            <span>{getSortLabel(sort)}</span>
-            <Icon icon="mdi:chevron-down" width={18} />
-          </button>
-
-          {isSortOpen && (
-            <div className="absolute right-0 top-12 z-50 w-[190px] overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white p-2 shadow-lg">
-              {SORT_OPTIONS.map((option) => {
-                const active = sort?.key === option.key && sort?.order === option.order;
-
-                return (
-                  <button
-                    key={`${option.key}-${option.order}`}
-                    type="button"
-                    onClick={() => {
-                      setSort({ key: option.key, order: option.order });
-                      setIsSortOpen(false);
-                    }}
-                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-[#F8FAFC] ${
-                      active ? "font-semibold text-[#2563EB]" : "text-[#334155]"
-                    }`}
-                  >
-                    <span>{option.label}</span>
-                    {active && <Icon icon="mdi:check" className="text-[18px]" />}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center rounded-lg border border-[#D8E0EA] bg-[#F8FAFC] p-[2px]">
+    <div className="ml-auto flex w-fit items-center gap-2">
+      <div className="inline-flex items-center gap-0.5 rounded-md border border-[#E3E8EF] bg-[#F6F8FB] p-0.5">
+        <PortalTooltip label="표 보기">
           <button
             type="button"
             onClick={() => setViewMode("table")}
-            className={`flex h-8 w-8 items-center justify-center rounded-md transition ${
+            className={`inline-flex h-[22px] w-[22px] items-center justify-center rounded transition-colors ${
               viewMode === "table"
-                ? "bg-white text-[#334155] shadow-sm"
-                : "text-[#64748B] hover:bg-white/70"
+                ? "bg-white text-[#28303D] shadow-sm"
+                : "text-[#79859A] hover:text-[#28303D]"
             }`}
-            data-tooltip="표 보기" aria-label="표 보기"
+            aria-label="표 보기"
           >
-            <Icon icon="lucide:table-2" width={17} height={17} />
+            <Table2 className="h-[14px] w-[14px]" strokeWidth={2} />
           </button>
+        </PortalTooltip>
 
+        <PortalTooltip label="칸반 보기">
           <button
             type="button"
             onClick={() => setViewMode("board")}
-            className={`flex h-8 w-8 items-center justify-center rounded-md transition ${
+            className={`inline-flex h-[22px] w-[22px] items-center justify-center rounded transition-colors ${
               viewMode === "board"
-                ? "bg-white text-[#334155] shadow-sm"
-                : "text-[#64748B] hover:bg-white/70"
+                ? "bg-white text-[#28303D] shadow-sm"
+                : "text-[#79859A] hover:text-[#28303D]"
             }`}
-            data-tooltip="칸반 보기" aria-label="칸반 보기"
+            aria-label="칸반 보기"
           >
-            <Icon icon="lucide:columns-3" width={17} height={17} />
+            <Columns3 className="h-[14px] w-[14px]" strokeWidth={2} />
           </button>
-        </div>
-
-        <div className="flex h-10 w-[280px] items-center gap-2 rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] px-3 focus-within:border-[#2563EB] focus-within:ring-2 focus-within:ring-[#BFDBFE]">
-          <Icon icon="mdi:magnify" className="text-[20px] text-[#64748B]" />
-
-          <input
-            value={searchKeyword}
-            onChange={(event) => setSearchKeyword(event.target.value)}
-            placeholder="기업명 / 공고명"
-            className="w-full bg-transparent text-sm text-[#0F172A] outline-none placeholder:text-[#64748B]"
-          />
-        </div>
-
-        <div ref={columnRef} className="relative">
-          <button
-            onClick={() => setIsColumnOpen(!isColumnOpen)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#F1F5F9] transition hover:bg-gray-50"
-            data-tooltip="컬럼 설정" aria-label="컬럼 설정"
-          >
-            <Icon
-              icon="material-symbols:view-column-outline"
-              className="text-[24px] text-[#64748B]"
-            />
-          </button>
-
-          {isColumnOpen && (
-            <div className="absolute right-0 top-12 z-50 w-[280px] overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-lg">
-              <div className="border-b border-[#F1F5F9] px-6 py-4">
-                <p className="text-[15px] font-semibold text-[#334155]">
-                  표시할 컬럼 선택
-                </p>
-              </div>
-
-              <div className="py-2">
-                {COLUMN_OPTIONS.map((column) => {
-                  const checked = visibleColumns.includes(column.key);
-
-                  return (
-                    <button
-                      key={column.key}
-                      onClick={() => toggleColumn(column.key)}
-                      className="flex w-full items-center justify-between px-6 py-2 hover:bg-[#F8FAFC]"
-                    >
-                      <span className="text-[15px] text-[#334155]">
-                        {column.label}
-                      </span>
-
-                      {checked && (
-                        <Icon
-                          icon="mdi:check"
-                          className="text-[20px] text-[#3B82F6]"
-                        />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                onClick={() => setVisibleColumns(DEFAULT_COLUMNS)}
-                className="flex w-full items-center gap-2 border-t border-[#F1F5F9] px-6 py-3 text-[#64748B] hover:bg-[#F8FAFC]"
-              >
-                <Icon icon="mdi:restore" className="text-[18px]" />
-                기본값으로 초기화
-              </button>
-            </div>
-          )}
-        </div>
+        </PortalTooltip>
       </div>
+
+      <label className="relative block">
+        <Search
+          className="pointer-events-none absolute left-2 top-1/2 h-[14px] w-[14px] -translate-y-1/2 text-[#79859A]"
+          strokeWidth={2}
+        />
+        <input
+          value={searchKeyword}
+          onChange={(event) => setSearchKeyword(event.target.value)}
+          placeholder="기업명 / 공고명"
+          className="h-7 w-44 rounded-md border border-[#E3E8EF] bg-white pl-6 pr-2 text-[14px] text-[#28303D] outline-none placeholder:text-[#A4AEBE] focus:border-[#93C5FD] focus:ring-2 focus:ring-[#DBEAFE]"
+        />
+      </label>
     </div>
   );
 }

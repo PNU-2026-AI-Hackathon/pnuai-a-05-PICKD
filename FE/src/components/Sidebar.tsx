@@ -1,112 +1,109 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
-  PickdLogoIcon,
-  DashboardIcon,
-  PortfolioIcon,
-  DocumentIcon,
-  SettingsIcon,
-  HelpIcon,
-  CalendarIcon,
-} from "../assets";
+  BookOpen,
+  CalendarDays,
+  HelpCircle,
+  LayoutDashboard,
+  Settings,
+  Sparkles,
+} from "lucide-react";
+import { PickdLogoIcon } from "../assets";
+
+const navItems = [
+  { name: "지원 대시보드", path: "/main", Icon: LayoutDashboard },
+  { name: "경험정리", path: "/experience", Icon: BookOpen },
+  { name: "AI 자소서", path: "/ai", Icon: Sparkles },
+];
 
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const isSettingsActive = location.pathname === "/settings";
-  const isHelpActive = location.pathname === "/help";
-  const isCalendarActive = location.pathname === "/calendar";
 
-  const menuItems = [
-    { name: "지원 대시보드", path: "/main", Icon: DashboardIcon, size: 18 },
-    {
-      name: "개인경험 정리",
-      path: "/experience",
-      Icon: PortfolioIcon,
-      size: 20,
-    },
-    { name: "AI 자소서", path: "/ai", Icon: DocumentIcon, size: 19 },
-  ];
+  const isActive = (path: string) => {
+    if (path === "/main") {
+      return (
+        location.pathname === "/main" ||
+        location.pathname.startsWith("/applications/")
+      );
+    }
+    return (
+      location.pathname === path || location.pathname.startsWith(`${path}/`)
+    );
+  };
+
+  const itemClass = (active: boolean) =>
+    `group relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
+      active
+        ? "bg-[#EFF6FF] text-[#1D4ED8]"
+        : "text-[#79859A] hover:bg-[#F6F8FB] hover:text-[#28303D]"
+    }`;
 
   return (
-    <nav className="sticky top-0 z-40 flex h-screen min-h-screen w-[60px] shrink-0 flex-col items-center border-r border-gray-200 bg-white py-6">
-      <div className="mb-7 cursor-pointer" onClick={() => navigate("/main")}>
-        <PickdLogoIcon size={32} />
-      </div>
+    <aside className="sticky top-0 z-40 flex h-screen w-[60px] shrink-0 flex-col items-center border-r border-[#E3E8EF] bg-white py-4">
+      <button
+        type="button"
+        onClick={() => navigate("/main")}
+        className="mb-6 flex h-7 w-7 items-center justify-center"
+        aria-label="Pickd 홈"
+      >
+        <PickdLogoIcon size={28} />
+      </button>
 
-      <div className="flex-1 flex flex-col gap-2">
-        {menuItems.map((item) => {
-          const isActive = location.pathname === item.path;
+      <nav className="flex min-h-0 flex-1 flex-col gap-1">
+        {navItems.map(({ name, path, Icon }) => {
+          const active = isActive(path);
           return (
             <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              className={`group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all ${
-                isActive
-                  ? "bg-blue-50 text-blue-600"
-                  : "text-gray-400 hover:bg-gray-50 hover:text-gray-600"
-              }`}
-              data-tooltip={item.name}
+              key={path}
+              type="button"
+              onClick={() => navigate(path)}
+              className={itemClass(active)}
+              data-tooltip={name}
               data-tooltip-position="right"
-              aria-label={item.name}
+              aria-label={name}
             >
-              <item.Icon
-                size={item.size}
-                color={isActive ? "#2563EB" : "#94A3B8"}
-              />
+              <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
             </button>
           );
         })}
-      </div>
 
-      <div className="flex flex-col gap-2 mb-2">
-        <button
-          data-tooltip="캘린더"
-          data-tooltip-position="right"
-          aria-label="캘린더"
-          onClick={() => navigate("/calendar")}
-          className={`group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all active:scale-95 ${
-            isCalendarActive
-              ? "bg-blue-100 text-blue-600"
-              : "text-gray-400 hover:bg-gray-50 hover:text-gray-600"
-          }`}
-        >
-          <CalendarIcon
-            size={18}
-            color={isCalendarActive ? "#2563EB" : "#94A3B8"}
-          />
-        </button>
+        <div className="mt-auto">
+          <button
+            type="button"
+            onClick={() => navigate("/calendar")}
+            className={itemClass(isActive("/calendar"))}
+            data-tooltip="캘린더"
+            data-tooltip-position="right"
+            aria-label="캘린더"
+          >
+            <CalendarDays className="h-[18px] w-[18px]" strokeWidth={2} />
+          </button>
+        </div>
+      </nav>
 
+      <div className="flex flex-col gap-1 border-t border-[#E3E8EF] pt-2">
         <button
+          type="button"
+          onClick={() => navigate("/settings")}
+          className={itemClass(isActive("/settings"))}
           data-tooltip="설정"
           data-tooltip-position="right"
           aria-label="설정"
-          onClick={() => navigate("/settings")}
-          className={`group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all active:scale-95 ${
-            isSettingsActive
-              ? "bg-blue-100 text-blue-600"
-              : "text-gray-400 hover:bg-gray-50 hover:text-gray-600"
-          }`}
         >
-          <SettingsIcon
-            size={20}
-            color={isSettingsActive ? "#2563EB" : "#94A3B8"}
-          />
+          <Settings className="h-[18px] w-[18px]" strokeWidth={2} />
         </button>
 
         <button
+          type="button"
+          onClick={() => navigate("/help")}
+          className={itemClass(isActive("/help"))}
           data-tooltip="도움말"
           data-tooltip-position="right"
           aria-label="도움말"
-          onClick={() => navigate("/help")}
-          className={`group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all active:scale-95 ${
-            isHelpActive
-              ? "bg-blue-100 text-blue-600"
-              : "text-gray-400 hover:bg-gray-50 hover:text-gray-600"
-          }`}
         >
-          <HelpIcon size={20} color={isHelpActive ? "#2563EB" : "#94A3B8"} />
+          <HelpCircle className="h-[18px] w-[18px]" strokeWidth={2} />
         </button>
       </div>
-    </nav>
+    </aside>
   );
 }
