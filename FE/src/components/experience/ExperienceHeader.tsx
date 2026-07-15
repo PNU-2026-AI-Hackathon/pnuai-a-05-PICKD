@@ -7,8 +7,7 @@ interface Props {
 }
 
 export default function ExperienceHeader({
-  onExtract,
-  onExportExcel,
+  onExportExcel
 }: Props) {
   return (
     <div className="flex items-start justify-between gap-4">

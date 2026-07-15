@@ -259,8 +259,7 @@ export default function ExperienceTable({
   onEditItem,
   onDuplicateItem,
   onLinkApplication,
-  onChangeType,
-  onDeleteItem,
+  onChangeType
 }: Props) {
   const { widths, onMouseDown, resizingKey } = useResizableCols(
     "pickd.experience.colWidths.v5",
