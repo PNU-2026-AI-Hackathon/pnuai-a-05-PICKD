@@ -607,12 +607,10 @@ function buildJobFromBackend(
   };
 }
 
-// ---------- Highlight key helpers ----------
 function hlKey(section: string, group: string, idx: number) {
   return `${section}::${group}::${idx}`;
 }
 
-// ---------- Essay status chip ----------
 function EssayStatus({ status }: { status: string }) {
   const cls =
     status === "완료"
@@ -634,7 +632,6 @@ function EssayStatus({ status }: { status: string }) {
   );
 }
 
-// ---------- Small utilities ----------
 function CopyButton({
   text,
   label = "복사",
@@ -672,36 +669,6 @@ function CopyButton({
   );
 }
 
-function SectionHeader({
-  icon: Icon,
-  title,
-  subtitle,
-  rightSlot,
-}: {
-  icon: any;
-  title: string;
-  subtitle?: string;
-  rightSlot?: ReactNode;
-}) {
-  return (
-    <div className="flex items-end justify-between mb-3">
-      <div className="flex items-center gap-2">
-        <Icon className="w-4 h-4 text-muted-foreground" />
-        <h2 className="text-[15px] font-semibold text-foreground tracking-tight">
-          {title}
-        </h2>
-        {subtitle && (
-          <span className="text-[11px] text-muted-foreground ml-1">
-            {subtitle}
-          </span>
-        )}
-      </div>
-      {rightSlot}
-    </div>
-  );
-}
-
-// ---------- HighlightableLine ----------
 interface HighlightableLineProps {
   lineKey: string;
   text: string;
@@ -811,7 +778,6 @@ function getDetailStatusClass(status?: string | null) {
   }
 }
 
-// ---------- Main component ----------
 export default function ApplicationJobDetailPage() {
   const { applicationId } = useParams();
   const navigate = useNavigate();
@@ -1105,6 +1071,8 @@ export default function ApplicationJobDetailPage() {
   };
 
   const eligibilityHighlightCount = getHighlightCountByPrefix("eligibility::");
+
+/*
   const jdHighlightCount = getHighlightCountByPrefix("jd::");
   const jobDescriptionRows = [
     {
@@ -1116,7 +1084,7 @@ export default function ApplicationJobDetailPage() {
     },
     { groupKey: "요구 역량", items: job.competencies },
   ];
-
+*/
 
   const urgent = !job.expired && job.dday !== null && job.dday <= 3;
   const submitDocs = (job.eligibility["제출 서류"] ?? []) as string[];
@@ -1146,7 +1114,6 @@ export default function ApplicationJobDetailPage() {
     });
   };
 
-  // Navigate to Tab3 (AI Cover) immediately — no confirmation
   const goToTab3 = (essay: DetailEssay) => {
     const params = new URLSearchParams({
       from: "job",
