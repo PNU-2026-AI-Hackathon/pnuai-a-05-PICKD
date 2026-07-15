@@ -1,12 +1,10 @@
-import { ChevronRight, Plus } from "lucide-react";
-import type { Schedule } from "../../../types/schedule";
-import { getGoogleEventDate } from "../../../utils/date";
+import { ChevronRight } from "lucide-react";
+import type { CalendarItem } from "../../../utils/calendarItems";
 
 interface ScheduleSectionProps {
-  weeklyEvents: Schedule[];
-  selectedEvents: Schedule[];
+  weeklyEvents: CalendarItem[];
+  selectedEvents: CalendarItem[];
   onClick: () => void;
-  onAdd?: () => void;
   selectedDate: Date | null;
 }
 
@@ -15,12 +13,9 @@ const isSameDay = (a: Date, b: Date) =>
   a.getMonth() === b.getMonth() &&
   a.getDate() === b.getDate();
 
-const getTimeLabel = (event: Schedule) => {
-  const date = getGoogleEventDate(event);
-  if (!date) return "-";
-
-  const start = event.start as any;
-  if (start?.date && !start?.dateTime) return "종일";
+const getTimeLabel = (item: CalendarItem) => {
+  const { date } = item;
+  if (date.getHours() === 0 && date.getMinutes() === 0) return "종일";
 
   return date.toLocaleTimeString("ko-KR", {
     hour: "2-digit",
@@ -33,17 +28,14 @@ export default function ScheduleSection({
   weeklyEvents,
   selectedEvents,
   onClick,
-  onAdd,
   selectedDate,
 }: ScheduleSectionProps) {
   const today = new Date();
   const isToday = selectedDate ? isSameDay(selectedDate, today) : true;
-  const displayEvents = (selectedDate ? selectedEvents : weeklyEvents)
-    .filter((event: any) => {
-      const text = `${event?.summary ?? ""} ${event?.category ?? ""}`;
-      return !text.includes("할 일") && !text.includes("할일");
-    })
-    .slice(0, 5);
+  const displayEvents = (selectedDate ? selectedEvents : weeklyEvents).slice(
+    0,
+    5,
+  );
 
   return (
     <section>
@@ -58,14 +50,6 @@ export default function ScheduleSection({
             : `${selectedDate!.getMonth() + 1}/${selectedDate!.getDate()} 일정`}
           <ChevronRight className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-60" />
         </button>
-        <button
-          type="button"
-          onClick={onAdd}
-          aria-label="일정 추가"
-          className="flex h-4 w-4 items-center justify-center rounded text-[#A4AEBE] hover:bg-[#EFF2F6] hover:text-[#28303D]"
-        >
-          <Plus className="h-3 w-3" />
-        </button>
       </div>
 
       {displayEvents.length === 0 ? (
@@ -74,17 +58,17 @@ export default function ScheduleSection({
         </p>
       ) : (
         <ul className="space-y-0.5">
-          {displayEvents.map((event, index) => (
+          {displayEvents.map((item) => (
             <li
-              key={event.id ?? `${event.summary}-${index}`}
+              key={item.id}
               className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-white"
             >
               <span className="mt-0.5 h-1 w-1 shrink-0 rounded-full bg-[#2563EB]/60" />
               <span className="min-w-0 flex-1 truncate leading-snug text-[#28303D]">
-                {event.summary}
+                {item.title}
               </span>
               <span className="shrink-0 text-[10px] tabular-nums text-[#79859A]">
-                {getTimeLabel(event)}
+                {getTimeLabel(item)}
               </span>
             </li>
           ))}
