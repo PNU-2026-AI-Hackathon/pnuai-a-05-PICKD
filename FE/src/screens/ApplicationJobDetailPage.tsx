@@ -1071,6 +1071,8 @@ export default function ApplicationJobDetailPage() {
   };
 
   const eligibilityHighlightCount = getHighlightCountByPrefix("eligibility::");
+
+/*
   const jdHighlightCount = getHighlightCountByPrefix("jd::");
   const jobDescriptionRows = [
     {
@@ -1082,7 +1084,7 @@ export default function ApplicationJobDetailPage() {
     },
     { groupKey: "요구 역량", items: job.competencies },
   ];
-
+*/
 
   const urgent = !job.expired && job.dday !== null && job.dday <= 3;
   const submitDocs = (job.eligibility["제출 서류"] ?? []) as string[];
