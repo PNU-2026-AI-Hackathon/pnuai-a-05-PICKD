@@ -33,7 +33,7 @@ const TodoItem = ({ todo, onToggle }: TodoProps) => {
   return (
     <div
       className={`flex items-start gap-3 py-3 px-2 rounded-xl transition-colors group ${
-        isOverdue ? "bg-orange-50/40" : ""
+        isOverdue ? "bg-orange-50/40 hover:bg-orange-50" : "hover:bg-blue-50"
       }`}
     >
       <label className="mt-0.5 flex cursor-pointer items-center justify-center">
@@ -43,13 +43,19 @@ const TodoItem = ({ todo, onToggle }: TodoProps) => {
           onChange={() => onToggle?.(todo.id)}
           className="hidden"
         />
-        <div className="flex h-6 w-6 items-center justify-center rounded-md border border-blue-500">
+        <div
+          className={`flex h-5 w-5 items-center justify-center rounded-md border transition-colors ${
+            todo.completed
+              ? "border-indigo-300 bg-indigo-300"
+              : "border-blue-500 bg-white"
+          }`}
+        >
           {todo.completed && (
             <svg
-              className="h-4 w-4 text-blue-600"
+              className="h-4 w-4 text-white"
               fill="none"
               stroke="currentColor"
-              strokeWidth="3"
+              strokeWidth="2"
               viewBox="0 0 24 24"
             >
               <path d="M5 13l4 4L19 7" />

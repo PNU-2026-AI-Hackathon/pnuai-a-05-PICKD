@@ -106,22 +106,24 @@ export const useSidePanelData = (selectedDate?: Date) => {
   }, [calendarItems, realToday]);
 
   const selectedDayTodos = useMemo(() => {
-    return todos.filter((todo) => {
-      if (!todo.dueDateTime) return false;
-      if (todo.completed) {
+    return todos
+      .filter((todo) => {
+        if (!todo.dueDateTime) return false;
+        if (todo.completed) {
+          const todoDate = parseLocalDateTime(todo.dueDateTime);
+          return todoDate ? isSameLocalDay(todoDate, selectedDay) : false;
+        }
+
         const todoDate = parseLocalDateTime(todo.dueDateTime);
-        return todoDate ? isSameLocalDay(todoDate, selectedDay) : false;
-      }
+        if (!todoDate) return false;
 
-      const todoDate = parseLocalDateTime(todo.dueDateTime);
-      if (!todoDate) return false;
-
-      const todoDay = startOfLocalDay(todoDate);
-      return (
-        isSameLocalDay(todoDay, selectedDay) ||
-        (selectedDay >= realToday && todoDay < selectedDay)
-      );
-    });
+        const todoDay = startOfLocalDay(todoDate);
+        return (
+          isSameLocalDay(todoDay, selectedDay) ||
+          (selectedDay >= realToday && todoDay < selectedDay)
+        );
+      })
+      .sort((a, b) => Number(a.completed) - Number(b.completed));
   }, [todos, selectedDay, realToday]);
 
   const handleAddTodo = async (newTodoData: {

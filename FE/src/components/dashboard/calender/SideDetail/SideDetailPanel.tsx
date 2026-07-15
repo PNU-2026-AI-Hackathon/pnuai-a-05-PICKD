@@ -66,12 +66,13 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
   }, [calendarItems, allViewMonth]);
 
   const monthTodos = useMemo(() => {
-    return todos.filter((todo) => {
-      if (todo.completed) return false;
-      if (!todo.dueDateTime) return false;
-      const date = parseLocalDateTime(todo.dueDateTime);
-      return date ? isSameMonth(date, allViewMonth) : false;
-    });
+    return todos
+      .filter((todo) => {
+        if (!todo.dueDateTime) return false;
+        const date = parseLocalDateTime(todo.dueDateTime);
+        return date ? isSameMonth(date, allViewMonth) : false;
+      })
+      .sort((a, b) => Number(a.completed) - Number(b.completed));
   }, [todos, allViewMonth]);
 
   const goToPrevMonth = () => {
@@ -116,7 +117,7 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
   );
 
   return (
-    <div className="w-[480px] h-full bg-[#F8FAFC] border-l border-gray-200 flex flex-col">
+    <div className="w-full h-full bg-[#F8FAFC] flex flex-col">
       <div className="p-6 flex justify-between items-center">
         {viewMode === "day" ? (
           <div>
@@ -159,7 +160,7 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
 
       <div className="mx-6 border-b border-gray-300" />
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
         <section className={`px-6 pt-6 ${isAnnouncementOpen ? "pb-6" : "pb-2"}`}>
           <button
             type="button"
