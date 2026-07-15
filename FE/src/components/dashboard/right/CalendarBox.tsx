@@ -11,7 +11,6 @@ import { createPortal } from "react-dom";
 import { HelpCircle, X } from "lucide-react";
 import type { Application } from "../../../types/application";
 import type { Todo } from "../../../types/todo";
-import { getGoogleEventDate } from "../../../utils/date";
 import {
   buildApplicationCalendarItems,
   buildGoogleCalendarItems,
@@ -33,7 +32,7 @@ function isSameDay(d1: Date, d2: Date) {
   );
 }
 
-function getThisWeekEvents(events: any[]) {
+function getThisWeekItems(items: CalendarItem[]) {
   const now = new Date();
   const start = new Date(now);
   start.setDate(now.getDate() - now.getDay());
@@ -42,10 +41,7 @@ function getThisWeekEvents(events: any[]) {
   const end = new Date(start);
   end.setDate(start.getDate() + 7);
 
-  return events.filter((event) => {
-    const date = getGoogleEventDate(event);
-    return date && date >= start && date < end;
-  });
+  return items.filter((item) => item.date >= start && item.date < end);
 }
 
 const ITEM_TYPE_META: Record<
@@ -174,14 +170,17 @@ export default function CalendarBox({
     [allEvents, applications, todos],
   );
 
+  const nonTodoCalendarItems = useMemo(
+    () => calendarMarkerItems.filter((item) => item.type !== "todo"),
+    [calendarMarkerItems],
+  );
+
   const weeklyEvents = useMemo(
     () =>
-      getThisWeekEvents(allEvents).sort((a, b) => {
-        const aDate = getGoogleEventDate(a)?.getTime() ?? 0;
-        const bDate = getGoogleEventDate(b)?.getTime() ?? 0;
-        return aDate - bDate;
-      }),
-    [allEvents],
+      getThisWeekItems(nonTodoCalendarItems).sort(
+        (a, b) => a.date.getTime() - b.date.getTime(),
+      ),
+    [nonTodoCalendarItems],
   );
 
   useEffect(() => {
@@ -189,13 +188,12 @@ export default function CalendarBox({
   }, [setWeeklyEvents, weeklyEvents]);
 
   useEffect(() => {
-    const selectedDayEvents = allEvents.filter((event) => {
-      const eventDate = getGoogleEventDate(event);
-      return eventDate && isSameDay(eventDate, date);
-    });
+    const selectedDayItems = nonTodoCalendarItems.filter((item) =>
+      isSameDay(item.date, date),
+    );
 
-    setSelectedEvents(selectedDayEvents);
-  }, [allEvents, date, setSelectedEvents]);
+    setSelectedEvents(selectedDayItems);
+  }, [nonTodoCalendarItems, date, setSelectedEvents]);
 
   useEffect(() => {
     if (!dayPopover) return;
@@ -293,7 +291,7 @@ export default function CalendarBox({
             prev2Label={null}
             next2Label={null}
             calendarType="gregory"
-            showNeighboringMonth={false}
+            showNeighboringMonth={true}
             formatDay={(_, calendarDate) => calendarDate.getDate().toString()}
             navigationLabel={({ date: cursorDate }) => (
               <span

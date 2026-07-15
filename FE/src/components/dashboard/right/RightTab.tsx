@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import CalendarBox from "./CalendarBox";
 import TodoSection from "./TodoSection";
 import ScheduleSection from "./ScheduleSection";
-import PostSchedule from "../../modal/PostSchedule";
 import PostTodo from "../../modal/PostTodo";
 import { useApplication } from "../../../context/ApplicationContext";
 import { getCurrentDeadlineInfo } from "../../../utils/applicationDeadline";
@@ -51,7 +50,6 @@ export default function RightTab({
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [selectedEvents, setSelectedEvents] = useState<any[]>([]);
   const [weeklyEvents, setWeeklyEvents] = useState<any[]>([]);
-  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [todoModalOpen, setTodoModalOpen] = useState(false);
   const { applications, addTodo, loadData } = useApplication();
 
@@ -171,7 +169,6 @@ export default function RightTab({
         selectedEvents={selectedEvents}
         selectedDate={selectedDate}
         onClick={() => navigate("/calendar")}
-        onAdd={() => setScheduleModalOpen(true)}
       />
 
       <TodoSection
@@ -181,14 +178,6 @@ export default function RightTab({
         onClick={() => navigate("/calendar")}
         onAdd={() => setTodoModalOpen(true)}
       />
-
-      {scheduleModalOpen && (
-        <PostSchedule
-          application={focusedApplication ?? undefined}
-          onClose={() => setScheduleModalOpen(false)}
-          onSuccess={handleRefresh}
-        />
-      )}
 
       {todoModalOpen && (
         <PostTodo

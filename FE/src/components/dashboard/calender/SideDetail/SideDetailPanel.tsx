@@ -66,12 +66,13 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
   }, [calendarItems, allViewMonth]);
 
   const monthTodos = useMemo(() => {
-    return todos.filter((todo) => {
-      if (todo.completed) return false;
-      if (!todo.dueDateTime) return false;
-      const date = parseLocalDateTime(todo.dueDateTime);
-      return date ? isSameMonth(date, allViewMonth) : false;
-    });
+    return todos
+      .filter((todo) => {
+        if (!todo.dueDateTime) return false;
+        const date = parseLocalDateTime(todo.dueDateTime);
+        return date ? isSameMonth(date, allViewMonth) : false;
+      })
+      .sort((a, b) => Number(a.completed) - Number(b.completed));
   }, [todos, allViewMonth]);
 
   const goToPrevMonth = () => {
@@ -116,7 +117,7 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
   );
 
   return (
-    <div className="w-[480px] h-full bg-[#F8FAFC] border-l border-gray-200 flex flex-col">
+    <div className="w-full h-full bg-[#F8FAFC] flex flex-col">
       <div className="p-6 flex justify-between items-center">
         {viewMode === "day" ? (
           <div>
@@ -159,7 +160,7 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
 
       <div className="mx-6 border-b border-gray-300" />
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
         <section className={`px-6 pt-6 ${isAnnouncementOpen ? "pb-6" : "pb-2"}`}>
           <button
             type="button"
@@ -177,7 +178,7 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
 
             <h3 className="font-bold text-gray-800 text-sm">다가오는 공고</h3>
 
-            <span className="flex items-center justify-center w-5 h-5 bg-[#F1F5F9] text-gray-500 text-[11px] font-base rounded-full">
+            <span className="flex items-center justify-center w-5 h-5 bg-[#F1F5F9] text-gray-500 text-[11px] font-semibold rounded-full">
               {sortedList.length}
             </span>
           </button>
@@ -272,7 +273,7 @@ const SideDetailPanel = ({ applications: data, selectedDate }: Props) => {
                 {monthSchedules.length > 0 ? (
                   monthSchedules.map((item) => (
                     <div key={item.id} className="flex items-baseline gap-2 py-3 px-2">
-                      <span className="font-medium text-gray-800 text-[14px] truncate">
+                      <span className="font-medium text-gray-800 text-[13px] truncate">
                         {item.title}
                       </span>
                     </div>
