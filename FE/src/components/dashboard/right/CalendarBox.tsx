@@ -293,7 +293,7 @@ export default function CalendarBox({
             prev2Label={null}
             next2Label={null}
             calendarType="gregory"
-            showNeighboringMonth={false}
+            showNeighboringMonth={true}
             formatDay={(_, calendarDate) => calendarDate.getDate().toString()}
             navigationLabel={({ date: cursorDate }) => (
               <span

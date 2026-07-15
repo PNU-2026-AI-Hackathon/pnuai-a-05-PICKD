@@ -191,6 +191,14 @@ body {
   border-right: 0;
 }
 
+.right-panel-calendar .react-calendar__month-view__days__day--neighboringMonth {
+  pointer-events: none;
+}
+
+.right-panel-calendar .react-calendar__month-view__days__day--neighboringMonth > * {
+  visibility: hidden;
+}
+
 .right-panel-calendar .react-calendar__tile:enabled:hover,
 .right-panel-calendar .react-calendar__tile:enabled:focus {
   background: #f6f8fb;
