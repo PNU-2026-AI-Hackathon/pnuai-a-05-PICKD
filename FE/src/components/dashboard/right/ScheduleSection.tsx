@@ -43,7 +43,7 @@ export default function ScheduleSection({
         <button
           type="button"
           onClick={onClick}
-          className="group flex flex-1 items-center gap-1 text-left text-[11px] font-medium uppercase tracking-wide text-[#79859A] hover:text-[#28303D]"
+          className="group flex flex-1 items-center gap-1 text-left text-[12px] font-medium uppercase tracking-wide text-[#71809A] hover:text-[#28303D]"
         >
           {isToday
             ? "오늘의 일정"
