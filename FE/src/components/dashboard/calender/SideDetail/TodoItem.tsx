@@ -33,7 +33,7 @@ const TodoItem = ({ todo, onToggle }: TodoProps) => {
   return (
     <div
       className={`flex items-start gap-3 py-3 px-2 rounded-xl transition-colors group ${
-        isOverdue ? "bg-orange-50/40" : ""
+        isOverdue ? "bg-orange-50/40 hover:bg-orange-50" : "hover:bg-blue-50"
       }`}
     >
       <label className="mt-0.5 flex cursor-pointer items-center justify-center">
@@ -43,13 +43,19 @@ const TodoItem = ({ todo, onToggle }: TodoProps) => {
           onChange={() => onToggle?.(todo.id)}
           className="hidden"
         />
-        <div className="flex h-6 w-6 items-center justify-center rounded-md border border-blue-500">
+        <div
+          className={`flex h-5 w-5 items-center justify-center rounded-md border transition-colors ${
+            todo.completed
+              ? "border-indigo-300 bg-indigo-300"
+              : "border-blue-500 bg-white"
+          }`}
+        >
           {todo.completed && (
             <svg
-              className="h-4 w-4 text-blue-600"
+              className="h-4 w-4 text-white"
               fill="none"
               stroke="currentColor"
-              strokeWidth="3"
+              strokeWidth="2"
               viewBox="0 0 24 24"
             >
               <path d="M5 13l4 4L19 7" />
@@ -61,7 +67,7 @@ const TodoItem = ({ todo, onToggle }: TodoProps) => {
       <div className="flex-1">
         <div className="flex justify-between items-center">
           <p
-            className={`font-medium text-[14px] leading-tight ${
+            className={`font-medium text-[13px] leading-tight ${
               todo.completed ? "text-gray-400 line-through" : "text-gray-900"
             }`}
           >
@@ -69,7 +75,7 @@ const TodoItem = ({ todo, onToggle }: TodoProps) => {
           </p>
 
           {isOverdue && (
-            <span className="text-[11px] font-medium text-orange-500 bg-orange-100 border border-orange-500 px-2 py-0.5 rounded-full">
+            <span className="text-[11px] font-semibold text-orange-500 bg-orange-100 border border-orange-500 px-2 py-0.5 rounded-full">
               이월
             </span>
           )}
@@ -77,7 +83,7 @@ const TodoItem = ({ todo, onToggle }: TodoProps) => {
 
         <div className="flex items-center gap-2 mt-1">
           <span
-            className={`text-[10px] px-1 py-0.5 rounded-xl font-semibold ${
+            className={`text-[11px] px-1 py-0.5 rounded-xl font-semibold ${
               priority === "긴급"
                 ? "bg-red-100 text-red-600"
                 : "bg-blue-50 text-blue-500"
@@ -92,7 +98,7 @@ const TodoItem = ({ todo, onToggle }: TodoProps) => {
             </span>
           )}
 
-          <span className="text-[12px] text-gray-400 flex items-center gap-1">
+          <span className="text-[12px] text-gray-400 font-medium flex items-center gap-1">
             <Icon icon="lucide:clock" className="w-3 h-3 opacity-70" />
             {time}
           </span>

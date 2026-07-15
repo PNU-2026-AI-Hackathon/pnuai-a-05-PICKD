@@ -14,6 +14,7 @@ import {
   Star,
   Clipboard,
   X,
+  Pin,
 } from "lucide-react";
 
 import ExperienceHeader from "../components/experience/ExperienceHeader";
@@ -1161,32 +1162,39 @@ function ExperienceCardGrid({
   }
 
   return (
-    <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+    <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
       {items.map((item) => {
         const important = Boolean(item.important);
+        const role = getExperienceCardRole(item);
+        const action = getExperienceCardAction(item);
+        const result = getExperienceCardResult(item);
+        const competencyTags = getExperienceCardCompetencies(item);
+
         return (
           <article
             key={item.id}
             onClick={() => onOpen(item)}
-            className="cursor-pointer rounded-xl border border-[#E3E8EF] bg-white px-4 py-3 transition-colors hover:bg-[#F6F8FB]"
+            className="flex min-h-[350px] cursor-pointer flex-col rounded-xl border border-[#E3E8EF] bg-white px-4 py-4 transition-all hover:-translate-y-0.5 hover:border-[#CBD5E1] hover:shadow-[0_12px_30px_-18px_rgba(15,23,42,0.35)]"
           >
             <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5">
                   <span className="rounded-md border border-[#D9E8F8] bg-[#F3F8FD] px-1.5 py-0.5 text-[11px] font-[600] text-[#2F6799]">
                     {item.type}
                   </span>
+                  <ExperienceStatusBadge status={item.status} />
                   <ExperienceManageIndicator item={item} />
                 </div>
-                <h3 className="mt-1 truncate text-[14px] font-[600] text-[#28303D]">
+                <h3 className="mt-2 line-clamp-2 text-[15px] font-[700] leading-5 text-[#28303D]">
                   {item.name}
                 </h3>
-                <p className="mt-1 truncate text-[11px] text-[#79859A]">
-                  {getOrgText(item)} · {getPeriodText(item) || "기간 미입력"}
+                <p className="mt-1 text-[11px] leading-5 text-[#79859A]">
+                  {getPeriodText(item) || "기간 미입력"} ·{" "}
+                  {getExperienceCardOrg(item)}
                 </p>
               </div>
 
-              <div className="flex items-center gap-1">
+              <div className="flex shrink-0 items-center gap-1">
                 <button
                   type="button"
                   onClick={(event) => {
@@ -1194,6 +1202,7 @@ function ExperienceCardGrid({
                     onToggleImportant(item.id);
                   }}
                   className="flex h-6 w-6 items-center justify-center rounded hover:bg-[#EFF2F6]"
+                  aria-label={important ? "중요 표시 해제" : "중요 표시"}
                 >
                   <Star
                     size={14}
@@ -1211,36 +1220,172 @@ function ExperienceCardGrid({
                     onTogglePin(item.id);
                   }}
                   className="flex h-6 w-6 items-center justify-center rounded hover:bg-[#EFF2F6]"
+                  aria-label={item.pin ? "고정 해제" : "고정"}
                 >
-                  <span
-                    className={item.pin ? "text-[#2563EB]" : "text-[#94A3B8]"}
-                  >
-                    ⌖
-                  </span>
+                  <Pin
+                    size={14}
+                    className={
+                      item.pin
+                        ? "fill-[#2563EB] text-[#2563EB]"
+                        : "text-[#94A3B8]"
+                    }
+                  />
                 </button>
               </div>
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              {item.keywords.length > 0 ? (
-                item.keywords.slice(0, 4).map((keyword) => (
-                  <span
-                    key={keyword}
-                    className="rounded-full bg-[#F1F5F9] px-3 py-1 text-[12px] font-[700] text-[#475569]"
-                  >
-                    {keyword}
+            <div className="mt-4 space-y-3 border-t border-[#EEF2F6] pt-3">
+              <ExperienceCardDetail label="나의 역할" value={role} />
+              <ExperienceCardDetail
+                label="행동"
+                value={action}
+                valueClassName="line-clamp-3"
+              />
+              <ExperienceCardDetail label="정량 성과" value={result} />
+            </div>
+
+            <div className="mt-5 pt-4">
+              <p className="mb-2 text-[10px] font-[800] tracking-wide text-[#94A3B8]">
+                역량 태그
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {competencyTags.length > 0 ? (
+                  competencyTags.slice(0, 5).map((keyword) => (
+                    <span
+                      key={keyword}
+                      className="rounded-full bg-[#F1F5F9] px-2.5 py-1 text-[11px] font-[700] text-[#475569]"
+                    >
+                      {keyword}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-[12px] font-[600] text-[#CBD5E1]">
+                    역량 태그 없음
                   </span>
-                ))
-              ) : (
-                <span className="text-[13px] font-[600] text-[#CBD5E1]">
-                  키워드 없음
-                </span>
-              )}
+                )}
+              </div>
             </div>
           </article>
         );
       })}
     </div>
+  );
+}
+
+function ExperienceCardDetail({
+  label,
+  value,
+  valueClassName = "",
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+}) {
+  return (
+    <div className="grid grid-cols-[64px_1fr] gap-2">
+      <span className="text-[10px] font-[800] tracking-wide text-[#94A3B8]">
+        {label}
+      </span>
+      <p
+        className={`text-[12px] leading-5 text-[#475569] ${valueClassName}`.trim()}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function ExperienceStatusBadge({
+  status,
+}: {
+  status: ExperienceItem["status"];
+}) {
+  const className =
+    status === "정리 완료" || status === "완료"
+      ? "border-[#BFE9D7] bg-[#ECFDF5] text-[#087A55]"
+      : status === "병합 필요"
+        ? "border-[#F5DCA9] bg-[#FFF8E8] text-[#9A6700]"
+        : status === "AI 질문 필요"
+          ? "border-[#BFDBFE] bg-[#EFF6FF] text-[#2563EB]"
+          : status === "작성중"
+            ? "border-[#DDE3EA] bg-[#F6F8FB] text-[#64748B]"
+            : "border-[#F4D0D3] bg-[#FFF1F2] text-[#B4232B]";
+
+  return (
+    <span
+      className={`rounded-md border px-1.5 py-0.5 text-[10px] font-[700] ${className}`}
+    >
+      {status}
+    </span>
+  );
+}
+
+function getExperienceCardOrg(item: ExperienceItem) {
+  const org = getOrgText(item);
+  if (org !== "기관 미입력") return org;
+
+  if (item.fields.activity) return item.fields.activity;
+  if (item.type === "공모전") {
+    const contestName = item.name
+      .replace(/\s+(대상|최우수상|우수상|장려상|수상)\s*$/, "")
+      .trim();
+    if (contestName) return contestName;
+  }
+
+  return "소속 미입력";
+}
+
+function getExperienceCardRole(item: ExperienceItem) {
+  return (
+    item.role ||
+    item.fields.role ||
+    item.fields.activity ||
+    item.fields.tasks ||
+    "역할 미입력"
+  );
+}
+
+function getExperienceCardAction(item: ExperienceItem) {
+  return (
+    item.fields.action ||
+    item.fields.actions ||
+    item.fields.tasks ||
+    item.fields.task ||
+    item.fields.key_experience ||
+    item.fields.__body ||
+    "행동 내용 미입력"
+  );
+}
+
+function getExperienceCardResult(item: ExperienceItem) {
+  const explicitResult =
+    item.fields.result || item.fields.achievements || item.fields.deliverables;
+  if (explicitResult) return explicitResult;
+
+  const contestResult = [item.fields.rank, item.fields.prize, item.fields.award]
+    .filter(Boolean)
+    .join(" · ");
+  if (contestResult) return contestResult;
+
+  const languageResult = [
+    item.fields.toeic ? `TOEIC ${item.fields.toeic}` : "",
+    item.fields.opic ? `OPIc ${item.fields.opic}` : "",
+    item.fields.score || "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  if (languageResult) return languageResult;
+
+  return "정량 성과 미입력";
+}
+
+function getExperienceCardCompetencies(item: ExperienceItem) {
+  return Array.from(
+    new Set(
+      [...item.competencies, ...item.keywords]
+        .map((value) => value.trim())
+        .filter(Boolean),
+    ),
   );
 }
 
@@ -1281,7 +1426,7 @@ function ExperienceManageIndicator({ item }: { item: ExperienceItem }) {
     );
   }
 
-  return <span className="text-[11px] text-[#CDD5E0]">—</span>;
+  return null;
 }
 
 function DeleteConfirmModal({

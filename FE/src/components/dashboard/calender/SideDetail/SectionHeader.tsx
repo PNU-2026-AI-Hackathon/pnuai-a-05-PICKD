@@ -66,10 +66,10 @@ const SectionHeader = ({
     <>
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
-          <h3 className="font-bold text-gray-800 text-sm">{title}</h3>
+          <h3 className="font-semibold text-gray-800 text-sm">{title}</h3>
 
           {count !== undefined && (
-            <span className="flex items-center justify-center w-5 h-5 bg-[#F1F5F9] text-gray-500 text-[11px] font-base rounded-full">
+            <span className="flex items-center justify-center w-5 h-5 bg-[#F1F5F9] text-gray-500 text-[11px] font-semibold rounded-full">
               {count}
             </span>
           )}
@@ -87,7 +87,7 @@ const SectionHeader = ({
               className={`p-1 rounded-md transition-colors group ${
                 submitting ? "cursor-not-allowed opacity-50" : "hover:bg-gray-100"
               }`}
-              title="새 할 일 추가"
+              data-tooltip="새 할 일 추가"
               disabled={submitting}
             >
               <Plus

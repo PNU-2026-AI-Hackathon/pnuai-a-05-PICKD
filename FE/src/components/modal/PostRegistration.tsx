@@ -25,7 +25,11 @@ import {
   getNoticeDetail,
   type NoticeDetail,
 } from "../../api/notice";
-import { toBackendLocalDateTime, toDateInputValue } from "../../utils/date";
+import {
+  getDDay,
+  toBackendLocalDateTime,
+  toDateInputValue,
+} from "../../utils/date";
 
 interface PostRegistrationProps {
   initialData?: any;
@@ -44,6 +48,11 @@ const EMPLOYMENT_TYPE_OPTIONS = [
 
 const DEFAULT_CATEGORY = "FULL_TIME" as const;
 const MEMO_MAX_LENGTH = 500;
+const ANALYSIS_MIN_LOADING_MS = 1000;
+
+function wait(ms: number) {
+  return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+}
 
 type ReviewForm = {
   noticeId: number | null;
@@ -229,11 +238,15 @@ export default function PostRegistration({
     const qualification = section?.qualifications?.[0];
     const preference = section?.preferences?.[0];
     const document = reviewNotice.documents?.[0];
+    const applicationProcess = reviewNotice.processes?.find(
+      (process) => process.applicationPeriod?.trim(),
+    );
 
     return [
       ["기업명", reviewNotice.companyName],
       ["공고명", reviewNotice.noticeName],
       ["직무", section?.jobTitle],
+      ["담당업무", section?.responsibilities],
       [
         "근무지",
         getFirstText(section?.workplace, reviewNotice.workplaceAddress),
@@ -252,9 +265,21 @@ export default function PostRegistration({
           preference?.additionalPoints,
         ),
       ],
+      ["접수 기간", applicationProcess?.applicationPeriod],
+      ["D-day", reviewNotice.endedAt ? getDDay(reviewNotice.endedAt) : ""],
       ["제출서류", document?.mandatoryDocuments],
       ["원문", reviewNotice.noticeUrl],
     ].filter(([, value]) => value && String(value).trim());
+  }, [reviewNotice]);
+
+  const coverLetterQuestions = useMemo(() => {
+    return [...(reviewNotice?.coverLetterItems ?? [])]
+      .sort(
+        (a, b) =>
+          (a.orderIndex ?? Number.MAX_SAFE_INTEGER) -
+          (b.orderIndex ?? Number.MAX_SAFE_INTEGER),
+      )
+      .slice(0, 4);
   }, [reviewNotice]);
 
   const startReview = async (noticeId: number) => {
@@ -286,7 +311,10 @@ export default function PostRegistration({
           return;
         }
 
-        const result = await analyzeNoticeByUrl(url);
+        const [result] = await Promise.all([
+          analyzeNoticeByUrl(url),
+          wait(ANALYSIS_MIN_LOADING_MS),
+        ]);
         await startReview(result.noticeId);
         return;
       }
@@ -297,7 +325,10 @@ export default function PostRegistration({
           return;
         }
 
-        const result = await analyzeNoticeByPdf(selectedPdfFile);
+        const [result] = await Promise.all([
+          analyzeNoticeByPdf(selectedPdfFile),
+          wait(ANALYSIS_MIN_LOADING_MS),
+        ]);
         await startReview(result.noticeId);
         return;
       }
@@ -308,7 +339,10 @@ export default function PostRegistration({
           return;
         }
 
-        const result = await analyzeNoticeByImages(selectedImageFiles);
+        const [result] = await Promise.all([
+          analyzeNoticeByImages(selectedImageFiles),
+          wait(ANALYSIS_MIN_LOADING_MS),
+        ]);
         await startReview(result.noticeId);
         return;
       }
@@ -453,6 +487,34 @@ export default function PostRegistration({
                           <span className="break-words text-[#334155]">
                             {value}
                           </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {coverLetterQuestions.length > 0 && (
+                  <div className="rounded-2xl border border-[#E2E8F0] bg-white p-4">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <p className="text-xs font-bold text-[#64748B]">
+                        자기소개서 문항
+                      </p>
+                      <span className="rounded-full bg-[#EFF6FF] px-2 py-0.5 text-[11px] font-bold text-[#2563EB]">
+                        {coverLetterQuestions.length}개
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {coverLetterQuestions.map((item, index) => (
+                        <div
+                          key={item.id}
+                          className="flex gap-2 rounded-xl bg-[#F8FAFC] px-3 py-2.5"
+                        >
+                          <span className="shrink-0 text-[12px] font-extrabold text-[#2563EB]">
+                            {item.orderIndex ?? index + 1}.
+                          </span>
+                          <p className="text-[12px] leading-5 text-[#334155]">
+                            {item.question}
+                          </p>
                         </div>
                       ))}
                     </div>
