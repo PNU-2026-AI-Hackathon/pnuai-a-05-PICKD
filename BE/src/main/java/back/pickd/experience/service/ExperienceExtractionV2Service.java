@@ -46,11 +46,20 @@ public class ExperienceExtractionV2Service {
     private final ExperienceMergeService experienceMergeService;
     private final PresetRegistry presetRegistry;
     private final ExperienceConversionUtils conversionUtils;
+    private final ExperienceDemoMockService experienceDemoMockService;
 
     @Transactional
     public Step2Response extractStep2(String email, List<Long> selectedTempIds) {
         User user = userService.findByEmail(email);
         List<ExperienceTemp> temps = loadSelectedTemps(user, selectedTempIds);
+        if (experienceDemoMockService.isDemoTempBatch(temps)) {
+            List<UserExperience> savedExperiences = experienceDemoMockService.saveDemoExperiences(user, temps);
+            return new Step2Response(
+                    savedExperiences.stream().map(ExperienceResponse::new).toList(),
+                    null,
+                    List.of()
+            );
+        }
         String resumeUrl = validateSingleResumeSource(temps);
 
         List<SelectedExperience> selectedExperiences = temps.stream()
