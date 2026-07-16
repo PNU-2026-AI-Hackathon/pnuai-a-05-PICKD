@@ -51,7 +51,9 @@ export default function ExperienceEntryModal({
               <Pencil className="h-4 w-4" />
             </span>
             <span className="min-w-0">
-              <span className="block text-[14px] font-[600] text-[#28303D]">직접 작성하기</span>
+              <span className="block text-[14px] font-[600] text-[#28303D]">
+                직접 작성하기
+              </span>
               <span className="mt-0.5 block text-[12px] text-[#79859A]">
                 빈 문서로 시작하고, 작성하면서 유형을 정해요.
               </span>
@@ -67,7 +69,9 @@ export default function ExperienceEntryModal({
               <FilePlus className="h-4 w-4" />
             </span>
             <span className="min-w-0">
-              <span className="block text-[14px] font-[600] text-[#28303D]">자소서 파일 불러오기</span>
+              <span className="block text-[14px] font-[600] text-[#28303D]">
+                자소서 파일 불러오기
+              </span>
               <span className="mt-0.5 block text-[12px] text-[#79859A]">
                 기존 자소서에서 경험을 자동으로 추출해요.
               </span>
