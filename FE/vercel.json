@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/landingpage", "destination": "/landingpage/index.html" }
+  ]
+}
