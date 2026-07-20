@@ -1425,8 +1425,7 @@ function ExperienceManageIndicator({ item }: { item: ExperienceItem }) {
       </span>
     );
   }
-
-  return null;
+  return <span className="text-[11px] text-[#CDD5E0]">—</span>;
 }
 
 function DeleteConfirmModal({
