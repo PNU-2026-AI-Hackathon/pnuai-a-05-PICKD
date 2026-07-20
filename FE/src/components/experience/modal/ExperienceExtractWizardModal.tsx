@@ -40,11 +40,6 @@ interface Props {
 
 type WizardStep = "upload" | "candidates" | "result" | "duplicates";
 type SourceMode = "file" | "text";
-const EXTRACTION_MIN_LOADING_MS = 1200;
-
-function wait(ms: number) {
-  return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
-}
 
 export default function ExperienceExtractWizardModal({
   open,
@@ -173,10 +168,7 @@ export default function ExperienceExtractWizardModal({
     setError("");
     setLoading(true);
     try {
-      const [result] = await Promise.all([
-        extractExperienceStep1(sourceFile),
-        wait(EXTRACTION_MIN_LOADING_MS),
-      ]);
+      const result = await extractExperienceStep1(sourceFile);
       setCandidates(result ?? []);
       setSelectedTempIds((result ?? []).map((candidate) => candidate.id));
       setStep("candidates");
