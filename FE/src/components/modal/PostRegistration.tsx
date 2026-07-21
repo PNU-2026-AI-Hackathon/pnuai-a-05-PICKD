@@ -48,11 +48,6 @@ const EMPLOYMENT_TYPE_OPTIONS = [
 
 const DEFAULT_CATEGORY = "FULL_TIME" as const;
 const MEMO_MAX_LENGTH = 500;
-const ANALYSIS_MIN_LOADING_MS = 1000;
-
-function wait(ms: number) {
-  return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
-}
 
 type ReviewForm = {
   noticeId: number | null;
@@ -311,10 +306,7 @@ export default function PostRegistration({
           return;
         }
 
-        const [result] = await Promise.all([
-          analyzeNoticeByUrl(url),
-          wait(ANALYSIS_MIN_LOADING_MS),
-        ]);
+        const result = await analyzeNoticeByUrl(url);
         await startReview(result.noticeId);
         return;
       }
@@ -325,10 +317,7 @@ export default function PostRegistration({
           return;
         }
 
-        const [result] = await Promise.all([
-          analyzeNoticeByPdf(selectedPdfFile),
-          wait(ANALYSIS_MIN_LOADING_MS),
-        ]);
+        const result = await analyzeNoticeByPdf(selectedPdfFile);
         await startReview(result.noticeId);
         return;
       }
@@ -339,10 +328,7 @@ export default function PostRegistration({
           return;
         }
 
-        const [result] = await Promise.all([
-          analyzeNoticeByImages(selectedImageFiles),
-          wait(ANALYSIS_MIN_LOADING_MS),
-        ]);
+        const result = await analyzeNoticeByImages(selectedImageFiles);
         await startReview(result.noticeId);
         return;
       }
