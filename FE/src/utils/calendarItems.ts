@@ -48,17 +48,15 @@ const startOfLocalDay = (date: Date) => {
 
 export const getCalendarEventType = (event: any) => {
   const privateProps = event?.extendedProperties?.private ?? {};
-  const direct =
-    privateProps.pickdEventType ??
-    event?.pickdEventType ??
-    event?.eventType ??
-    event?.type;
+  const pickdType = privateProps.pickdEventType ?? event?.pickdEventType;
 
-  if (direct) return normalize(direct);
+  if (pickdType) return normalize(pickdType);
 
   const description = normalize(event?.description);
   const match = description.match(/pickd:eventType=([^\n]+)/i);
-  return match ? normalize(match[1]) : "";
+
+  if (match) return normalize(match[1]);
+  return normalize(event?.type);
 };
 
 const getEventCategory = (event: Partial<Schedule> | any) => {
