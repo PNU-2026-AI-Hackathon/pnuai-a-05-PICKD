@@ -51,7 +51,6 @@ public class ExperienceExtractionService {
     private final ExperienceMergeService experienceMergeService;
     private final PresetRegistry presetRegistry;
     private final ExperienceConversionUtils conversionUtils;
-    private final ExperienceDemoMockService experienceDemoMockService;
 
     /**
      * 1차 경험 후보 추출 및 임시 캐싱
@@ -59,9 +58,6 @@ public class ExperienceExtractionService {
     @Transactional
     public List<ExperienceTemp> extractStep1(String email, MultipartFile file) {
         User user = userService.findByEmail(email);
-        if (experienceDemoMockService.supportsFile(file)) {
-            return experienceDemoMockService.saveDemoTemps(user, file);
-        }
         // 1. 자소서 원본을 S3 temp/resume 디렉터리에 임시 저장 (CloudFront URL 획득)
         String resumeUrl = s3Service.uploadFile(file, FileUploadType.TEMP_RESUME, user.getId());
 
@@ -106,12 +102,6 @@ public class ExperienceExtractionService {
         List<ExperienceTemp> temps = tempRepository.findAllById(selectedTempIds);
         if (temps.isEmpty()) {
             throw new IllegalArgumentException("요청한 임시 경험 데이터를 찾을 수 없습니다.");
-        }
-        if (experienceDemoMockService.isDemoTempBatch(temps)) {
-            return new Step2SaveResult(
-                    experienceDemoMockService.saveDemoExperiences(user, temps),
-                    List.of()
-            );
         }
 
         // 자소서 URL 추출 (모두 같은 파일이므로 첫 번째 아이템에서 획득)

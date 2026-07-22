@@ -33,16 +33,12 @@ public class NoticeService {
     private final ApplicationDocumentRepository applicationDocumentRepository;
     private final UserRepository userRepository;
     private final CoverLetterItemRepository coverLetterItemRepository;
-    private final NoticeDemoMockService noticeDemoMockService;
 
     // URL 채용공고 분석 후 저장
     @Transactional
     public Long analyzeAndSaveNoticeUrl(String email, String url) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        if (noticeDemoMockService.supportsUrl(url)) {
-            return noticeDemoMockService.saveBusanStartupPackageNotice(user, url);
-        }
         AiJobPostingResponse aiResponse = aiClient.analyzeNoticeUrl(url);
         return saveNotice(user, aiResponse, url);
     }
