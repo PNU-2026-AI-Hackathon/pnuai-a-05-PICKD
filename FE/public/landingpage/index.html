@@ -541,7 +541,7 @@ const CONFIG = {
   betaSlots: 100,          // 정직한 희소성 문구에 쓰는 숫자
   // 신청 데이터를 보낼 곳 (Formspree/Google Apps Script 등의 POST URL).
   // 비워두면 브라우저 콘솔에만 기록됩니다. 배포 전 반드시 연결하세요!
-  formEndpoint: '',
+  formEndpoint: 'https://script.google.com/macros/s/AKfycbx2tQlyA_LE92DE0szThOSTes0XLj-qH1_kISLFvjzkc_6Wl0mU4Y7AzeBGQiFswBdD/exec',
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1023,7 +1023,7 @@ async function submitLead(payload) {
     try {
       await fetch(CONFIG.formEndpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload),
       });
     } catch (err) { console.warn('[Pickd] 전송 실패(로컬에는 기록됨):', err); }
