@@ -42,3 +42,13 @@ CREATE TABLE IF NOT EXISTS experience_extraction_drafts (
   similarity double DEFAULT NULL,
   PRIMARY KEY (id)
 );
+
+CREATE TABLE IF NOT EXISTS quotes (
+  id bigint NOT NULL,
+  quote text NOT NULL,
+  author varchar(255) DEFAULT NULL,
+  source varchar(255) DEFAULT NULL,
+  is_verified boolean NOT NULL DEFAULT false,
+  is_active boolean NOT NULL DEFAULT true,
+  PRIMARY KEY (id)
+);
