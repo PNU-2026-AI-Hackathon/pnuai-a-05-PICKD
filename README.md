@@ -177,4 +177,3 @@ PICKD의 3대 핵심 기능 명세와 화면별 설명은 아래 상세 문서�
 | [@tomchccom](https://github.com/tomchccom) | [@mongdmin](https://github.com/mongdmin) | [@gayeoniya](https://github.com/gayeoniya) | [@Nayeeun5](https://github.com/Nayeeun5) |
 | 세부 역할 작성 | 세부 역할 작성 | 세부 역할 작성 | 세부 역할 작성 |
 
-> 각 팀원의 상세 역할은 추후 직접 작성할 예정입니다.
