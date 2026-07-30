@@ -175,6 +175,5 @@ PICKD의 3대 핵심 기능 명세와 화면별 설명은 아래 상세 문서�
 | **김명성** | **현승민** | **김가연** | **나예은** |
 | `dreamkms2014`<br>`@pusan.ac.kr` | `tmdals0429`<br>`@pusan.ac.kr` | `cindy20269405`<br>`@gmail.com` | `dmsdpsk05`<br>`@gmail.com` |
 | [@tomchccom](https://github.com/tomchccom) | [@mongdmin](https://github.com/mongdmin) | [@gayeoniya](https://github.com/gayeoniya) | [@Nayeeun5](https://github.com/Nayeeun5) |
-| 아키텍처 설계 및 Spring, AI    
-  서버 개발| 세부 역할 작성 | 세부 역할 작성 | 지원 및 경험 상태 관리, 테이블 ui |
-
+| 아키텍처 설계 및 Spring, AI  |            |           | 지원 및 경험 상태 관리  
+  서버 개발| 세부 역할 작성 | 세부 역할 작성 | 탭1, 탭3 ui |
