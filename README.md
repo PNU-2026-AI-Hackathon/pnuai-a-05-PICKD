@@ -174,6 +174,6 @@ PICKD의 3대 핵심 기능 명세와 화면별 설명은 아래 상세 문서�
 | <a href="https://github.com/tomchccom"><img src="https://github.com/tomchccom.png" width="100px" alt="김명성" /></a> | <a href="https://github.com/mongdmin"><img src="https://github.com/mongdmin.png" width="100px" alt="현승민" /></a> | <a href="https://github.com/gayeoniya"><img src="https://github.com/gayeoniya.png" width="100px" alt="김가연" /></a> | <a href="https://github.com/Nayeeun5"><img src="https://github.com/Nayeeun5.png" width="100px" alt="나예은" /></a> |
 | **김명성** | **현승민** | **김가연** | **나예은** |
 | `dreamkms2014`<br>`@pusan.ac.kr` | `tmdals0429`<br>`@pusan.ac.kr` | `cindy20269405`<br>`@gmail.com` | `dmsdpsk05`<br>`@gmail.com` |
-| [@tomchccom](https://github.com/tomchccom) | [@mongdmin](https://github.com/mongdmin) | [@gayeoniya](https://github.com/gayeoniya) | [@Nayeeun5](https://github.com/Nayeeun5) |
-| 아키텍처 설계 및 Spring, AI  |            |           | 지원 및 경험 상태 관리  
-  서버 개발| 세부 역할 작성 | 세부 역할 작성 | 탭1, 탭3 ui |
+| [@tomchccom](https://github.com/tomchccom) | [@mongdmin](https://github.com/mongdmin) | [@urgayeon](https://github.com/urgayeon) | [@Nayeeun5](https://github.com/Nayeeun5) |
+| 아키텍처 설계 및 Spring, AI  |            | 캘린더 및 탭2 기능 연동 관리 | 지원 및 경험 상태 관리  
+  서버 개발| 세부 역할 작성 | 탭4, 탭2 기능 연동  | 탭1, 탭3 UI |
