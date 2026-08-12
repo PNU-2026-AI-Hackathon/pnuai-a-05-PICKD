@@ -1,0 +1,310 @@
+.main-calendar-container {
+  width: 100%;
+  position: relative;
+  background-color: #FBFBFB33;
+  padding-top: 14px;
+}
+
+/* ── View mode toggle ── */
+/* 월간 뷰: absolute 우측 상단 / 주간 뷰: static (topbar 안에서 사용) */
+.view-mode-toggle {
+  position: absolute;
+  top: 14px;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+}
+
+.view-mode-btn {
+  padding: 6px 18px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #64748B;
+  border-radius: 8px;
+  border: 1.5px solid #E2E8F0;
+  background: #ffffff;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  line-height: 1;
+}
+
+.view-mode-btn.active {
+  background: #4F6EF7;
+  color: #ffffff;
+  border-color: #4F6EF7;
+  font-weight: 600;
+}
+
+.view-mode-btn:not(.active):hover {
+  background: #F8FAFC;
+  color: #374151;
+}
+
+/* ── Monthly view (react-calendar) ── */
+.main-calendar-container .react-calendar {
+  width: 100%;
+  border: none;
+  font-family: inherit;
+  background: transparent;
+}
+
+.main-calendar-container .react-calendar__navigation {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 64px;
+}
+
+.main-calendar-container .react-calendar__navigation__label {
+  flex-grow: 0 !important;
+  width: auto !important;
+  font-weight: 700;
+  font-size: 1rem !important;
+  color: #111827;
+  padding: 0 4px !important;
+  order: 2;
+}
+
+.main-calendar-container .react-calendar__navigation__label:hover {
+  background: none !important;
+}
+
+.main-calendar-container .react-calendar__navigation button {
+  min-width: 32px !important;
+  height: 32px;
+  background: none;
+  font-size: 1.25rem;
+  color: #111827;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+
+.main-calendar-container .react-calendar__navigation button:hover {
+  background: none !important;
+  opacity: 0.5;
+}
+
+.main-calendar-container .react-calendar__navigation__prev-button { order: 1; }
+.main-calendar-container .react-calendar__navigation__next-button { order: 3; }
+
+.calendar-filter-dropdown {
+  position: absolute;
+  top: 62px;
+  left: 10px;
+  z-index: 10;
+}
+
+.main-calendar-container .react-calendar__tile {
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 8px !important;
+}
+
+.main-calendar-container .react-calendar__tile--now {
+  background: #FBFBFB33 !important;
+}
+
+.main-calendar-container .react-calendar__tile--now abbr {
+  background: #2563EB;
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.main-calendar-container .react-calendar__month-view__weekdays__weekday {
+  padding: 12px 0;
+  font-size: 0.8125rem;
+  color: #9ca3af;
+  text-decoration: none;
+}
+
+.main-calendar-container .react-calendar__month-view__weekdays__weekday:first-child abbr {
+  color: #F87171;
+}
+
+.main-calendar-container .react-calendar__month-view__weekdays__weekday:last-child abbr {
+  color: #60A5FA;
+}
+
+.main-calendar-container .react-calendar__tile--active {
+  background: #F1F5F9 !important;
+  color: #2563EB !important;
+  border: 1px solid #2563EB !important;
+}
+
+.main-calendar-container .react-calendar__month-view__days__day--neighboringMonth abbr {
+  color: #94A3B8 !important;
+}
+
+.main-calendar-container .react-calendar__month-view__days__day:nth-child(7n+1) abbr {
+  color: #F87171;
+}
+
+.main-calendar-container .react-calendar__month-view__days__day:nth-child(7n) abbr {
+  color: #60A5FA;
+}
+
+.main-calendar-container .react-calendar__month-view__days__day--neighboringMonth:nth-child(7n+1) abbr,
+.main-calendar-container .react-calendar__month-view__days__day--neighboringMonth:nth-child(7n) abbr {
+  color: #94A3B8 !important;
+}
+
+/* ── Weekly view ── */
+
+/* 상단 바: ← 월 → (좌) + 월간/주간 토글 (우) */
+.weekly-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-right: 10px;
+}
+
+.weekly-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 필터 드롭다운 행 */
+.weekly-filter-row {
+  margin-bottom: 16px;
+  padding-left: 10px;
+}
+
+/* 네비 버튼 */
+.weekly-nav-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.weekly-nav-btn:hover {
+  opacity: 0.5;
+}
+
+.weekly-nav-label {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #111827;
+  padding: 0 4px;
+}
+
+/* 그리드 */
+.weekly-grid {
+  display: flex;
+  flex-direction: column;
+}
+
+.weekly-header-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.weekly-header-cell {
+  padding: 10px 6px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.weekly-weekday-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.weekly-columns {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  min-height: 520px;
+}
+
+.weekly-day-col {
+  border-right: 1px solid #F3F4F6;
+  border-bottom: 1px solid #F3F4F6;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 6px 8px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.weekly-day-col:hover:not(.weekly-day-col--selected) {
+  background: #F8FAFC;
+}
+
+.weekly-day-col--selected {
+  background: #EFF6FF !important;
+  border: 1px solid #3B82F6 !important;
+  border-radius: 16px;
+}
+
+/* 날짜 숫자 영역 */
+.weekly-date-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.weekly-date-number {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  border-radius: 50%;
+}
+
+.weekly-date-number--today {
+  background: #2563EB;
+  color: #ffffff !important;
+}
+
+.weekly-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* 이벤트 배지 */
+.weekly-events {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.weekly-event-badge {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  padding: 3px 7px;
+  border-radius: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}

@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+python-multipart
+requests
+pydantic[email]
+openai
+langchain-openai
+langchain-core
+langgraph
+tenacity
+beautifulsoup4
+PyMuPDF
+pillow
+google-genai
+streamlit

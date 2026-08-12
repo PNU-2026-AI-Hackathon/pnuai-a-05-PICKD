@@ -1,0 +1,55 @@
+HELP.md
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+
+/Users/myeongsung/Documents/pickd/src/main/resources/client.json
+/Users/myeongsung/Documents/pickd/src/main/resources/desktop.json
+/tokens
+# Security and Secret files
+application-local.properties
+.env
+tokens/
+
+# YAML Secret files
+application-local.yml
+
+# macOS
+.DS_Store
+
+# PR/temp docs
+pr_body_*.md
