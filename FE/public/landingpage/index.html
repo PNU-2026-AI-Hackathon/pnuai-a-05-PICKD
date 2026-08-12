@@ -495,6 +495,81 @@ h3{font-size:var(--font-h3);font-weight:700;line-height:1.3;letter-spacing:-0.02
   .reveal{opacity:1;transform:none;}
 }
 </style>
+<!-- ═══════════════════════════════════════════════════════════════
+     📊 접속자 분석 — GA4 · Meta Pixel · Microsoft Clarity
+     ▸ 아래 ANALYTICS 객체의 ID 3개만 발급받은 값으로 바꾸면 끝입니다.
+     ▸ 빈 문자열('')로 두면 해당 도구는 로드되지 않습니다. (하나씩 켜도 됨)
+     ▸ debug:true 로 두면 브라우저 콘솔에서 이벤트 전송을 확인할 수 있어요.
+     ═══════════════════════════════════════════════════════════════ -->
+<script>
+const ANALYTICS = {
+  ga4:       'G-98YNP40CD3',   // Google Analytics 4 측정 ID
+  metaPixel: '',   // Meta(인스타/페북) 픽셀 ID     예) '1234567890123456'
+  clarity:   'y15fqofgv3',     // Microsoft Clarity 프로젝트 ID
+  debug:     false // true: 콘솔에 이벤트 로그 출력
+};
+
+/* ── UTM 파라미터 수집 (광고 소재별 성과 구분용) ── */
+const UTM = (() => {
+  const KEY = 'pickdUtmV1';
+  const p = new URLSearchParams(location.search);
+  const keys = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'];
+  const found = {};
+  keys.forEach(k => { const v = p.get(k); if (v) found[k] = v; });
+  try {
+    if (Object.keys(found).length) { sessionStorage.setItem(KEY, JSON.stringify(found)); return found; }
+    return JSON.parse(sessionStorage.getItem(KEY) || '{}');
+  } catch (_) { return found; }
+})();
+
+/* ── Google Analytics 4 ── */
+window.dataLayer = window.dataLayer || [];
+function gtag(){ dataLayer.push(arguments); }
+if (ANALYTICS.ga4) {
+  const gaScript = document.createElement('script');
+  gaScript.async = true;
+  gaScript.src = 'https://www.googletagmanager.com/gtag/js?id=' + ANALYTICS.ga4;
+  document.head.appendChild(gaScript);
+  gtag('js', new Date());
+  gtag('config', ANALYTICS.ga4);
+}
+
+/* ── Meta Pixel (인스타그램·페이스북 광고) ── */
+if (ANALYTICS.metaPixel) {
+  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+  n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+  document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', ANALYTICS.metaPixel);
+  fbq('track', 'PageView');
+}
+
+/* ── Microsoft Clarity (히트맵·세션 녹화) ── */
+if (ANALYTICS.clarity) {
+  (function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+  t=l.createElement(r);t.async=1;t.src='https://www.clarity.ms/tag/'+i;
+  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+  })(window, document, 'clarity', 'script', ANALYTICS.clarity);
+  Object.entries(UTM).forEach(([k,v]) => { try { clarity('set', k, String(v)); } catch(_){} });
+}
+
+/* ── 공통 이벤트 전송 헬퍼 ──
+   track('이벤트명', {파라미터}, 'MetaEvent명')
+   GA4 · Meta Pixel · Clarity 세 곳에 동시에 보냅니다. */
+window.track = function (eventName, params, metaEvent) {
+  params = Object.assign({}, UTM, params || {});
+  if (ANALYTICS.debug) console.log('[track]', eventName, params, metaEvent || '');
+  try { if (ANALYTICS.ga4 && window.gtag) gtag('event', eventName, params); } catch(_){}
+  try {
+    if (ANALYTICS.metaPixel && window.fbq && metaEvent) {
+      const STANDARD = ['Lead','CompleteRegistration','ViewContent','Contact','Subscribe','Search','InitiateCheckout'];
+      (STANDARD.includes(metaEvent) ? fbq('track', metaEvent, params) : fbq('trackCustom', metaEvent, params));
+    }
+  } catch(_){}
+  try { if (ANALYTICS.clarity && window.clarity) clarity('event', eventName); } catch(_){}
+};
+</script>
 </head>
 <body>
 
@@ -1132,6 +1207,7 @@ document.querySelectorAll('.faq-item').forEach(item => {
       item.classList.add('open');
       btn.setAttribute('aria-expanded', 'true');
       ans.style.maxHeight = ans.scrollHeight + 'px';
+      track('faq_open', { question: btn.querySelector('span')?.textContent?.trim() || '' }, 'FaqOpen');
     }
   });
 });
@@ -1158,12 +1234,16 @@ const validPhone = v => /^\d{9,11}$/.test(v.replace(/[\s-]/g,''));
 const validContact = v => validEmail(v) || validPhone(v);
 
 async function submitLead(payload) {
+  payload = Object.assign({}, payload, { utm: (typeof UTM !== 'undefined' ? UTM : {}), referrer: document.referrer || '', landingPath: location.pathname });
   leads.push(payload);
   console.log('[Pickd] 신청/설문 데이터:', payload);
   if (CONFIG.formEndpoint) {
     try {
       const res = await fetch(CONFIG.formEndpoint, {
         method: 'POST',
+        // ⚠️ Apps Script는 CORS preflight(OPTIONS)를 처리하지 못합니다.
+        // 'application/json'을 쓰면 preflight가 발생해 전송이 실패하므로 text/plain 사용.
+        // 본문은 그대로 JSON 문자열이라 Apps Script에서 JSON.parse(e.postData.contents)로 받으면 됩니다.
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload),
       });
@@ -1206,6 +1286,8 @@ document.addEventListener('click', e => {
   const t = e.target.closest('[data-open-signup]');
   if (!t) return;
   e.preventDefault();
+  const ctaSection = t.closest('section')?.id || (t.closest('.mobile-cta') ? 'mobile_bar' : (t.closest('.nav') ? 'nav' : 'unknown'));
+  track('cta_click', { cta_location: ctaSection, cta_label: (t.textContent || '').trim() }, 'CTAClick');
   document.getElementById('apply')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   setTimeout(() => document.getElementById('reservationAge')?.focus(), 650);
 });
@@ -1260,12 +1342,18 @@ reservationForm?.addEventListener('submit', async ev => {
     else if (!emailValid) emailInput.focus();
     else if (!phoneValid) phoneInput.focus();
     else if (!consentValid) consentInput?.focus();
+    track('signup_form_error', {
+      missing: [!ageValid&&'age', !emailValid&&'email', !phoneValid&&'phone',
+                !reservationSchool&&'school', !reservationPrep&&'prep', !consentValid&&'consent']
+              .filter(Boolean).join(',')
+    }, 'SignupFormError');
     return;
   }
 
   reservationForm.classList.remove('invalid');
   reservationForm.classList.remove('consent-invalid');
   currentEmail = email;
+  track('generate_lead', { school_status: reservationSchool, prep_stage: reservationPrep, age_group: age < 25 ? '18-24' : (age < 30 ? '25-29' : '30-39') }, 'Lead');
   const serverData = await submitLead({
     type: 'signup',
     age,
@@ -1316,6 +1404,7 @@ function renderInlineSurvey() {
     const wishEl = inlineSurvey.querySelector('#surveyWish');
     answers.wish = wishEl ? wishEl.value.trim() : '';
     await submitLead({ type: 'survey', contact: currentEmail, ...answers, at: new Date().toISOString() });
+    track('survey_complete', { target: answers.target || '', info: answers.info || '', consider: answers.consider || '', has_wish: answers.wish ? 'yes' : 'no' }, 'SurveyComplete');
     inlineSurvey.innerHTML = `<p class="survey-thanks">${esc(COPY.survey.thanks)}</p>`;
   });
 }
@@ -1336,6 +1425,54 @@ if (reduceMotion) {
   }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
   document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 }
+
+/* ─────────── 스크롤 깊이 · 섹션 노출 추적 ─────────── */
+(() => {
+  const marks = [25, 50, 75, 100];
+  const fired = new Set();
+  const onScrollDepth = () => {
+    const h = document.documentElement.scrollHeight - window.innerHeight;
+    if (h <= 0) return;
+    const pct = Math.min(100, Math.round((window.scrollY / h) * 100));
+    marks.forEach(m => {
+      if (pct >= m && !fired.has(m)) {
+        fired.add(m);
+        track('scroll_depth', { percent: m }, 'ScrollDepth' + m);
+      }
+    });
+  };
+  window.addEventListener('scroll', onScrollDepth, { passive: true });
+  onScrollDepth();
+
+  const seen = new Set();
+  const sio = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (!en.isIntersecting) return;
+      const id = en.target.id;
+      if (!id || seen.has(id)) return;
+      seen.add(id);
+      track('section_view', { section: id });
+      sio.unobserve(en.target);
+    });
+  }, { threshold: 0.4 });
+  document.querySelectorAll('main section[id]').forEach(s => sio.observe(s));
+
+  /* 체류 시간 (이탈 시점 기록) */
+  const startedAt = Date.now();
+  let sent = false;
+  const sendEngagement = () => {
+    if (sent) return; sent = true;
+    track('time_on_page', { seconds: Math.round((Date.now() - startedAt) / 1000) });
+  };
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') sendEngagement(); });
+  window.addEventListener('pagehide', sendEngagement);
+
+  /* 푸터 연락처 클릭 */
+  document.querySelectorAll('.footer a[href^="mailto:"]').forEach(a =>
+    a.addEventListener('click', () => track('contact_click', { channel: 'email' }, 'Contact')));
+  document.querySelectorAll('.footer .ig-link').forEach(a =>
+    a.addEventListener('click', () => track('contact_click', { channel: 'instagram' }, 'Contact')));
+})();
 </script>
 </body>
 </html>
