@@ -247,6 +247,21 @@ h3{font-size:var(--font-h3);font-weight:700;line-height:1.3;letter-spacing:-0.02
 .chip.gray{background:#EDF2FA;color:var(--ink-600);}
 .dday{flex:none;white-space:nowrap;font-size:11px;font-weight:700;border-radius:var(--r-pill);padding:3px 9px;background:var(--blue-100);color:#3B66C4;}
 .dday.urgent{background:var(--lemon-400);color:#7A6410;}
+@media (max-width:600px){
+  .mock-body{padding:12px;overflow:hidden;}
+  .mock-row{flex-wrap:wrap;gap:7px 8px;padding:10px;}
+  .mock-row > span[style*="flex:1"]{display:none;}
+  .mock-label{flex:1 1 55%;white-space:normal;line-height:1.35;}
+  .mock-sub{flex:1 1 35%;white-space:normal;line-height:1.35;}
+  .mock-row .chip,.mock-row .dday{font-size:10.5px;}
+  .mock-row .dday{margin-left:0;}
+}
+@media (max-width:420px){
+  .mock-frame{padding:8px;}
+  .mock-body{padding:10px;}
+  .mock-row{align-items:flex-start;}
+  .mock-label,.mock-sub{flex-basis:100%;}
+}
 
 /* ═══════════════ Section 2 · 공감 ═══════════════ */
 .sec-problem{background:var(--bg-white);}
