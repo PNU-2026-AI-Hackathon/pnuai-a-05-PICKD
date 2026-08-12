@@ -592,7 +592,7 @@ const CONFIG = {
   initialSignupCount: 61,  // 소셜 프루프 시작 숫자
   // 신청 데이터를 보낼 곳 (Formspree/Google Apps Script 등의 POST URL).
   // 비워두면 브라우저 콘솔에만 기록됩니다. 배포 전 반드시 연결하세요!
-  formEndpoint: '',
+  formEndpoint: 'https://script.google.com/macros/s/AKfycbw4cpMB6b3p_9qtezPxzvWhIhs1h4K6J-_VsxaN31H4myrkKFdhoM4ySkbzwKJ1HMW7/exec',
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1163,7 +1163,7 @@ async function submitLead(payload) {
     try {
       const res = await fetch(CONFIG.formEndpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => null);
