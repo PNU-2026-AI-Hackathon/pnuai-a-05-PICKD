@@ -11,9 +11,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<link rel="icon" type="image/svg+xml" href="/pickd-logo.svg?v=1">
-<title>Pickd — 지원할수록 가벼워지는 취업 준비</title>
-<meta name="description" content="부울경 취준생을 위한 AI 취업 매니지먼트. 내 경험은 그대로, 강조할 내용은 기관에 맞게. 무료 베타 사전 신청.">
+<title>Pickd — 잡코리아에 없는 부산 기관 채용, 여기 다 있습니다</title>
+<meta name="description" content="부산 지역기관 105곳 조사. 몰랐던 부산의 기관을 발견하고 고용형태·신입 초임·NCS·공고 채널까지 한눈에 확인하세요.">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 <style>
 /* ═══════════════ 디자인 토큰 — 여기서만 수정 ═══════════════ */
@@ -38,7 +37,7 @@
   --ink-600:#5B6B80;
   --ink-400:#93A1B5;
   /* Gradients */
-  --grad-sky:linear-gradient(160deg,#DCE9FF 0%,#A9C9FF 45%,#A8EBD9 100%);
+  --grad-sky:linear-gradient(160deg,#F6F9FF 0%,#EDF4FF 48%,#F0FAF7 100%);
   --grad-sky-soft:linear-gradient(180deg,#E9F1FF 0%,#F4F8FE 60%,#EAF9F3 100%);
   --grad-solution:linear-gradient(160deg,#EAF9F3 0%,#E4EEFF 100%);
   --grad-text:linear-gradient(90deg,#5B8DEF,#34C48E);
@@ -149,7 +148,7 @@ h3{font-size:var(--font-h3);font-weight:700;line-height:1.3;letter-spacing:-0.02
 .cloud::after{width:60%;height:60%;right:-20%;top:30%;}
 .cloud.faint{opacity:.3;filter:blur(16px);}
 @keyframes cloudFloat{from{transform:translateX(0);}to{transform:translateX(18px);}}
-.orb{position:absolute;border-radius:50%;filter:blur(50px);opacity:.5;animation:cloudFloat 38s ease-in-out infinite alternate-reverse;}
+.orb{position:absolute;border-radius:50%;filter:blur(50px);opacity:.28;animation:cloudFloat 38s ease-in-out infinite alternate-reverse;}
 
 /* ═══════════════ 버튼 · 입력칸 · 칩 ═══════════════ */
 .btn-primary{
@@ -254,7 +253,7 @@ h3{font-size:var(--font-h3);font-weight:700;line-height:1.3;letter-spacing:-0.02
 .problem-card{padding:var(--space-8);}
 .problem-card h3{margin-bottom:var(--space-3);}
 .problem-card p{color:var(--ink-600);font-size:15.5px;}
-.problem-closing{margin-top:var(--space-16);text-align:center;font-size:clamp(19px,2.4vw,24px);font-weight:700;line-height:1.5;white-space:pre-line;color:var(--ink-900);}
+.problem-closing{margin-top:var(--space-16);text-align:center;font-size:clamp(26px,3.2vw,36px);font-weight:800;line-height:1.4;letter-spacing:-0.025em;white-space:pre-line;color:var(--ink-900);}
 @media (max-width:767px){.problem-grid{grid-template-columns:1fr;}}
 
 /* ═══════════════ Section 3 · 솔루션 ═══════════════ */
@@ -262,42 +261,54 @@ h3{font-size:var(--font-h3);font-weight:700;line-height:1.3;letter-spacing:-0.02
 .demo-flow{margin-top:var(--space-12);position:relative;z-index:2;}
 .demo-exp-chip{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;font-size:14px;font-weight:600;color:var(--ink-900);}
 /* Before 카드 — 업로드한 경험 메모 파일 느낌 */
-.demo-before{max-width:620px;margin:0 auto;padding:var(--space-3);text-align:left;background:rgba(255,255,255,0.42);border-style:dashed;border-color:rgba(147,161,181,.55);}
+.demo-before{max-width:880px;margin:0 auto;padding:var(--space-4);text-align:left;background:rgba(255,255,255,0.42);border-style:dashed;border-color:rgba(147,161,181,.55);}
 /* BEFORE / AFTER 라벨 — 동일한 알약 버튼 모양 (중앙 정렬) */
 .demo-label-row{text-align:center;margin-bottom:var(--space-4);}
 .demo-pill{display:inline-flex;align-items:center;font-size:13px;font-weight:800;letter-spacing:.04em;border-radius:var(--r-pill);padding:8px 20px;}
 .demo-pill.before{background:rgba(255,255,255,0.72);border:1px solid rgba(147,161,181,.28);color:var(--ink-400);}
 .demo-pill.after{background:var(--blue-500);color:#fff;box-shadow:var(--shadow-sm);}
-.memo{background:#fff;border:1px solid var(--input-border);border-radius:var(--r-sm);padding:var(--space-4) var(--space-6);box-shadow:var(--shadow-sm);}
+.memo{background:#fff;border:1px solid var(--input-border);border-radius:var(--r-sm);padding:var(--space-5) var(--space-6);box-shadow:var(--shadow-sm);}
 .memo-head{display:flex;align-items:center;gap:8px;margin-bottom:var(--space-4);}
 .memo-ic{flex:none;width:22px;height:22px;}
 .memo-ic svg{width:22px;height:22px;}
 .memo-name{font-size:13.5px;font-weight:700;color:var(--ink-600);}
 .memo-uploaded{margin-left:auto;display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;color:#157150;background:var(--mint-200);border-radius:var(--r-pill);padding:4px 11px;white-space:nowrap;}
 .memo-uploaded svg{width:13px;height:13px;}
-.memo-title{font-size:14.5px;font-weight:700;color:var(--ink-900);margin-bottom:6px;}
+.memo-title{font-size:14.5px;font-weight:700;color:var(--ink-900);margin-bottom:10px;}
 .memo-body{color:var(--ink-600);font-size:15px;line-height:1.75;}
+.demo-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:var(--space-4);}
+.demo-step-chip{display:flex;align-items:center;gap:10px;background:#F7FAFF;border:1px solid #E6EEF9;border-radius:16px;padding:12px 14px;}
+.demo-step-no{flex:none;width:26px;height:26px;border-radius:50%;background:var(--blue-100);color:var(--blue-600);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;}
+.demo-step-chip span:last-child{font-size:14px;font-weight:650;color:var(--ink-700);line-height:1.4;}
 /* Before → After 화살표 구분자 */
 .demo-divider{display:flex;flex-direction:column;align-items:center;gap:8px;margin:var(--space-6) 0;}
 .demo-arrow{font-size:24px;font-weight:800;line-height:1;color:var(--blue-500);animation:arrowBob 2.2s ease-in-out infinite;}
 @keyframes arrowBob{0%,100%{transform:translateY(0);}50%{transform:translateY(5px);}}
-.demo-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-6);}
-.demo-card{padding:var(--space-8);text-align:left;background:rgba(255,255,255,0.82);}
+.demo-grid{display:grid;grid-template-columns:1fr;gap:var(--space-6);max-width:880px;margin-left:auto;margin-right:auto;}
+.demo-card{padding:var(--space-8);text-align:left;background:rgba(255,255,255,0.88);}
 .demo-card .org{display:inline-block;font-size:13px;font-weight:700;color:var(--blue-600);background:var(--blue-100);border-radius:var(--r-pill);padding:5px 14px;margin-bottom:var(--space-4);}
-.demo-card.alt .org{color:#177A58;background:var(--mint-200);}
-.demo-card p{color:var(--ink-900);font-size:15.5px;line-height:1.9;}
-/* 강조 — 배경 없이 글자 굵기·색만 (기관 색상) */
-.demo-card mark{background:none;color:#2E5AB8;font-weight:700;}
-.demo-card.alt mark{background:none;color:#157150;}
+.demo-card-title{font-size:15px;font-weight:700;color:var(--ink-900);margin-bottom:14px;}
+.demo-stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:16px;}
+.demo-stat{background:#F7FAFF;border:1px solid #E6EEF9;border-radius:16px;padding:14px 16px;}
+.demo-stat .k{display:block;font-size:12px;font-weight:700;color:var(--ink-500);margin-bottom:6px;}
+.demo-stat .v{display:block;font-size:18px;font-weight:800;color:var(--ink-900);line-height:1.35;}
+.demo-stat .v strong{color:#2E5AB8;}
+.demo-source,.demo-summary{display:flex;gap:10px;align-items:flex-start;border-radius:14px;padding:12px 14px;}
+.demo-source{background:#F8FBFF;border:1px solid #E8F0FD;margin-bottom:10px;}
+.demo-summary{background:#FFF9E8;border:1px solid #FFE9A8;}
+.demo-row-label{flex:none;font-size:12px;font-weight:800;color:var(--ink-500);margin-top:2px;}
+.demo-row-text{font-size:14px;font-weight:700;color:var(--ink-900);line-height:1.6;}
 .demo-caption{text-align:center;margin-top:var(--space-6);}
+@media (max-width:767px){.demo-steps,.demo-stat-grid{grid-template-columns:1fr;} .demo-step-chip{padding:11px 12px;} .demo-stat .v{font-size:16px;} }
 /* 프로세스 — 독립 섹션 (기존 흰 배경 사용) */
 .sec-process{background:var(--bg-white);}
 .process-head{margin-bottom:var(--space-12);}
 .process-title{margin-top:var(--space-3);white-space:pre-line;}
 .steps{display:flex;align-items:stretch;justify-content:center;gap:var(--space-3);}
 .step{flex:1;padding:var(--space-6);text-align:left;}
-.step .num{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:var(--blue-500);color:#fff;font-size:15px;font-weight:700;margin-bottom:var(--space-4);box-shadow:var(--shadow-sm);}
-.step h4{font-size:18px;font-weight:700;margin-bottom:var(--space-2);color:var(--ink-900);}
+.step-head{display:flex;align-items:center;gap:12px;margin-bottom:var(--space-4);}
+.step .num{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:var(--blue-500);color:#fff;font-size:15px;font-weight:700;box-shadow:var(--shadow-sm);flex:none;}
+.step h4{font-size:18px;font-weight:700;margin:0;color:var(--ink-900);}
 .step p{color:var(--ink-600);font-size:14.5px;}
 .step-arrow{flex:none;align-self:center;font-size:24px;font-weight:800;color:var(--blue-300);}
 .mid-cta{margin-top:var(--space-16);text-align:center;position:relative;z-index:2;}
@@ -340,12 +351,12 @@ h3{font-size:var(--font-h3);font-weight:700;line-height:1.3;letter-spacing:-0.02
 .coverage-checks li{display:flex;align-items:center;gap:var(--space-4);font-size:16px;font-weight:600;color:var(--ink-900);}
 .check-ic{flex:none;width:24px;height:24px;border-radius:50%;background:var(--blue-100);color:var(--blue-600);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;}
 .marquee-zone{margin-top:var(--space-16);display:flex;flex-direction:column;gap:var(--space-4);}
-.marquee{overflow:hidden;position:relative;-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);}
+.marquee{overflow:hidden;position:relative;-webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);}
 .marquee-track{display:flex;gap:var(--space-3);width:max-content;animation:marquee 42s linear infinite;}
 .marquee.reverse .marquee-track{animation-direction:reverse;animation-duration:48s;}
 .marquee:hover .marquee-track{animation-play-state:paused;}
 @keyframes marquee{to{transform:translateX(-50%);}}
-.org-chip{flex:none;font-size:13px;font-weight:600;color:var(--ink-600);padding:10px 18px;border-radius:var(--r-pill);}
+.org-chip{flex:none;font-size:14.5px;font-weight:750;color:var(--ink-900);padding:12px 22px;border-radius:var(--r-pill);background:rgba(255,255,255,.92);border:1px solid rgba(220,233,255,.95);box-shadow:0 6px 18px rgba(90,141,239,.08);}
 .coverage-micro{text-align:center;margin-top:var(--space-6);}
 
 /* ═══════════════ Section 7 · FAQ ═══════════════ */
@@ -362,36 +373,72 @@ h3{font-size:var(--font-h3);font-weight:700;line-height:1.3;letter-spacing:-0.02
 .faq-a p{padding:0 var(--space-2) var(--space-5);color:var(--ink-600);font-size:15px;line-height:1.8;white-space:pre-line;}
 @media (max-width:767px){.faq-q{font-size:15px;}}
 
-/* ═══════════════ Section 6 · Final CTA ═══════════════ */
+/* ═══════════════ Section 6 · Final CTA + 인라인 사전예약 ═══════════════ */
 .sec-final{background:var(--grad-sky);overflow:hidden;}
-.final-panel{position:relative;z-index:2;max-width:720px;margin:0 auto;padding:var(--space-16) clamp(24px,6vw,64px);text-align:center;}
+.final-panel{position:relative;z-index:2;max-width:860px;margin:0 auto;padding:var(--space-16) clamp(24px,6vw,72px);text-align:center;}
 .final-urgency{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink-900);padding:7px 16px;margin-bottom:var(--space-6);border:1px solid rgba(255,216,77,.55);}
 .final-panel h2{white-space:pre-line;margin-bottom:var(--space-4);}
-.final-panel .sub{white-space:pre-line;margin:0 auto var(--space-8);}
-.final-panel .email-form{margin:0 auto;}
+.final-panel > .sub{white-space:pre-line;margin:0 auto var(--space-6);}
 .final-sun{position:absolute;left:50%;bottom:-180px;transform:translateX(-50%);width:520px;height:320px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,226,122,.5),rgba(255,226,122,0) 70%);filter:blur(40px);pointer-events:none;}
 
-/* ═══════════════ 성공 모달 · 미니 설문 ═══════════════ */
-.overlay{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:var(--space-4);background:rgba(30,42,59,.32);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
-.overlay.open{display:flex;}
-.survey-panel{position:relative;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;background:rgba(255,255,255,.94);padding:var(--space-8);text-align:left;}
-.survey-close{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;font-size:18px;color:var(--ink-400);display:flex;align-items:center;justify-content:center;transition:background .2s;}
-.survey-close:hover{background:#EDF2FA;color:var(--ink-900);}
-.survey-title{font-size:19px;font-weight:700;line-height:1.5;white-space:pre-line;margin-bottom:var(--space-6);}
-/* 신청 모달 1단계 — 이메일 입력 (친근한 디자인) */
-.signup-icon{width:60px;height:60px;border-radius:50%;background:var(--blue-500);display:flex;align-items:center;justify-content:center;margin:var(--space-2) auto var(--space-4);box-shadow:0 8px 22px rgba(90,141,239,.35);}
-.signup-icon svg{width:30px;height:30px;}
-.signup-title{font-size:22px;font-weight:800;letter-spacing:-0.02em;text-align:center;margin-bottom:8px;}
-.signup-desc{font-size:14.5px;color:var(--ink-600);text-align:center;white-space:pre-line;line-height:1.6;margin-bottom:var(--space-6);}
-.signup-form{display:flex;flex-direction:column;gap:var(--space-3);margin-bottom:var(--space-3);}
-.signup-input{position:relative;}
-.signup-input .in-ic{position:absolute;left:16px;top:50%;transform:translateY(-50%);width:20px;height:20px;color:var(--ink-400);pointer-events:none;}
-.signup-form input{width:100%;height:56px;background:#fff;border:1.5px solid var(--input-border);border-radius:var(--r-pill);padding:0 18px 0 46px;font-size:16px;color:var(--ink-900);transition:border-color .2s,box-shadow .2s;}
+/* 소셜 프루프 */
+.social-proof-badge{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.86);border-radius:var(--r-pill);padding:5px 12px;font-size:13px;line-height:1.2;font-weight:650;color:var(--ink-600);box-shadow:var(--shadow-sm);backdrop-filter:blur(var(--blur-chip));-webkit-backdrop-filter:blur(var(--blur-chip));}
+.social-proof-badge strong{font-size:14px;color:var(--ink-900);font-weight:800;}
+.social-proof-badge .proof-dot{width:7px;height:7px;border-radius:50%;background:var(--green-500);box-shadow:0 0 0 3px rgba(52,196,142,.13);}
+.hero-proof{margin-top:var(--space-4);}
+
+/* 페이지 내 인라인 신청 폼 */
+.inline-signup{margin-top:var(--space-8);padding:var(--space-8);background:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.86);border-radius:var(--r-lg);box-shadow:var(--shadow-md);backdrop-filter:blur(var(--blur-panel)) saturate(1.25);-webkit-backdrop-filter:blur(var(--blur-panel)) saturate(1.25);text-align:left;}
+.inline-signup-head{text-align:center;margin-bottom:var(--space-6);}
+.signup-title{font-size:24px;font-weight:800;letter-spacing:-0.025em;text-align:center;margin-bottom:8px;}
+.signup-desc{font-size:15px;color:var(--ink-600);text-align:center;white-space:pre-line;line-height:1.65;}
+.reservation-benefits{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:700px;margin:0 auto var(--space-6);}
+.reservation-benefit{background:rgba(244,248,254,.92);border:1px solid var(--input-border);border-radius:14px;padding:12px 14px;text-align:center;}
+.reservation-benefit strong{display:block;font-size:13.5px;color:var(--ink-900);margin-bottom:2px;}
+.reservation-benefit span{font-size:12px;color:var(--ink-600);}
+.reservation-fields{max-width:700px;margin:0 auto;}
+.reservation-field{margin-bottom:var(--space-5);}
+.reservation-label{display:block;font-size:13.5px;font-weight:750;color:var(--ink-900);margin:0 0 9px 4px;}
+.reservation-required{font-size:11px;font-weight:700;color:var(--blue-600);margin-left:4px;vertical-align:1px;}
+.status-opts{display:flex;flex-wrap:wrap;gap:8px;}
+.status-opt{font-size:13.5px;font-weight:600;color:var(--ink-600);background:#fff;border:1px solid var(--input-border);border-radius:var(--r-pill);padding:8px 14px;transition:all .15s;}
+.status-opt:hover{border-color:var(--blue-300);}
+.status-opt.on{background:var(--blue-100);border-color:var(--blue-300);color:#315FB8;}
+.signup-form{margin:0;}
+.signup-grid{display:grid;grid-template-columns:140px 1fr 1fr;gap:12px;align-items:start;}
+.signup-field{min-width:0;}
+.signup-field label{display:block;font-size:13.5px;font-weight:750;color:var(--ink-900);margin:0 0 9px 4px;}
+.signup-input{position:relative;min-width:0;}
+.signup-input .in-ic{position:absolute;left:16px;top:50%;transform:translateY(-50%);width:19px;height:19px;color:var(--ink-400);pointer-events:none;}
+.signup-form input{width:100%;height:52px;background:#fff;border:1.5px solid var(--input-border);border-radius:15px;padding:0 16px;font-size:15px;color:var(--ink-900);transition:border-color .2s,box-shadow .2s;}
+.signup-form .with-icon input{padding-left:44px;}
 .signup-form input::placeholder{color:var(--ink-400);}
 .signup-form input:focus{outline:none;border-color:var(--blue-500);box-shadow:0 0 0 4px rgba(125,167,244,.22);}
 .signup-input:focus-within .in-ic{color:var(--blue-500);}
-.signup-form .form-error{margin:-2px 0 0 18px;}
-.signup-form .btn-primary{width:100%;height:56px;font-size:16.5px;}
+.reservation-form-error{display:none;color:#D9534F;font-size:13px;font-weight:600;margin:10px 4px 0;text-align:left;}
+.signup-form.invalid .reservation-form-error{display:block;}
+.privacy-consent{max-width:700px;margin:var(--space-5) auto 0;padding:14px 16px;background:#F8FBFF;border:1px solid var(--input-border);border-radius:14px;}
+.privacy-consent-label{display:flex;align-items:flex-start;gap:10px;cursor:pointer;}
+.privacy-consent input[type="checkbox"]{flex:none;width:18px;height:18px;margin-top:2px;accent-color:var(--blue-500);}
+.privacy-consent-title{font-size:13.5px;font-weight:750;color:var(--ink-900);line-height:1.5;}
+.privacy-consent-required{font-size:11px;font-weight:700;color:var(--blue-600);margin-right:4px;}
+.privacy-consent-detail{margin:8px 0 0 28px;font-size:12.5px;line-height:1.65;color:var(--ink-600);}
+.privacy-consent-error{display:none;margin:8px 0 0 28px;font-size:12.5px;font-weight:650;color:#D9534F;}
+.signup-form.consent-invalid .privacy-consent{border-color:rgba(217,83,79,.45);background:#FFF9F8;}
+.signup-form.consent-invalid .privacy-consent-error{display:block;}
+.signup-submit{display:flex;justify-content:center;margin-top:var(--space-6);}
+.signup-submit .btn-primary{height:54px;font-size:16.5px;padding-left:42px;padding-right:42px;}
+.inline-micro{text-align:center;margin-top:var(--space-4);}
+
+/* 신청 완료 + 인라인 설문 */
+.inline-success{display:flex;align-items:center;justify-content:center;gap:12px;text-align:left;padding:6px 0 var(--space-4);}
+.inline-success[hidden],.inline-survey[hidden],.signup-form[hidden],.inline-micro[hidden]{display:none!important;}
+.done-ic{flex:none;width:46px;height:46px;border-radius:50%;background:var(--mint-200);display:flex;align-items:center;justify-content:center;}
+.done-ic svg{width:25px;height:25px;}
+.done-title{font-size:18px;font-weight:800;letter-spacing:-0.02em;margin-bottom:2px;}
+.done-desc{font-size:13.5px;color:var(--ink-600);line-height:1.5;}
+.inline-survey{margin-top:var(--space-5);padding-top:var(--space-6);border-top:1px solid rgba(147,161,181,.2);}
+.survey-title{text-align:center;font-size:20px;font-weight:800;line-height:1.5;white-space:pre-line;margin-bottom:var(--space-6);}
 .survey-q{margin-bottom:var(--space-6);}
 .survey-q .q{font-size:14.5px;font-weight:700;margin-bottom:var(--space-3);}
 .chip-opts{display:flex;flex-wrap:wrap;gap:var(--space-2);}
@@ -400,14 +447,18 @@ h3{font-size:var(--font-h3);font-weight:700;line-height:1.3;letter-spacing:-0.02
 .chip-opt.on{background:var(--blue-500);border-color:var(--blue-500);color:#fff;font-weight:600;}
 .survey-q input[type="text"]{width:100%;height:46px;background:#fff;border:1px solid var(--input-border);border-radius:var(--r-sm);padding:0 14px;font-size:14px;}
 .survey-q input[type="text"]:focus{outline:none;border-color:var(--blue-500);box-shadow:0 0 0 3px rgba(125,167,244,.25);}
-.survey-panel .btn-primary{width:100%;}
-.survey-thanks{text-align:center;font-size:18px;font-weight:700;padding:var(--space-12) 0;}
-/* 최종 확인 화면 */
-.signup-done{text-align:center;padding:var(--space-8) var(--space-2);}
-.done-ic{width:66px;height:66px;border-radius:50%;background:var(--mint-200);display:flex;align-items:center;justify-content:center;margin:0 auto var(--space-4);}
-.done-ic svg{width:34px;height:34px;}
-.done-title{font-size:22px;font-weight:800;letter-spacing:-0.02em;margin-bottom:10px;}
-.done-desc{font-size:14.5px;color:var(--ink-600);line-height:1.6;white-space:pre-line;}
+.inline-survey .btn-primary{width:100%;}
+.survey-thanks{text-align:center;font-size:18px;font-weight:700;padding:var(--space-8) 0 var(--space-2);}
+
+@media (max-width:767px){
+  .problem-closing{font-size:clamp(23px,7vw,30px);}
+  .inline-signup{padding:var(--space-6) var(--space-4);}
+  .reservation-benefits{grid-template-columns:1fr;gap:8px;}
+  .reservation-benefit{text-align:left;}
+  .signup-grid{grid-template-columns:1fr;gap:14px;}
+  .signup-submit .btn-primary{width:100%;}
+  .inline-success{align-items:flex-start;}
+}
 
 /* ═══════════════ 푸터 ═══════════════ */
 .footer{padding:var(--space-12) 0 calc(var(--space-12) + 72px);background:var(--bg-tint);}
@@ -472,6 +523,16 @@ h3{font-size:var(--font-h3);font-weight:700;line-height:1.3;letter-spacing:-0.02
     <div class="container" id="problemContent" style="position:relative;z-index:2;"></div>
   </section>
 
+  <!-- Section 3: 부산 기관 발견 -->
+  <section class="sec-coverage" id="coverage">
+    <div class="sky-layer" aria-hidden="true">
+      <div class="cloud faint" style="width:260px;height:110px;top:6%;right:-4%;"></div>
+    </div>
+    <div class="container" id="coverageContent" style="position:relative;z-index:2;"></div>
+    <div class="marquee-zone" id="marqueeZone"></div>
+    <div class="container"><p class="caption coverage-micro" id="coverageMicro"></p></div>
+  </section>
+
   <!-- Section 3: 솔루션 -->
   <section class="sec-solution" id="solution">
     <div class="sky-layer" aria-hidden="true">
@@ -494,15 +555,7 @@ h3{font-size:var(--font-h3);font-weight:700;line-height:1.3;letter-spacing:-0.02
     <div class="container" id="featuresContent" style="position:relative;z-index:2;"></div>
   </section>
 
-  <!-- Section 5: 부울경 기관 정보 -->
-  <section class="sec-coverage" id="coverage">
-    <div class="sky-layer" aria-hidden="true">
-      <div class="cloud faint" style="width:260px;height:110px;top:6%;right:-4%;"></div>
-    </div>
-    <div class="container" id="coverageContent" style="position:relative;z-index:2;"></div>
-    <div class="marquee-zone" id="marqueeZone"></div>
-    <div class="container"><p class="caption coverage-micro" id="coverageMicro"></p></div>
-  </section>
+
 
   <!-- Section 6: Final CTA -->
   <section class="sec-final" id="apply">
@@ -526,23 +579,20 @@ h3{font-size:var(--font-h3);font-weight:700;line-height:1.3;letter-spacing:-0.02
 <!-- 모바일 하단 고정 CTA 바 -->
 <div class="mobile-cta" id="mobileCta"></div>
 
-<!-- 신청 성공 + 미니 설문 모달 -->
-<div class="overlay" id="surveyOverlay" role="dialog" aria-modal="true" aria-label="신청 완료">
-  <div class="glass-panel survey-panel" id="surveyPanel"></div>
-</div>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════
    🔀 CONFIG — 켜고 끄기 스위치
    ═══════════════════════════════════════════════════════════════ */
 const CONFIG = {
-  showSurvey: true,        // 신청 후 미니 설문 표시
+  showSurvey: true,        // 사전예약 후 인라인 미니 설문 표시
   showMobileCtaBar: true,  // 모바일 하단 고정 CTA 바
   showUrgency: true,       // Final CTA 긴박감 라인
   betaSlots: 100,          // 정직한 희소성 문구에 쓰는 숫자
+  initialSignupCount: 61,  // 소셜 프루프 시작 숫자
   // 신청 데이터를 보낼 곳 (Formspree/Google Apps Script 등의 POST URL).
   // 비워두면 브라우저 콘솔에만 기록됩니다. 배포 전 반드시 연결하세요!
-  formEndpoint: 'https://script.google.com/macros/s/AKfycbx2tQlyA_LE92DE0szThOSTes0XLj-qH1_kISLFvjzkc_6Wl0mU4Y7AzeBGQiFswBdD/exec',
+  formEndpoint: '',
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -553,137 +603,155 @@ const CONFIG = {
 const COPY = {
   brand: {
     name: 'Pickd',
-    slogan: '지원할수록 가벼워지는 취업 준비',
+    slogan: '부산 기관 채용, 한 곳에서',
   },
   nav: {
     menu: [
-      { label: '문제', href: '#problem' },
-      { label: '솔루션', href: '#solution' },
-      { label: '기능', href: '#features' },
-      { label: '기관 정보', href: '#coverage' },
+      { label: '부산 기관', href: '#coverage' },
+      { label: '제공 정보', href: '#features' },
+      { label: '사용 방법', href: '#process' },
+      { label: 'FAQ', href: '#faq' },
     ],
-    cta: '베타 신청',
+    cta: '사전예약하기',
   },
   hero: {
-    badge: '🍋 부울경 취준생 무료 베타 모집',
-    h1: '내 경험으로,\n{{기업에 맞는 자소서}}까지',
-    sub: '지원할 공고만 등록하면, 그 기업이 중요하게 보는 기준에 맞춰\n내 경험을 어떻게 쓸지 정리해드려요.',
+    badge: '🍋 부산 지역기관 105곳 전수 조사 완료',
+    h1: '잡코리아에 없는\n{{부산 기관 채용}}, 여기 다 있습니다',
+    sub: '부산에서 일하고 싶은데 늘 보던 기업·공기업만 찾고 있었다면,\n재단·진흥원·연구원·협회까지 ==몰랐던 부산의 일자리를 발견해보세요.==\n\n고용형태 · 신입 초임 · NCS · 공고가 뜨는 곳까지\n지원 전에 궁금한 정보를 한눈에 확인할 수 있어요.',
     formPlaceholder: '이메일 주소를 입력해 주세요',
-    /* A/B 테스트 후보: '무료로 미리 신청하기' / '베타 알림 받기' / '내 경험으로 베타 써보기' */
-    ctaPrimary: '무료 베타 신청하기',
-    micro: '',
-    browse: '먼저 둘러볼래요 →',
-    mockupCaption: '지원할수록 가벼워지는 취업 준비',
+    ctaPrimary: '사전예약하기',
+    micro: '최근 채용공고·공시자료 기반 · 출처 제공',
+    browse: '어떤 기관이 있는지 먼저 볼래요 ↓',
+    mockupCaption: '고용형태 · 신입 초임 · NCS 유무 · 공고가 뜨는 곳까지, 기관마다 한 장으로',
   },
   problem: {
-    label: '자소서를 쓸 때마다',
-    h2: '{{기업마다}}\n중요하게 보는 경험은 다릅니다',
-    sub: '공고와 인재상을 읽어도\n어떤 경험을 골라 무엇을 강조해야 할지는 알기 어려워요.',
+    label: '부산에 남고 싶은데',
+    h2: '아는 곳만 검색하면,\n{{지원할 곳도 늘 비슷해집니다}}',
+    sub: '부산에서 일하고 싶어도 막상 취업을 준비하면\n아는 기업과 공기업 몇 곳만 반복해서 찾게 됩니다.',
     cards: [
-      { title: '정보는 많은데, 기준은 없어요', desc: '홈페이지와 채용 공고, 취업 커뮤니티, 최신 기사까지 찾아보지만 자소서에 무엇을 반영할지는 결국 직접 판단해야 해요.' },
-      { title: '문항이 바뀔 때마다 다시 고민해요', desc: '지원동기, 직무역량, 협업 경험처럼 질문이 달라질 때마다 맞는 경험을 다시 찾아야 해요.' },
-      { title: '조언을 들을수록 더 헷갈려요', desc: '합격 자소서와 선배의 조언, AI의 답변을 참고해도 무엇을 적용해야 할지는 여전히 알기 어려워요.' },
-      { title: '기업에 맞추다 보면 내 이야기가 흐려져요', desc: '좋아 보이는 문장을 따라가다 보면 내가 실제로 한 일과 말투에서 조금씩 멀어져요.' },
+      { title: '기관이 있는 줄도 몰라요', desc: '재단, 진흥원, 연구원, 협회까지. 이름을 처음 들어보는 곳이 많아 애초에 검색할 기회가 없습니다.' },
+      { title: '처음 보는 기관은 지원해도 될지 모르겠어요', desc: '정규직인지, 초임은 어느 정도인지, 어떤 전형을 거치는지 다시 하나씩 찾아봐야 합니다.' },
+      { title: '공고마다 확인할 곳이 달라요', desc: '기관 홈페이지, 잡알리오, 클린아이, 지역 채용페이지까지 기관마다 채용공고가 올라오는 곳이 다릅니다.' },
+      { title: '괜찮은 공고를 나중에 알게 돼요', desc: '“여기도 뽑았었네?” 하고 알게 됐을 때는 이미 모집이 끝난 경우도 있습니다.' },
     ],
-    closing: '필요한 것은 새로운 경험이나 합격 자소서가 아니라,\n==내 경험을 기업의 기준에 맞게 작성==하는 방법입니다.',
+    closing: '몰랐던 부산의 일자리까지,\n==지원할 수 있는 선택지를 넓혀보세요.==',
   },
   solution: {
-    h2: '내 경험은 그대로,\n{{강조할 내용은 기업에 맞게}}',
-    sub: 'Pickd가 공고와 기업 정보를 분석해\n문항에 맞는 경험과 강조할 내용을 먼저 정리해드려요.',
-    /* Before: 사용자가 올린 원본 경험 메모 (정제되지 않은 상태) */
-    demoBeforeLabel: 'BEFORE · 내가 올린 경험 그대로',
-    demoBeforeFile: '김수빈_경험정리.txt',
-    demoBeforeUploaded: '업로드됨',
-    demoBeforeTitle: '부산 로컬 브랜드 팝업 기획 · 대외활동',
-    demoBeforeText: '부산 로컬 브랜드 팝업을 기획해 2주간 운영했다. 위치를 정하고 소상공인들과 함께 준비했고, 방문객을 보며 부스 배치도 바꿨다.',
-    /* After: 기관에 맞게 정렬한 자소서 — ==...== 로 감싼 부분이 강조 하이라이트됩니다 */
-    demoAfterLabel: 'AFTER · 기업에 맞게 정렬',
+    h2: '처음 보는 기관도,\n{{지원할지 빠르게 알 수 있어요}}',
+    sub: '최근 채용공고와 공식 공시자료를 직접 대조해\n지원 전에 궁금한 정보를 기관마다 한 장으로 정리했습니다.',
+    demoBeforeLabel: 'BEFORE · 직접 찾는다면',
+    demoBeforeFile: '기관 하나를 알아보는 과정',
+    demoBeforeUploaded: '여러 곳 확인',
+    demoBeforeTitle: '지원할 만한 곳인지 판단하려면',
+    demoBeforeText: '기관명 검색 → 홈페이지 채용게시판 → 채용공고 PDF → 공시자료에서 초임 확인 → NCS·필기 확인 → 과거 채용 시기 확인',
+    demoBeforeSteps: ['기관명 검색','홈페이지 채용게시판','채용공고 PDF','공시자료에서 초임 확인','NCS·필기 확인','과거 채용 시기 확인'],
+    demoAfterLabel: 'AFTER · Pickd 기관 카드',
     demoCards: [
-      { org: '부산창조경제혁신센터 지원 시', text: '비어가는 원도심 상권을 보며 사람을 다시 모으는 일에 도전하고 싶었습니다. ==유동인구와 임대 시세를 직접 조사==해 팝업 위치를 정했고, ==지역 소상공인들을 설득==해 2주 만에 매장을 열었습니다. 기획이 아이디어에서 끝나지 않고 ==지역 경제 안에서 실제로 작동==하게 만드는 과정을 경험했습니다.' },
-      { org: '부산디자인진흥원 지원 시', text: '좋은 기획은 ==사용자를 관찰==하는 데서 시작한다고 믿습니다. ==방문객의 동선을 지켜보며 부스 배치를 두 차례 조정==했고, ==안내물의 크기와 문구까지 다듬==었습니다. ==작은 반응 하나까지 설계에 반영==하며 디테일이 경험의 완성도를 결정한다는 것을 배웠습니다.' },
+      { org: '부산기술창업투자원', text: '==정규직== · 신입 초임 ==연 3,300만 원 이상== · ==NCS 필기 없음== · 필수 자격증 없음\n공고 확인: ==기관 홈페이지·공식 채용채널==\n한 줄 요약: 처음 보는 기관도 지원 조건부터 빠르게 확인.' },
     ],
-    demoCaption: '같은 경험도, 기업에 따라 강조하는 부분이 달라집니다.',
+    demoCard: {
+      org: '부산기술창업투자원',
+      employment: '정규직',
+      salary: '연 3,300만 원 이상',
+      exam: 'NCS 필기 없음',
+      cert: '필수 자격증 없음',
+      source: '기관 홈페이지·공식 채용채널',
+      summary: '처음 보는 기관도 지원 조건부터 빠르게 확인.'
+    },
+    demoCaption: '여러 사이트를 오가며 찾던 정보를, 기관 카드 한 장에서 확인하세요.',
     stepsEyebrow: '이렇게 사용해요',
-    stepsHeading: '3단계면,\n기업에 적합한 자소서가 완성돼요',
+    stepsHeading: '부산 일자리 찾기,\n{{3단계면 충분해요}}',
     steps: [
-      { title: '내 경험을 올려요', desc: '메모, 기존 자소서, 활동 기록을 그대로 불러와요.' },
-      { title: '지원 공고를 등록해요', desc: '기업과 직무, 문항에서 중요하게 보는 기준을 확인해요.' },
-      { title: '맞는 경험을 연결해요', desc: '문항별로 적합한 경험과 강조점을 추천받고 초안을 완성해요.' },
+      { title: '발견하기', desc: '몰랐던 부산 기관까지 목록에서 가볍게 둘러봐요.' },
+      { title: '비교하기', desc: '고용형태·초임·전형·업무를 보고 내가 지원할 곳인지 판단해요.' },
+      { title: '놓치지 않기', desc: '관심 있는 기관에 새 공고가 나오면 알림을 받고 준비해요.' },
     ],
-    midCta: '내 경험으로 베타 써보기',
+    midCta: '사전예약하기',
   },
   features: {
-    keyBadge: '핵심 기능',
-    h2: '흩어진 채용 준비가\n{{하나의 흐름}}으로',
-    sub: '공고를 확인하는 순간부터 자소서를 완성할 때까지,\n따로 놀던 준비를 한곳에서 이어가세요.',
+    keyBadge: '제공 정보',
+    h2: '지원할지 고민될 때,\n{{궁금한 정보부터}}',
+    sub: '단순히 채용공고를 모으는 것이 아니라,\n지원할지 판단할 때 실제로 궁금한 정보를 정리합니다.',
     cards: [
-      { label: '지원 일정 관리', headline: '지원할 공고와 마감을\n==한눈에 관리==할 수 있어요', desc: '공고, D-day, 전형 상태를 한 화면에서 확인해요.' },
-      { label: '경험 정리', headline: '한 번 정리한 경험을\n==자산처럼 계속 활용==할 수 있어요', desc: '활동과 성과를 경험별로 저장하고 필요한 순간 다시 꺼내 써요.' },
-      { label: '기업 맞춤 작성', headline: '기업 기준에 맞는 경험부터\n==자소서 초안까지 완성==할 수 있어요', desc: '기업 인재상과 문항에 맞춰 경험과 강조점을 연결하고 초안을 만들어요.' },
+      { label: '01 · 지원 조건', headline: '여기,\n==내가 지원할 수 있는 곳일까?==', desc: '정규직·기간제 여부부터 신입 초임, 필수 자격, NCS·전공시험, 면접 절차까지 확인할 수 있어요.' },
+      { label: '02 · 채용 시기', headline: '여기는 보통\n==언제 사람을 뽑을까?==', desc: '최근 채용 이력을 모아 어느 시기에 어떤 채용이 있었는지 확인하고, 새 공고가 나오면 알림을 받아볼 수 있어요.' },
+      { label: '03 · 실제 업무', headline: '붙으면 실제로\n==무슨 일을 하게 될까?==', desc: '공고 몇 줄만으로 알기 어려운 주요 사업과 실제 업무, 필요한 역량을 순차적으로 추가하고 있어요.' },
     ],
   },
   coverage: {
-    h2: '{{부울경 공기업, 공공 기관}}은\n더 구체적으로 준비해요',
-    sub: '채용 공고 요약이 아니라, 기업을 깊게 이해할 수 있는\n데이터를 직접 구축해 자소서와 연결해드려요.',
+    eyebrow: '어, 이런 곳도 있었네',
+    h2: '{{나에게 맞는 부산의 일자리를 알 수 있어요}}',
+    sub: '익숙한 몇 곳만 보는 것이 아니라,\n부산에서 실제로 근무할 수 있는 지역기관을 더 넓게 발견해보세요.',
     checks: [
-      '기업의 미션·인재상·조직문화',
-      '지금 집중하는 주요 사업과 최신 동향',
-      '모집 직무에서 실제로 맡게 될 업무',
-      '자소서 문항별로 강조하면 좋은 경험',
+      '고용형태 — 정규직 / 무기계약 / 기간제',
+      '신입 초임 — 공식 공시자료 기준, 출처 제공',
+      '전형 절차 — NCS / 별도 필기 / 면접',
+      '공고 확인처 — 어디에서 채용공고를 확인해야 하는지',
     ],
-    orgsRow1: ['부산교통공사','한국거래소(KRX)','부산테크노파크','한국자산관리공사(캠코)','부산디자인진흥원','영화의전당','한국주택금융공사(HF)','부산창조경제혁신센터','부산정보산업진흥원'],
-    orgsRow2: ['주택도시보증공사(HUG)','부산경제진흥원','한국해양진흥공사','부산문화재단','한국예탁결제원','영화진흥위원회(KOFIC)','부산연구원(BDI)','한국장학재단 부산센터','부산관광공사'],
-    micro: '부산 주요 공공기관부터 순차적으로 확대하고 있어요.',
+    orgsRow1: ['부산기술창업투자원','부산문화재단','부산항시설관리센터','부산연구원','부산경제진흥원','부산정보산업진흥원','부산사회서비스원','국립해양박물관','영상물등급위원회'],
+    orgsRow2: ['부산신용보증재단','한국해양수산개발원','금정문화재단','부산진문화재단','동아대 산학협력단','부산대 산학협력단','부산영상위원회','부산디자인진흥원','부산테크노파크'],
+    micro: '부산 105곳 조사 완료 · 검증된 기관부터 순차 공개 중',
   },
   finalCta: {
-    urgency: '🍋 부산 주요 공공기관부터 우선 오픈',
-    h2: '다음 자소서는,\n처음부터 다시 헤매지 않도록',
-    sub: '베타에 신청하면 기업 분석부터 자소서 초안까지\n가장 먼저 무료로 써볼 수 있어요.',
+    urgency: '🍋 사전예약 시 서비스 1달 무료이용권 증정',
+    h2: '{{새로운 부산 일자리 정보를}},\n가장 먼저 받아보세요',
+    sub: '새로운 부산 기관 정보와 채용 공고 소식을 가장 먼저 받아보고,\n정식 오픈 시 서비스 1달 무료이용권도 함께 받아보세요.',
     formPlaceholder: '이메일 주소를 입력해 주세요',
-    ctaPrimary: '무료 베타 우선 신청하기',
-    micro: '',
+    ctaPrimary: '사전예약하기',
+    micro: '무료 · 기관 정보와 채용 소식만 보내드려요 · 언제든 수신 거부 가능',
   },
   signup: {
-    title: '무료 베타 우선 신청',
-    desc: '이메일이나 전화번호를 남겨주시면\n서비스가 열릴 때 가장 먼저 알려드릴게요.',
-    placeholder: '이메일 또는 전화번호',
-    submit: '무료 베타 신청하기',
-    micro: '입력하신 연락처는 서비스 출시 알림 용도로만 사용돼요.',
-    doneTitle: '신청되었습니다. 감사합니다!',
-    doneDesc: '서비스가 열리면 입력하신 연락처로\n가장 먼저 알려드릴게요.',
+    title: 'Pickd 사전예약',
+    desc: '부산에서 일할 곳을 더 쉽게 찾을 수 있도록 준비하고 있어요.\n사전예약하면 정식 공개 전에 가장 먼저 소식을 받고, 서비스 1달 무료이용권도 드려요.',
+    benefits: [
+      { title: '새 기관 공개', desc: '처음 보는 부산 기관 정보' },
+      { title: '새 채용공고', desc: '놓치기 쉬운 공고 알림' },
+      { title: '1달 무료이용권', desc: '정식 오픈 시 무료 이용 혜택' },
+    ],
+    schoolLabel: '현재 학업 상태',
+    schoolOptions: ['재학 중','휴학 중','졸업예정','졸업·수료','해당 없음'],
+    prepLabel: '현재 취준 단계',
+    prepOptions: ['아직 탐색 중','정보 수집·직무 탐색','서류·필기 준비 중','실제 지원 중','면접·최종전형 진행 중'],
+    agePlaceholder: '예: 26',
+    emailPlaceholder: 'example@email.com',
+    phonePlaceholder: '010-1234-5678',
+    submit: '사전예약하기',
+    micro: '입력한 정보는 Pickd 서비스 안내 및 사용자 조사 목적으로만 사용합니다.',
+    doneTitle: '사전예약 완료 🍋',
+    doneDesc: '새 기관 정보와 채용 소식을 가장 먼저 알려드리고, 정식 오픈 시 1달 무료이용권도 보내드릴게요.',
   },
   survey: {
-    successTitle: '🎉 신청 완료! 베타 소식, 가장 먼저 전해드릴게요.\n1분만 더 — 아래에 답해주시면 딱 맞는 서비스로 준비할게요. (선택)',
+    successTitle: '🎉 알림 신청 완료!\n30초만 더 알려주시면 어떤 정보부터 채워야 할지 결정하는 데 도움이 됩니다. (선택)',
     questions: [
-      { id: 'target', q: '지금 어디를 준비하고 있나요?', options: ['공공기관','공기업','지역 기업','아직 탐색 중'] },
-      { id: 'pain', q: '자소서에서 가장 막히는 건 무엇인가요?', options: ['어떤 경험을 쓸지','기업에 맞추기','문장 표현','절대적 시간 부족'] },
-      { id: 'price', q: '이런 서비스라면 얼마까지 내볼 수 있나요?', options: ['무료면 써볼래요','월 5천~1만원','월 1만~3만원','도움 되면 더 낼 수 있어요'] },
+      { id: 'target', q: '부산 근무를 얼마나 우선하고 있나요?', options: ['부산 근무가 가장 중요해요','가능하면 부산에서 일하고 싶어요','부산·울산·경남까지 괜찮아요','근무 지역은 크게 상관없어요'] },
+      { id: 'info', q: '가장 먼저 보고 싶은 정보는 무엇인가요?', options: ['어떤 기관이 있는지','연봉·고용형태','NCS·필기·면접','실제 하는 일','채용 시기'] },
+      { id: 'consider', q: '오늘 처음 알게 된 기관 중 지원해보고 싶은 곳이 있었나요?', options: ['있어요','조금 더 알아보고 싶어요','아직 없어요'] },
     ],
-    freeQ: { id: 'wish', q: '가장 갖고 싶은 기능이 있다면?', placeholder: '예: 부산 공공기관 합격 자소서 예시' },
+    freeQ: { id: 'wish', q: '추가됐으면 하는 기관이 있나요?', placeholder: '예: ○○재단, ○○진흥원' },
     submit: '답변 보내기',
     thanks: '보내주셔서 고마워요 🙌',
-    invalidEmail: '이메일 또는 전화번호를 다시 확인해 주세요.',
+    invalidEmail: '필수 정보를 모두 정확하게 입력해 주세요.',
   },
-  mobileCta: '무료 베타 신청하기',
+  mobileCta: '사전예약하기',
   faq: {
     eyebrow: '자주 묻는 질문',
     h2: '궁금한 점을 모았어요',
     items: [
-      { q: '정말 무료인가요?', a: '네, 베타 기간에는 무료로 사용하실 수 있어요.\n신청도 이메일이나 전화번호만 남기면 끝이고, 참여 비용은 없습니다.' },
-      { q: '자소서를 대신 써주는 서비스인가요?', a: '내 경험을 그대로 살려, 기업에 맞게 정리해주는 서비스예요.\n없던 이야기를 만드는 게 아니라 이미 가진 경험 중 무엇을 어떻게 보여줄지 찾아드리고, 초안은 직접 다듬을 수 있어요.' },
-      { q: '어떤 기업·기관을 준비할 수 있나요?', a: '부산·울산·경남의 공공기관과 공기업부터 시작해요.\n기업별 인재상과 주요 사업, 자소서 문항 데이터를 직접 구축하고 있고, 다루는 곳을 순차적으로 넓혀가고 있어요.' },
-      { q: 'AI가 쓴 티가 나진 않을까요?', a: '내 문체와 실제 경험을 기준으로 정리하기 때문에 내가 쓴 글에서 크게 벗어나지 않아요.\n추천받은 초안을 바탕으로 직접 고쳐 쓰면서 내 이야기를 그대로 유지할 수 있어요.' },
+      { q: '정말 무료인가요?', a: '네. 부산 지역기관 정보와 채용 알림은 무료로 제공합니다.' },
+      { q: '부산 일자리에는 어떤 기업이 있나요?', a: 'Pickd는 부산에서 근무할 수 있는 다양한 일자리를 조사합니다. 공공기관뿐 아니라 부산시 출자·출연기관, 재단·진흥원·연구원·협회, 산학협력단 등 지역에서 실제 채용이 발생하는 기관들을 함께 정리합니다.' },
+      { q: '정보는 어디서 확인하나요?', a: '최근 채용공고 원문과 기관 홈페이지, 잡알리오·클린아이 등 공식 자료를 우선 확인합니다.\n확인이 어려운 내용은 임의로 채우지 않고 “확인 중”으로 표시합니다.' },
+      { q: '아직 채용 중인 공고만 나오나요?', a: '현재는 기관별 기본 정보와 최근 채용 이력을 먼저 정리하고 있습니다.\n새로운 채용공고가 확인되면 알림을 통해 알려드릴 예정입니다.' },
+      { q: '원하는 기관이 목록에 없어요', a: '알림 신청 후 원하는 기관을 남겨주세요.\n요청이 많은 기관부터 우선 조사해 추가하겠습니다.' },
     ],
   },
   footer: {
-    tagline: '부울경 취준생을 위한 AI 취업 매니지먼트, Pickd',
+    tagline: '부산에서 일할 곳을 더 많이 발견하도록, Pickd',
     email: 'pickd.ai.kr@gmail.com',
     instagram: '@pickd.ai.kr',
     instagramUrl: 'https://instagram.com/pickd.ai.kr',
     copyright: '© 2026 Pickd',
   },
 };
-
 /* ═══════════════════════════════════════════════════════════════
    렌더링 — 아래 코드는 COPY/CONFIG 값을 화면에 그리는 로직입니다.
    문구·디자인 수정 시 이 아래는 건드릴 필요 없습니다.
@@ -738,30 +806,31 @@ document.getElementById('heroContent').innerHTML = `
   <p class="sub reveal">${rich(COPY.hero.sub)}</p>
   <div class="reveal" style="width:100%;display:flex;flex-direction:column;align-items:center;">
     <button type="button" class="btn-primary hero-cta" data-open-signup>${esc(COPY.hero.ctaPrimary)}</button>
+    <div class="social-proof-badge hero-proof"><span class="proof-dot" aria-hidden="true"></span><span><strong data-signup-count>${CONFIG.initialSignupCount}</strong>명이 신청했어요</span></div>
     ${COPY.hero.micro ? `<p class="micro">${esc(COPY.hero.micro)}</p>` : ''}
-    <p class="browse"><a class="link-plain" href="#features">${esc(COPY.hero.browse)}</a></p>
+    <p class="browse"><a class="link-plain" href="#coverage">${esc(COPY.hero.browse)}</a></p>
   </div>`;
 
 /* 히어로 목업: 지원 대시보드 (CSS 스켈레톤) */
 document.getElementById('heroMockup').innerHTML = `
   <div class="glass-panel mock-frame reveal">
     <div class="mock-bar" aria-hidden="true"><i></i><i></i><i></i></div>
-    <div class="mock-body" role="img" aria-label="Pickd 지원 대시보드 미리보기">
+    <div class="mock-body" role="img" aria-label="Pickd 기관 정보 목록 미리보기">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <span class="fm-title" style="margin:0;">이번 주 지원 현황</span>
-        <span class="chip mint">4곳 진행 중</span>
+        <span class="fm-title" style="margin:0;">부산 지역기관 채용 정보</span>
+        <span class="chip mint">105곳 조사 완료</span>
       </div>
       <div class="mock-row hot">
-        <span class="mock-label">부산디자인진흥원</span><span class="mock-sub">전시기획</span>
-        <span class="chip blue">작성 중</span><span style="flex:1"></span><span class="dday urgent">D-2</span>
+        <span class="mock-label">부산기술창업투자원</span><span class="mock-sub">정규직 · 3,300만↑</span>
+        <span class="chip mint">NCS 없음</span><span style="flex:1"></span><span class="dday urgent">공식 채용채널 확인</span>
       </div>
       <div class="mock-row">
-        <span class="mock-label">부산테크노파크</span><span class="mock-sub">사업기획</span>
-        <span class="chip gray">서류 준비</span><span style="flex:1"></span><span class="dday">D-6</span>
+        <span class="mock-label">부산문화재단</span><span class="mock-sub">정규직 · 3,078만</span>
+        <span class="chip blue">최근 채용 이력</span><span style="flex:1"></span><span class="dday">공고 채널 확인</span>
       </div>
       <div class="mock-row">
-        <span class="mock-label">영화의전당</span><span class="mock-sub">공연운영</span>
-        <span class="chip blue">제출 완료</span><span style="flex:1"></span><span class="dday">D-9</span>
+        <span class="mock-label">부산항시설관리센터</span><span class="mock-sub">정규직 · 3,400만 내외</span>
+        <span class="chip gray">지원 조건 확인</span><span style="flex:1"></span><span class="dday">공고 채널 확인</span>
       </div>
     </div>
     <p class="caption" style="text-align:center;padding:10px 0 2px;">${esc(COPY.hero.mockupCaption)}</p>
@@ -798,7 +867,9 @@ document.getElementById('solutionContent').innerHTML = `
           <span class="memo-uploaded">${checkSvg}${esc(COPY.solution.demoBeforeUploaded)}</span>
         </div>
         <p class="memo-title">${esc(COPY.solution.demoBeforeTitle)}</p>
-        <p class="memo-body">${esc(COPY.solution.demoBeforeText)}</p>
+        <div class="demo-steps">
+          ${COPY.solution.demoBeforeSteps.map((step,idx)=>`<div class="demo-step-chip"><span class="demo-step-no">${idx+1}</span><span>${esc(step)}</span></div>`).join('')}
+        </div>
       </div>
     </div>
     <div class="demo-divider reveal">
@@ -806,10 +877,24 @@ document.getElementById('solutionContent').innerHTML = `
       <span class="demo-pill after">${esc(COPY.solution.demoAfterLabel)}</span>
     </div>
     <div class="demo-grid">
-      ${COPY.solution.demoCards.map((c,i)=>`
-        <div class="glass demo-card card-hover reveal ${i===1?'alt':''}">
-          <span class="org">${esc(c.org)}</span><p>${hl(c.text)}</p>
-        </div>`).join('')}
+      <div class="glass demo-card card-hover reveal">
+        <span class="org">${esc(COPY.solution.demoCard.org)}</span>
+        <p class="demo-card-title">지원 전에 궁금한 정보가 한 장에 정리돼 있어요</p>
+        <div class="demo-stat-grid">
+          <div class="demo-stat"><span class="k">고용형태</span><span class="v"><strong>${esc(COPY.solution.demoCard.employment)}</strong></span></div>
+          <div class="demo-stat"><span class="k">신입 초임</span><span class="v"><strong>${esc(COPY.solution.demoCard.salary)}</strong></span></div>
+          <div class="demo-stat"><span class="k">필기 전형</span><span class="v"><strong>${esc(COPY.solution.demoCard.exam)}</strong></span></div>
+          <div class="demo-stat"><span class="k">필수 자격</span><span class="v">${esc(COPY.solution.demoCard.cert)}</span></div>
+        </div>
+        <div class="demo-source">
+          <span class="demo-row-label">공고 확인</span>
+          <span class="demo-row-text">${esc(COPY.solution.demoCard.source)}</span>
+        </div>
+        <div class="demo-summary">
+          <span class="demo-row-label">한 줄 요약</span>
+          <span class="demo-row-text">${esc(COPY.solution.demoCard.summary)}</span>
+        </div>
+      </div>
     </div>
   </div>
   <p class="caption demo-caption reveal">${esc(COPY.solution.demoCaption)}</p>`;
@@ -824,82 +909,70 @@ document.getElementById('processContent').innerHTML = `
     ${COPY.solution.steps.map((s,i)=>`
       ${i>0?'<span class="step-arrow reveal" aria-hidden="true">→</span>':''}
       <div class="glass step card-hover reveal">
-        <span class="num">${i+1}</span><h4>${esc(s.title)}</h4><p>${esc(s.desc)}</p>
+        <div class="step-head"><span class="num">${i+1}</span><h4>${esc(s.title)}</h4></div>
+        <p>${esc(s.desc)}</p>
       </div>`).join('')}
   </div>
   <div class="mid-cta reveal"><a class="btn-primary" href="#apply" data-open-signup>${esc(COPY.solution.midCta)} →</a></div>`;
 
 /* Section 4: 기능 — 미니 목업 3종 */
 const featureMocks = [
-  /* 기능1: 지원 일정 보드 + 미니 캘린더 */
-  `<div class="feature-mock" role="img" aria-label="지원 일정 대시보드 미리보기">
-    <div class="mock-row hot" style="padding:8px 10px;">
-      <span class="mock-label">부산디자인진흥원</span>
-      <span class="chip blue">작성 중</span><span style="flex:1"></span><span class="dday urgent">D-2</span>
+  /* 기능1: 기관 정보 카드 */
+  `<div class="feature-mock" role="img" aria-label="기관 정보 카드 미리보기">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span class="fm-title" style="margin:0;">부산기술창업투자원</span>
+      <span class="chip mint">정규직</span>
     </div>
-    <div class="mock-row" style="padding:8px 10px;">
-      <span class="mock-label">부산테크노파크</span>
-      <span class="chip gray">서류 준비</span><span style="flex:1"></span><span class="dday">D-6</span>
-    </div>
-    <div class="mock-row" style="padding:8px 10px;">
-      <span class="mock-label">영화의전당</span>
-      <span class="chip blue">제출 완료</span><span style="flex:1"></span><span class="dday">D-9</span>
-    </div>
-    <div class="fm-panel" style="margin-top:8px;">
-      <div class="fm-title" style="font-size:11px;margin-bottom:6px;">7월 마감 캘린더</div>
-      <div class="mini-cal" style="margin-top:0;">
-        <i></i><i></i><i class="hot"></i><i></i><i></i><i class="mark"></i><i></i>
-        <i></i><i class="mark"></i><i></i><i></i><i></i><i></i><i></i>
+    <div class="fm-panel">
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;gap:8px;align-items:center;"><span class="chip gray">초임</span><span class="mock-sub" style="color:var(--ink-600);">연 3,300만 원 이상 (공시)</span></div>
+        <div style="display:flex;gap:8px;align-items:center;"><span class="chip gray">전형</span><span class="mock-sub" style="color:var(--ink-600);">NCS 없음 · 서류→면접</span></div>
+        <div style="display:flex;gap:8px;align-items:center;"><span class="chip lemon">공고</span><span class="mock-sub" style="color:var(--ink-600);">기관 홈페이지·공식 채용채널</span></div>
       </div>
     </div>
+    <div class="mock-row" style="padding:8px 10px;margin-top:6px;">
+      <span class="mock-sub">"서류 부담 낮고, 아는 사람만 지원하는 곳"</span>
+    </div>
   </div>`,
-  /* 기능2: 경험 리스트 + STAR 카드 */
-  `<div class="feature-mock" role="img" aria-label="경험 정리 화면 미리보기">
+  /* 기능2: 채용 시기 패턴 + 알림 */
+  `<div class="feature-mock" role="img" aria-label="채용 시기와 알림 미리보기">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <span class="fm-title" style="margin:0;">내 경험 12개</span>
-      <span class="fm-btn">자소서로 바로 쓰기</span>
+      <span class="fm-title" style="margin:0;">채용 시기 패턴</span>
+      <span class="fm-btn">알림 받는 중</span>
     </div>
     <div class="mock-row" style="padding:8px 10px;flex-wrap:wrap;">
-      <span class="mock-label">로컬 브랜드 팝업 기획</span>
-      <span class="chip blue">기획력</span><span class="chip mint">협업</span>
+      <span class="mock-label">부산문화재단</span>
+      <span class="chip blue">3월·9월</span><span class="chip mint">연 2회</span>
     </div>
     <div class="fm-panel" style="margin-top:6px;">
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="display:flex;gap:8px;align-items:center;"><span class="chip gray">상황</span><span class="sk w80" style="flex:1"></span></div>
-        <div style="display:flex;gap:8px;align-items:center;"><span class="chip gray">행동</span><span class="sk w60" style="flex:1"></span></div>
-        <div style="display:flex;gap:8px;align-items:center;"><span class="chip mint">결과</span><span class="sk w40" style="flex:1"></span></div>
+      <div class="fm-title" style="font-size:11px;margin-bottom:6px;">하반기 예상 캘린더</div>
+      <div class="mini-cal" style="margin-top:0;">
+        <i></i><i></i><i class="hot"></i><i></i><i></i><i class="mark"></i><i></i>
+        <i></i><i class="mark"></i><i></i><i></i><i class="hot"></i><i></i><i></i>
       </div>
     </div>
     <div class="mock-row" style="padding:8px 10px;flex-wrap:wrap;margin-top:6px;">
-      <span class="mock-label">교내 데이터 공모전</span>
-      <span class="chip blue">데이터 분석</span>
+      <span class="mock-label">부산경제진흥원</span>
+      <span class="chip gray">최근 공고 2026.6</span>
     </div>
   </div>`,
-  /* 기능3: 에디터 + 인재상 사이드패널 (핵심) */
-  `<div class="feature-mock" role="img" aria-label="기관 맞춤 자소서 작성 화면 미리보기">
-    <div style="display:flex;gap:8px;">
-      <div style="flex:1.1;display:flex;flex-direction:column;gap:6px;">
-        <div class="fm-title" style="margin-bottom:2px;">자소서 초안</div>
-        <span class="sk w80"></span><span class="sk w60"></span><span class="sk w80"></span><span class="sk w40"></span>
-        <span class="fm-btn" style="margin-top:6px;align-self:flex-start;">AI 초안 생성</span>
+  /* 기능3: 실제 업무 정보 */
+  `<div class="feature-mock" role="img" aria-label="실제 업무 정보 미리보기">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span class="fm-title" style="margin:0;">실제 업무 정보</span>
+      <span class="chip lemon">업데이트 중</span>
+    </div>
+    <div class="fm-panel">
+      <div class="fm-title" style="font-size:11px;margin-bottom:7px;">공고만으로 알기 어려운 정보</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">
+        <span class="chip blue">주요 사업</span>
+        <span class="chip mint">실제 업무</span>
+        <span class="chip blue">필요 역량</span>
+        <span class="chip gray">현직자 정보</span>
       </div>
-      <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
-        <div class="fm-panel">
-          <div class="fm-title" style="font-size:11px;margin-bottom:6px;">이 기업의 인재상</div>
-          <div style="display:flex;flex-wrap:wrap;gap:4px;">
-            <span class="chip blue">도전</span><span class="chip blue">지역 이해</span><span class="chip blue">협업</span>
-          </div>
-        </div>
-        <div class="fm-panel">
-          <div class="fm-title" style="font-size:11px;margin-bottom:6px;">추천 경험</div>
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;margin-bottom:5px;">
-            <span class="mock-sub" style="color:var(--ink-600);">☑ 팝업 기획</span><span class="match">적합 92%</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
-            <span class="mock-sub">☐ 공모전</span><span class="match" style="background:#EDF2FA;color:var(--ink-400);">적합 78%</span>
-          </div>
-        </div>
-      </div>
+    </div>
+    <div class="mock-row" style="padding:9px 10px;margin-top:7px;align-items:flex-start;">
+      <span class="mock-sub" style="color:var(--ink-600);white-space:normal;line-height:1.55;">기관별 공개자료와 현직자 인터뷰를 바탕으로 순차적으로 채워갈 예정이에요.</span>
     </div>
   </div>`,
 ];
@@ -927,9 +1000,10 @@ document.getElementById('featuresContent').innerHTML = `
       </div>`).join('')}
   </div>`;
 
-/* Section 5: 커버리지 */
+/* 부산 기관 발견 */
 document.getElementById('coverageContent').innerHTML = `
   <div class="center">
+    <span class="eyebrow reveal">${esc(COPY.coverage.eyebrow)}</span>
     <h2 class="reveal" style="white-space:pre-line;">${rich(COPY.coverage.h2)}</h2>
     <p class="sub reveal" style="white-space:pre-line;margin-top:var(--space-4);">${rich(COPY.coverage.sub)}</p>
   </div>
@@ -942,14 +1016,79 @@ document.getElementById('marqueeZone').innerHTML = `
   <div class="marquee reverse" aria-hidden="true"><div class="marquee-track">${chipRow(COPY.coverage.orgsRow2)}</div></div>`;
 document.getElementById('coverageMicro').textContent = COPY.coverage.micro;
 
-/* Section 6: Final CTA */
+/* Section 6: Final CTA + 인라인 사전예약 */
 document.getElementById('finalContent').innerHTML = `
   ${CONFIG.showUrgency ? `<span class="glass-chip final-urgency reveal">${esc(COPY.finalCta.urgency)}</span>` : ''}
   <h2 class="reveal">${rich(COPY.finalCta.h2)}</h2>
   <p class="sub reveal">${rich(COPY.finalCta.sub)}</p>
-  <div class="reveal" style="display:flex;flex-direction:column;align-items:center;">
-    <button type="button" class="btn-primary hero-cta" data-open-signup>${esc(COPY.finalCta.ctaPrimary)}</button>
-    ${COPY.finalCta.micro ? `<p class="micro">${esc(COPY.finalCta.micro)}</p>` : ''}
+  <div class="social-proof-badge reveal"><span class="proof-dot" aria-hidden="true"></span><span><strong data-signup-count>${CONFIG.initialSignupCount}</strong>명이 신청했어요</span></div>
+
+  <div class="inline-signup reveal" id="reservationPanel">
+    <div class="inline-signup-head">
+      <p class="signup-title">${esc(COPY.signup.title)}</p>
+      <p class="signup-desc">${esc(COPY.signup.desc)}</p>
+    </div>
+    <div class="reservation-benefits">
+      ${COPY.signup.benefits.map(b=>`<div class="reservation-benefit"><strong>${esc(b.title)}</strong><span>${esc(b.desc)}</span></div>`).join('')}
+    </div>
+    <form class="signup-form" id="reservationForm" novalidate>
+      <div class="reservation-fields" id="reservationFields">
+        <div class="signup-grid">
+          <div class="signup-field">
+            <label for="reservationAge">만 나이 <span class="reservation-required">필수</span></label>
+            <div class="signup-input">
+              <input type="number" id="reservationAge" name="age" min="18" max="39" inputmode="numeric" placeholder="${esc(COPY.signup.agePlaceholder)}" aria-label="만 나이" required>
+            </div>
+          </div>
+          <div class="signup-field">
+            <label for="reservationEmail">이메일 주소 <span class="reservation-required">필수</span></label>
+            <div class="signup-input with-icon">
+              <span class="in-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4.5 7.5A2.5 2.5 0 017 5h10a2.5 2.5 0 012.5 2.5v9A2.5 2.5 0 0117 19H7a2.5 2.5 0 01-2.5-2.5v-9z" stroke="currentColor" stroke-width="1.7"/><path d="M5.5 7l6.5 5 6.5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              <input type="email" id="reservationEmail" name="email" placeholder="${esc(COPY.signup.emailPlaceholder)}" autocomplete="email" aria-label="이메일 주소" required>
+            </div>
+          </div>
+          <div class="signup-field">
+            <label for="reservationPhone">휴대폰 번호 <span class="reservation-required">필수</span></label>
+            <div class="signup-input">
+              <input type="tel" id="reservationPhone" name="phone" placeholder="${esc(COPY.signup.phonePlaceholder)}" autocomplete="tel" inputmode="tel" aria-label="휴대폰 번호" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="reservation-field" style="margin-top:var(--space-5);">
+          <span class="reservation-label">${esc(COPY.signup.schoolLabel)} <span class="reservation-required">필수</span></span>
+          <div class="status-opts" id="reservationSchoolOptions">
+            ${COPY.signup.schoolOptions.map(o=>`<button type="button" class="status-opt" data-school="${esc(o)}">${esc(o)}</button>`).join('')}
+          </div>
+        </div>
+
+        <div class="reservation-field">
+          <span class="reservation-label">${esc(COPY.signup.prepLabel)} <span class="reservation-required">필수</span></span>
+          <div class="status-opts" id="reservationPrepOptions">
+            ${COPY.signup.prepOptions.map(o=>`<button type="button" class="status-opt" data-prep="${esc(o)}">${esc(o)}</button>`).join('')}
+          </div>
+        </div>
+
+        <div class="privacy-consent">
+          <label class="privacy-consent-label" for="privacyConsent">
+            <input type="checkbox" id="privacyConsent" name="privacyConsent" required>
+            <span class="privacy-consent-title"><span class="privacy-consent-required">필수</span>개인정보 수집·이용에 동의합니다.</span>
+          </label>
+          <p class="privacy-consent-detail">수집 항목: 만 나이, 이메일 주소, 휴대폰 번호, 학업 상태, 취준 단계 · 이용 목적: Pickd 사전예약 접수, 서비스 안내 및 사용자 조사 · 보유 기간: 이용 목적 달성 시까지 · 동의를 거부할 수 있으나 사전예약 신청은 제한됩니다.</p>
+          <p class="privacy-consent-error" role="alert">개인정보 수집·이용에 동의해 주세요.</p>
+        </div>
+        <p class="reservation-form-error" role="alert">${esc(COPY.survey.invalidEmail)}</p>
+        <div class="signup-submit"><button type="submit" class="btn-primary">${esc(COPY.signup.submit)}</button></div>
+      </div>
+    </form>
+    <p class="micro inline-micro" id="reservationMicro">${esc(COPY.signup.micro)}</p>
+
+    <div class="inline-success" id="reservationSuccess" hidden>
+      <div class="done-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.2 4.2L19 7" stroke="#22A574" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div><p class="done-title">${esc(COPY.signup.doneTitle)}</p><p class="done-desc">${esc(COPY.signup.doneDesc)}</p></div>
+    </div>
+
+    <div class="inline-survey" id="inlineSurvey" hidden></div>
   </div>`;
 
 /* 푸터 */
@@ -1022,82 +1161,135 @@ async function submitLead(payload) {
   console.log('[Pickd] 신청/설문 데이터:', payload);
   if (CONFIG.formEndpoint) {
     try {
-      await fetch(CONFIG.formEndpoint, {
+      const res = await fetch(CONFIG.formEndpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      const data = await res.json().catch(() => null);
+      return data;
     } catch (err) { console.warn('[Pickd] 전송 실패(로컬에는 기록됨):', err); }
   }
+  return null;
 }
 
-/* ─────────── 모달: 신청 버튼 → 이메일 입력 → 미니 설문 ─────────── */
-const overlay = document.getElementById('surveyOverlay');
-const panel = document.getElementById('surveyPanel');
+/* ─────────── 사전예약: 인라인 폼 → 인라인 미니 설문 ─────────── */
+const COUNT_KEY = 'pickdSignupCountV1';
+const CONTACT_KEY = 'pickdSignupContactsV1';
 const answers = {};
 let currentEmail = '';
 
-function openModal() { overlay.classList.add('open'); document.body.style.overflow = 'hidden'; }
-function closeModal() { overlay.classList.remove('open'); document.body.style.overflow = ''; }
-
-/* 최종 확인 화면: 신청되었습니다 · 감사합니다 */
-function showDone() {
-  panel.innerHTML = `
-    <div class="signup-done">
-      <div class="done-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.2 4.2L19 7" stroke="#22A574" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-      <p class="done-title">${esc(COPY.signup.doneTitle)}</p>
-      <p class="done-desc">${esc(COPY.signup.doneDesc)}</p>
-    </div>`;
-  setTimeout(closeModal, 2400);
+function getSignupCount() {
+  const saved = Number(localStorage.getItem(COUNT_KEY));
+  return Number.isFinite(saved) && saved >= CONFIG.initialSignupCount ? saved : CONFIG.initialSignupCount;
 }
+function setSignupCount(count) {
+  localStorage.setItem(COUNT_KEY, String(count));
+  document.querySelectorAll('[data-signup-count]').forEach(el => el.textContent = String(count));
+}
+function updateSignupCountUI() { setSignupCount(getSignupCount()); }
+function countNewSignup(contact) {
+  let contacts = [];
+  try { contacts = JSON.parse(localStorage.getItem(CONTACT_KEY) || '[]'); } catch (_) {}
+  const normalized = contact.trim().toLowerCase();
+  if (!contacts.includes(normalized)) {
+    contacts.push(normalized);
+    localStorage.setItem(CONTACT_KEY, JSON.stringify(contacts));
+    setSignupCount(getSignupCount() + 1);
+  }
+}
+updateSignupCountUI();
 
-/* 모든 CTA 버튼 → 이메일 입력 모달 열기 */
+/* 모든 CTA는 신청 섹션으로 부드럽게 이동 */
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-open-signup]');
   if (!t) return;
   e.preventDefault();
-  openSignup();
+  document.getElementById('apply')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => document.getElementById('reservationAge')?.focus(), 650);
 });
 
-/* 1단계: 이메일 입력 */
-function openSignup() {
-  panel.innerHTML = `
-    <button type="button" class="survey-close" aria-label="닫기">✕</button>
-    <div class="signup-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 9.5a6 6 0 0112 0c0 4.5 2 5.5 2 5.5H4s2-1 2-5.5z" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 19a2 2 0 004 0" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></div>
-    <p class="signup-title">${esc(COPY.signup.title)}</p>
-    <p class="signup-desc">${esc(COPY.signup.desc)}</p>
-    <form class="signup-form form-wrap" data-signup novalidate>
-      <div class="signup-input">
-        <span class="in-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 9.5a6 6 0 0112 0c0 4.5 2 5.5 2 5.5H4s2-1 2-5.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M10 19a2 2 0 004 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
-        <input type="text" id="modalEmail" name="contact" placeholder="${esc(COPY.signup.placeholder)}" autocomplete="email" aria-label="이메일 또는 전화번호" required>
-      </div>
-      <p class="form-error" role="alert">${esc(COPY.survey.invalidEmail)}</p>
-      <button type="submit" class="btn-primary">${esc(COPY.signup.submit)}</button>
-    </form>
-    ${COPY.signup.micro ? `<p class="micro" style="text-align:center;">${esc(COPY.signup.micro)}</p>` : ''}`;
-  openModal();
-  panel.querySelector('.survey-close').addEventListener('click', closeModal);
-  const form = panel.querySelector('[data-signup]');
-  form.addEventListener('submit', ev => {
-    ev.preventDefault();
-    const input = form.querySelector('input[name="contact"]');
-    if (!validContact(input.value)) { form.classList.add('invalid'); input.focus(); return; }
-    form.classList.remove('invalid');
-    currentEmail = input.value.trim();
-    const contactType = validEmail(currentEmail) ? 'email' : 'phone';
-    submitLead({ type: 'signup', contact: currentEmail, contactType, at: new Date().toISOString() });
-    if (CONFIG.showSurvey) renderSurvey();
-    else showDone();
-  });
-  setTimeout(() => panel.querySelector('#modalEmail')?.focus(), 120);
-}
+const reservationForm = document.getElementById('reservationForm');
+const reservationSuccess = document.getElementById('reservationSuccess');
+const reservationMicro = document.getElementById('reservationMicro');
+const reservationFields = document.getElementById('reservationFields');
+const inlineSurvey = document.getElementById('inlineSurvey');
+let reservationSchool = '';
+let reservationPrep = '';
 
-/* 2단계: 신청 완료 + 미니 설문 (선택) */
-function renderSurvey() {
+document.querySelectorAll('#reservationSchoolOptions .status-opt').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#reservationSchoolOptions .status-opt').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    reservationSchool = btn.dataset.school || '';
+  });
+});
+
+document.querySelectorAll('#reservationPrepOptions .status-opt').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#reservationPrepOptions .status-opt').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    reservationPrep = btn.dataset.prep || '';
+  });
+});
+
+document.getElementById('privacyConsent')?.addEventListener('change', e => {
+  if (e.target.checked) reservationForm?.classList.remove('consent-invalid');
+});
+
+reservationForm?.addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const ageInput = reservationForm.querySelector('input[name="age"]');
+  const emailInput = reservationForm.querySelector('input[name="email"]');
+  const phoneInput = reservationForm.querySelector('input[name="phone"]');
+  const consentInput = reservationForm.querySelector('input[name="privacyConsent"]');
+  const age = Number(ageInput.value);
+  const email = emailInput.value.trim();
+  const phone = phoneInput.value.trim();
+  const ageValid = Number.isInteger(age) && age >= 18 && age <= 39;
+  const emailValid = validEmail(email);
+  const phoneValid = validPhone(phone);
+
+  const consentValid = Boolean(consentInput?.checked);
+
+  if (!ageValid || !emailValid || !phoneValid || !reservationSchool || !reservationPrep || !consentValid) {
+    reservationForm.classList.add('invalid');
+    reservationForm.classList.toggle('consent-invalid', !consentValid);
+    if (!ageValid) ageInput.focus();
+    else if (!emailValid) emailInput.focus();
+    else if (!phoneValid) phoneInput.focus();
+    else if (!consentValid) consentInput?.focus();
+    return;
+  }
+
+  reservationForm.classList.remove('invalid');
+  reservationForm.classList.remove('consent-invalid');
+  currentEmail = email;
+  const serverData = await submitLead({
+    type: 'signup',
+    age,
+    email,
+    phone,
+    schoolStatus: reservationSchool,
+    prepStage: reservationPrep,
+    privacyConsent: true,
+    privacyConsentAt: new Date().toISOString(),
+    at: new Date().toISOString()
+  });
+  const serverCount = Number(serverData?.signupCount);
+  if (Number.isFinite(serverCount) && serverCount >= CONFIG.initialSignupCount) setSignupCount(serverCount);
+  else countNewSignup(email);
+  reservationForm.hidden = true;
+  reservationMicro.hidden = true;
+  reservationSuccess.hidden = false;
+  if (CONFIG.showSurvey) renderInlineSurvey();
+});
+
+function renderInlineSurvey() {
   answers.wish = '';
   COPY.survey.questions.forEach(q => answers[q.id] = null);
-  panel.innerHTML = `
-    <button type="button" class="survey-close" aria-label="닫기">✕</button>
+  inlineSurvey.hidden = false;
+  inlineSurvey.innerHTML = `
     <p class="survey-title">${esc(COPY.survey.successTitle)}</p>
     ${COPY.survey.questions.map(q => `
       <div class="survey-q" data-q="${q.id}">
@@ -1110,8 +1302,7 @@ function renderSurvey() {
     </div>
     <button type="button" class="btn-primary" id="surveySubmit">${esc(COPY.survey.submit)}</button>`;
 
-  panel.querySelector('.survey-close').addEventListener('click', closeModal);
-  panel.querySelectorAll('.survey-q[data-q]').forEach(qEl => {
+  inlineSurvey.querySelectorAll('.survey-q[data-q]').forEach(qEl => {
     qEl.querySelectorAll('.chip-opt').forEach(btn => {
       btn.addEventListener('click', () => {
         qEl.querySelectorAll('.chip-opt').forEach(b => b.classList.remove('on'));
@@ -1120,16 +1311,13 @@ function renderSurvey() {
       });
     });
   });
-  panel.querySelector('#surveySubmit').addEventListener('click', () => {
-    const wishEl = panel.querySelector('#surveyWish');
+  inlineSurvey.querySelector('#surveySubmit').addEventListener('click', async () => {
+    const wishEl = inlineSurvey.querySelector('#surveyWish');
     answers.wish = wishEl ? wishEl.value.trim() : '';
-    submitLead({ type: 'survey', contact: currentEmail, ...answers, at: new Date().toISOString() });
-    showDone();
+    await submitLead({ type: 'survey', contact: currentEmail, ...answers, at: new Date().toISOString() });
+    inlineSurvey.innerHTML = `<p class="survey-thanks">${esc(COPY.survey.thanks)}</p>`;
   });
 }
-const closeSurvey = closeModal; // 하위 호환
-overlay.addEventListener('click', e => { if (e.target === overlay) closeSurvey(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && overlay.classList.contains('open')) closeSurvey(); });
 
 /* ─────────── 스크롤 진입 모션 (IntersectionObserver + 80ms 스태거) ─────────── */
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
